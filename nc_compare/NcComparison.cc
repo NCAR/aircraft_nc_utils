@@ -653,12 +653,14 @@ std::ostream&
 CompareVariables::
 statisticsHeader(std::ostream& out)
 {
-  out << format("%2s %-16s %14s %14s %12s %12s\n")
-    % "" % "Variable" % "Left Mean" % "Right Mean"
+  out << format("%2s %-16s %14s %8s %14s %8s %12s %12s\n")
+    % "" % "Variable" % "Left Mean" % "Good Pts" 
+    % "Right Mean" % "Good Pts"
     % "Abs Error"
     % "Rel Err (%)";
-  out << format("%2s %-16s %14s %14s %12s %12s\n")
-    % "" % "--------" % "---------" % "----------"
+  out << format("%2s %-16s %14s %8s %14s %8s %12s %12s\n")
+    % "" % "--------" % "---------" % "--------"
+    % "----------" % "--------"
     % "------------"
     % "------------";
   return out;
@@ -671,11 +673,13 @@ reportStatistics(std::ostream& out)
 {
   std::string name(left ? left->name : right->name);
 
-  out << format("%2s %-16s %14s %14s %s")
+  out << format("%2s %-16s %14s %8s %14s %8s %s")
     % (left ? (right ? "" : "-") : "+")
     % name
     % (left ? str(format("%14.6f") % left->getMean()) : "")
+    % (left ? str(format("%7d") % left->npoints) : "")
     % (right ? str(format("%14.6f") % right->getMean()) : "")
+    % (right ? str(format("%7d") % right->npoints) : "")
     % (left && right ? str(format("%12.8f %12.2f")
 			   % absolute_error % relative_error) : "");
   out << "\n";

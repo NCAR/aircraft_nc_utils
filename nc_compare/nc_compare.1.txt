@@ -134,7 +134,5 @@ attributes and statistics would be shown.
 AUTHOR
 ------
 
-AsciiDoc was originally written by Chris Webster for EOL aircraft data files,
+nc_compare was originally written by Chris Webster for EOL aircraft data files,
 then extended by Gary Granger to work with EOL profiler data files.
-
-
