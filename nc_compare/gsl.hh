@@ -24,7 +24,7 @@ namespace gsl {
   /* Use some CPP magic to define the specializations.
    */
 #define GSL_STATS(T, ID) \
-template <> T \
+template <> T inline \
 gsl_stats_mean(const T data[], const size_t stride, const size_t n) { \
   return ::gsl_stats_##ID##mean(data, stride, n);  }
 

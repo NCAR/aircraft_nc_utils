@@ -677,9 +677,9 @@ reportStatistics(std::ostream& out)
     % (left ? (right ? "" : "-") : "+")
     % name
     % (left ? str(format("%14.6f") % left->getMean()) : "")
-    % (left ? str(format("%7d") % left->npoints) : "")
+    % (left ? str(format("%7d") % left->ngoodpoints) : "")
     % (right ? str(format("%14.6f") % right->getMean()) : "")
-    % (right ? str(format("%7d") % right->npoints) : "")
+    % (right ? str(format("%7d") % right->ngoodpoints) : "")
     % (left && right ? str(format("%12.8f %12.2f")
 			   % absolute_error % relative_error) : "");
   out << "\n";

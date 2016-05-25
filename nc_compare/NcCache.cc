@@ -408,14 +408,19 @@ next()
 
 
 nc_variable::
-nc_variable()
+nc_variable() :
+  npoints(0),
+  datatype(NC_NAT),
+  ngoodpoints(0)
 {}
 
 
 nc_variable::
 nc_variable(NcCache* ncc, const std::string& name, int id):
   nc_object(ncc, name, id),
-  npoints(1)
+  npoints(1),
+  datatype(NC_NAT),
+  ngoodpoints(0)
 {}
 
 
@@ -546,6 +551,7 @@ computeStatistics()
     if (data[i] != missing_value)
       cleaned_data.push_back(data[i]);
   }
+  ngoodpoints = cleaned_data.size();
   mean = gsl::gsl_stats_mean(&cleaned_data[0], 1, cleaned_data.size());
 }
 

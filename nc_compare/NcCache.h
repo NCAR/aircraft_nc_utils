@@ -226,9 +226,9 @@ public:
   coordinates(const std::vector<nc_dimension*>& dimensions) :
     dims(dimensions),
     index(0),
+    npoints(1),
     coords(dims.size(), 0)
   {
-    npoints = 1;
     for (unsigned int d = 0; d < dimensions.size(); ++d)
     {
       npoints *= dimensions[d]->len;
@@ -308,7 +308,12 @@ public:
 
   std::vector<nc_dimension*> dims;
   unsigned int index;
+  /**
+   * The product of the lengths of the dimensions in this coordinate's
+   * domain.
+   **/
   unsigned int npoints;
+
 private:
   coords_t coords;
 };
@@ -389,8 +394,20 @@ struct nc_variable : public nc_object
   // in multiple variables.
   std::vector<boost::shared_ptr<nc_attribute> > attributes;
   std::vector<nc_dimension*> dimensions;
+
+  /**
+   * Number of points in the whole variable, the product of all the
+   * dimension lengths.
+   **/
   size_t npoints;
   nc_type datatype;
+
+  /**
+   * The number of points which do not equal the missing value and which
+   * are used to compute the statistics.  It is only set by calling
+   * computeStatistics().
+   **/
+  size_t ngoodpoints;
 };
 
 

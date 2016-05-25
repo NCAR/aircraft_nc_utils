@@ -5,6 +5,7 @@
 #include "NcCache.h"
 #include "NcComparison.h"
 #include "compare_lists.h"
+#include "gsl.hh"
 
 using boost::make_shared;
 using boost::shared_ptr;
@@ -321,3 +322,12 @@ TEST(compare_floating_point, ulps)
 
 }
 
+
+TEST(calling_gsl, empty)
+{
+  double value = 10;
+
+  // Make sure it's ok to call gsl with 0 values.
+  EXPECT_EQ(0, gsl::gsl_stats_mean(&value, 1, 0));
+  EXPECT_EQ(10, gsl::gsl_stats_mean(&value, 1, 1));
+}
