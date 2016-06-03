@@ -749,3 +749,12 @@ prefix(std::ostream& out) const
   return out;
 }
 
+
+
+unsigned int 
+variable_range::
+size()
+{
+  return end.index - start.index + 1;
+}
+

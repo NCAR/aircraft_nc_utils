@@ -334,6 +334,12 @@ struct variable_range
     end(b)
   {}
 
+  /**
+   * Return the number of points in this range.
+   **/
+  unsigned int 
+  size();
+
   coordinates start;
   coordinates end;
 };

@@ -150,6 +150,38 @@ TEST(NcCache, GlobalAttributes)
 }
 
 
+TEST(NcCache, variable_range)
+{
+  NcCache* ncf = 0;
+  nc_dimension time(ncf, "time", 0, 100);
+  nc_dimension height(ncf, "height", 1, 88);
+  nc_dimension freq(ncf, "frequency", 2, 256);
+  std::vector<nc_dimension*> dims;
+  dims.push_back(&time);
+  dims.push_back(&height);
+  dims.push_back(&freq);
+  coordinates start(dims);
+  coordinates end(dims);
+  start.set(0, 0, 0);
+  end.set(99, 87, 255);
+  variable_range range(start, end);
+  EXPECT_EQ(start.npoints, range.size());
+
+  start.set(98, 86, 254);
+  range = variable_range(start, end);
+  EXPECT_EQ(1*88*256 + 1*256 + 1 + 1, range.size());
+
+  start.set(99, 87, 254);
+  range = variable_range(start, end);
+  EXPECT_EQ(2, range.size());
+
+  start.set(0, 0, 0);
+  end.set(2, 2, 2);
+  range = variable_range(start, end);
+  EXPECT_EQ(2*88*256 + 2*256 + 2 + 1, range.size());
+}
+
+
 TEST(Comparison, Dimensions)
 {
   NcCache* ncf1 = 0;

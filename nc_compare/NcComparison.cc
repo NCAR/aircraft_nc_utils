@@ -630,11 +630,23 @@ generateReport(std::ostream& out, const ReportStyle& style)
     }
     // The dimension differences are included in the header.  Now report
     // any ranges where variables differ, up to the limit.
-    for (unsigned int i = 0;
-	 i < ranges.size() && i < (unsigned int)_ncf->getReportLimit(); ++i)
+    unsigned int totalpts = 0;
+    for (unsigned int i = 0; i < ranges.size(); ++i)
     {
-      out << style.derive(1, " - ") << left->rangeSummary(ranges[i]) << "\n";
-      out << style.derive(1, " + ") << right->rangeSummary(ranges[i]) << "\n";
+      totalpts += ranges[i].size();
+      if (i < (unsigned int)_ncf->getReportLimit())
+      {
+	out << style.derive(1, " - ") << left->rangeSummary(ranges[i]) << "\n";
+	out << style.derive(1, " + ") << right->rangeSummary(ranges[i]) << "\n";
+      }
+    }
+    // Report on the total number of different points.  This might also be
+    // useful to report in the stats table, but for now it is only shown
+    // with showindex.
+    if (totalpts)
+    {
+      out << style.derive(1, "==>") << ranges.size() << " ranges differ, "
+	  << totalpts << " points differ out of " << left->npoints << ".\n";
     }
   }
 
