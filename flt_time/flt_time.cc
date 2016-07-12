@@ -107,12 +107,34 @@ main(int argc, char *argv[])
   }
   
   NcAtt * project = ncFile->get_att("project");
+  if (project == 0 || project->is_valid() == false)
+  {
+    // If :project not present, look for :ProjectName
+    project = ncFile->get_att("ProjectName");
+    if (project == 0 || project->is_valid() == false)
+    {
+      cerr << "Neither global variable :project nor :ProjectName present in file.\n";
+      return 0;
+    }
+  }
+
   NcAtt * flight = ncFile->get_att("FlightNumber");
+  if (flight == 0 || flight->is_valid() == false)
+  {
+    cerr << "Global variable :FlightNumber not present in file.\n";
+    return 0;
+  }
+
   cout	<< argv[indx] << ":"
 		<< project->as_string(0) << ":"
 		<< flight->as_string(0) << ":\n";
 
   NcValues * time_data = getData(ncFile, "Time");
+  if (time_data == 0)
+  {
+    cerr << "Variable Time not present in file.\n";
+    return 0;
+  }
 
   // If user specified variable, use that.
   // Try ground speed first, otherwise airspeed.
@@ -173,3 +195,4 @@ main(int argc, char *argv[])
   delete speed_data;
   delete ncFile;
 }
+
