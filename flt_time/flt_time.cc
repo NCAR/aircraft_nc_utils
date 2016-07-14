@@ -8,9 +8,22 @@ using namespace std;
 
 
 NcValues *
-getData(NcFile * file, const char * name)
+getData(NcFile * file, const char * name, long int * step)
 {
+  NcDim * dim;
   NcVar * var = file->get_var(name);
+  *step =1;
+  
+  // Figure out how many dimensions variable has
+  int ndims=var->num_dims();
+  if (ndims > 1)
+  {
+    for (int i=1; i < ndims; ++i)
+    {
+      dim = var->get_dim(i);
+      *step *= dim->size();
+    }
+  }
 
   if (var == 0 || var->is_valid() == false)
   {
@@ -66,6 +79,7 @@ main(int argc, char *argv[])
   float speed_cutoff = 25.0;	// Default.
   char variable[16] = "GSF";
   float delta = 1.0;
+  long int step;
 
 
   // Check arguments / usage.
@@ -129,7 +143,7 @@ main(int argc, char *argv[])
 		<< project->as_string(0) << ":"
 		<< flight->as_string(0) << ":\n";
 
-  NcValues * time_data = getData(ncFile, "Time");
+  NcValues * time_data = getData(ncFile, "Time", &step);
   if (time_data == 0)
   {
     cerr << "Variable Time not present in file.\n";
@@ -138,9 +152,12 @@ main(int argc, char *argv[])
 
   // If user specified variable, use that.
   // Try ground speed first, otherwise airspeed.
-  NcValues * speed_data = getData(ncFile, variable);
+  NcValues * speed_data = getData(ncFile, variable, &step);
   if (speed_data == 0)
-    speed_data = getData(ncFile, "TASX");
+    strncpy(variable,"TASX",5);
+    speed_data = getData(ncFile, variable, &step);
+
+  cout << "Using variable " << variable << "\n";
 
   if (time_data == 0 || speed_data == 0)
     return 1;
@@ -155,26 +172,33 @@ main(int argc, char *argv[])
     return 1;
   }
 
-
   // Locate Start of Flight
   long i;
+  long j=0;
   for (i = 0; i < time_var->num_vals(); ++i)
-    if (((delta > 0.0 && speed_data->as_float(i) > speed_cutoff) || (delta < 0.0 && speed_data->as_float(i) < speed_cutoff)) && speed_data->as_float(i) != -32767.0)
+  {
+    j+=step;
+//    cerr << i << " " << j << " " << speed_data->as_float(j) << "\n";
+    if (((delta > 0.0 && speed_data->as_float(j) > speed_cutoff) || (delta < 0.0 && speed_data->as_float(j) < speed_cutoff)) && speed_data->as_float(j) != -32767.0)
     {
       time_t x = start_t + i;
 
       cout << "Takeoff: " << ctime(&x);
-//cout << "take-off indx = " << x << " " << i << endl;
+//cout << "take-off indx = " << ctime << " " << x << " " << j << endl;
       break;
     }
+  }
 
   // Increment index to move us forward in time to make sure TAS stays
   // above threshold.
   i += 60;
+  j+= 60*step;
 
   // Locate End of Flight
   for (; i < time_var->num_vals(); ++i)
-    if (((delta > 0.0 && speed_data->as_float(i) < speed_cutoff) || (delta < 0.0 && speed_data->as_float(i) > speed_cutoff)) && speed_data->as_float(i) != -32767.0)
+  {
+    j+=step;
+    if (((delta > 0.0 && speed_data->as_float(j) < speed_cutoff) || (delta < 0.0 && speed_data->as_float(j) > speed_cutoff)) && speed_data->as_float(j) != -32767.0)
     {
       time_t x = start_t + i;
 
@@ -182,6 +206,7 @@ main(int argc, char *argv[])
 //cout << "landing indx = " << x << " " << i << endl;
       break;
     }
+  }
 
   if (speed_data->as_float(0) > 80.0)
     cout	<< endl << " First TAS value is " << speed_data->as_float(0)
