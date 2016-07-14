@@ -212,7 +212,7 @@ main(int argc, char *argv[])
     cout	<< endl << " First TAS value is " << speed_data->as_float(0)
 		<< "m/s, incomplete netCDF file?" << endl;
 
-  if (speed_data->as_float(time_var->num_vals()-1) > 80.0)
+  if (speed_data->as_float(time_var->num_vals()*step-1) > 80.0)
     cout << endl << " Last TAS value is " << speed_data->as_float(time_var->num_vals()-1)
 	<< "m/s, incomplete netCDF file?" << endl;
 
