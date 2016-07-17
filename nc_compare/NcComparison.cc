@@ -304,6 +304,8 @@ countDifferences()
 		   bind(mem_fn(&CompareVariables::isDifferent), _1));
   count += count_if(dims.begin(), dims.end(),
 		    bind(mem_fn(&CompareDimensions::isDifferent), _1));
+  count += count_if(atts.begin(), atts.end(),
+		    bind(mem_fn(&CompareAttributes::isDifferent), _1));
   count += _warnings.size();
   count += times.isDifferent();
   return count;

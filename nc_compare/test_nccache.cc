@@ -150,6 +150,31 @@ TEST(NcCache, GlobalAttributes)
 }
 
 
+TEST(NcCache, Compare)
+{
+  NcCache left("IDEAS-4rf02-expected.nc");
+  NcCache right("IDEAS-4rf02-expected.nc");
+
+  CompareNetcdf ncdiff(&left, &right);
+  ncdiff.compare();
+  EXPECT_EQ(ncdiff.countDifferences(), 0);
+
+  right.overrideGlobalAttribute("ConventionsVersion", "99999");
+  nc_attribute* att = right.getGlobalAttribute("ConventionsVersion");
+  ASSERT_TRUE(att);
+  EXPECT_EQ(att->as_string(), "99999");
+
+  ncdiff.compare();
+  EXPECT_EQ(ncdiff.countDifferences(), 1);
+
+  std::vector<std::string> overrides;
+  overrides.push_back("ConventionsVersion=99999");
+  left.overrideGlobalAttributes(overrides);
+  ncdiff.compare();
+  EXPECT_EQ(ncdiff.countDifferences(), 0);
+}
+
+
 TEST(NcCache, variable_range)
 {
   NcCache* ncf = 0;

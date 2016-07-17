@@ -31,7 +31,14 @@ nc_compare(int argc, char *argv[])
     ("showindex",
      "For vector values, report the indexes of the differences.")
     ("ignore", po::value<std::vector<std::string> >()->composing(),
-     "Ignore attributes and variables with the given names.")
+     "Ignore attributes and variables with the given name.  Pass --ignore "
+     "for each name to be ignored.")
+    ("override", po::value<std::vector<std::string> >()->composing(),
+     "Override a global attribute in the left file specified in the form "
+     "key=value.  "
+     "Pass --override for each attribute to override.  Only "
+     "global attribute names which exist in the left file will be "
+     "overridden, all other overrides are ignored.")
     ("file", po::value<std::vector<std::string> >(), "Input files.")
     ("delta", po::value<double>(),
      "Error delta allowed for floating point values to be equal.  "
@@ -78,9 +85,17 @@ nc_compare(int argc, char *argv[])
   NcCache left(files[0]);
   NcCache right(files[1]);
 
+  std::vector<std::string> override;
+  if (vm.count("override"))
+  {
+    override = vm["override"].as<std::vector<std::string> >();
+    left.overrideGlobalAttributes(override);
+  }
+
   CompareNetcdf ncdiff(&left, &right);
   ncdiff.showEqual(vm.count("showequal") > 0);
   ncdiff.showIndex(vm.count("showindex") > 0);
+
   std::vector<std::string> ignores;
   if (vm.count("ignore"))
     ignores = vm["ignore"].as<std::vector<std::string> >();

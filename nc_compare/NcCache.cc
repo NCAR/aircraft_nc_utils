@@ -157,6 +157,37 @@ loadGlobalAttributes()
 }
 
 
+void
+NcCache::
+overrideGlobalAttribute(const std::string& name, const std::string& value)
+{
+  nc_attribute* att = getGlobalAttribute(name);
+  if (att)
+  {
+    nc_string_attribute* satt = dynamic_cast<nc_string_attribute*>(att);
+    if (satt)
+    {
+      satt->value = value;
+    }
+  }
+}
+
+
+void
+NcCache::
+overrideGlobalAttributes(const std::vector<std::string>& overrides)
+{
+  std::vector<std::string>::const_iterator it;
+  for (it = overrides.begin(); it != overrides.end(); ++it)
+  {
+    std::string::size_type eq = it->find('=');
+    if (eq != std::string::npos && eq > 0)
+    {
+      overrideGlobalAttribute(it->substr(0, eq), it->substr(eq+1));
+    }
+  }
+}
+
 
 shared_ptr<nc_attribute>
 NcCache::

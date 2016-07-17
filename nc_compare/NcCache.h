@@ -575,6 +575,12 @@ public:
   nc_attribute*
   getGlobalAttribute(const std::string& name);
 
+  void
+  overrideGlobalAttribute(const std::string& name, const std::string& value);
+
+  void
+  overrideGlobalAttributes(const std::vector<std::string>& overrides);
+
   nc_time
   basetime()
   {
