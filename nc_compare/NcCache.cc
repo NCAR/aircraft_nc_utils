@@ -167,7 +167,9 @@ overrideGlobalAttribute(const std::string& name, const std::string& value)
     nc_string_attribute* satt = dynamic_cast<nc_string_attribute*>(att);
     if (satt)
     {
+      // Assume the length did not include a C-string null terminator.
       satt->value = value;
+      satt->len = value.length();
     }
   }
 }
