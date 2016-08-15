@@ -14,6 +14,9 @@ getData(NcFile * file, const char * name, long int * step)
   NcVar * var = file->get_var(name);
   *step =1;
   
+  if (var == 0)		// Variable does not exist.
+    return 0;
+
   // Figure out how many dimensions variable has
   int ndims=var->num_dims();
   if (ndims > 1)
