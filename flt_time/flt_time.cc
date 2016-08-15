@@ -77,7 +77,7 @@ main(int argc, char *argv[])
 {
   int indx = 1;
   float speed_cutoff = 25.0;	// Default.
-  char variable[16] = "GSF";
+  char variable[32] = "GSPD";
   float delta = 1.0;
   long int step;
 
@@ -85,7 +85,7 @@ main(int argc, char *argv[])
   // Check arguments / usage.
   if (argc < 2)
   {
-    cerr << "Print out take-off and landing times from a netCDF file.\nUses true airspeed (use -v to change) above 25 m/s (use -t to change).\n\n";
+    cerr << "Print out take-off and landing times from a netCDF file.\nUses ground speed (use -v to change) above 25 m/s (use -t to change).\n\n";
     cerr << "Usage: flt_time [-t value] [-v variable] netcdf_file\n";
     cerr << "Currently takes -t or -v, but not both\n";
     exit(1);
