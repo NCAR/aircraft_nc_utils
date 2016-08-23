@@ -37,18 +37,9 @@ import numpy as np
 from netCDF4 import Dataset
 import math
 
-if len(sys.argv) != 2:
-	sys.stderr.write('Error: expected exactly one argument\n')
-	exit(1)
-
-ncFileName = sys.argv[1]
-
-ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
-
-print('name,npoints,min,max,stddev,variance,mean')
-#for var in ncFile.variables:
-
 def print_stats(var):
+	# Remove missing values from statistics calculations
+	ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
 	min = np.min(ncFile.variables[var])
 	max = np.max(ncFile.variables[var])
 	variance = np.var(ncFile.variables[var])
@@ -63,6 +54,17 @@ def print_stats(var):
 	      'variance': variance, \
 	          'mean': mean })
 
-print_stats('THETA')
+if len(sys.argv) != 2:
+	sys.stderr.write('Error: expected exactly one argument\n')
+	exit(1)
 
+ncFileName = sys.argv[1]
+
+ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
+
+print('name,npoints,min,max,stddev,variance,mean')
+for var in ncFile.variables:
+    print_stats(var)
 ncFile.close()
+
+
