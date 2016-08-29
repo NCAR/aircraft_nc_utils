@@ -80,9 +80,9 @@ def print_default(ncFile):
             stat = stats(var)
             print "%s, %s, %s, %s, %s, %s, %s" %(stat[0], stat[1], stat[2], stat[3], stat[4], stat[5], stat[6])
 
-#if len(sys.argv) != 2:
- #   sys.stderr.write('Error: expected exactly one argument\n')
- #   exit(1)
+if len(sys.argv) == 1:
+    sys.stderr.write('Error: netCDF file expected as program argument. Use the -h argument to see other usage.\n')
+    exit(1)
 
 ncFileName = sys.argv[1]
 ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
