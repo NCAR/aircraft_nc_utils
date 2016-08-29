@@ -100,4 +100,3 @@ else:
 
 ncFile.close()
 
-# Test
