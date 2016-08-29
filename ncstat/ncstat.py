@@ -36,8 +36,10 @@ import sys
 import numpy as np
 from netCDF4 import Dataset
 import math
+import argparse
 
-def print_stats(var):
+
+def stats(var):
 	# Remove missing values from statistics calculations
 	ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
 	min = np.min(ncFile.variables[var])
@@ -45,26 +47,57 @@ def print_stats(var):
 	variance = np.var(ncFile.variables[var])
 	stddev = math.sqrt(variance)
 	mean = np.mean(ncFile.variables[var])
-	print('%(name)s,%(npoints)d,%(min)g,%(max)g,%(stddev)g,%(variance)g,%(mean)g' % { \
-	          'name': var, \
-	       'npoints': len(ncFile.variables[var]), \
-	           'min': min, \
-	           'max': max, \
-	        'stddev': stddev, \
-	      'variance': variance, \
-	          'mean': mean })
 
-if len(sys.argv) != 2:
-	sys.stderr.write('Error: expected exactly one argument\n')
-	exit(1)
+        stats = [var.encode('UTF-8'), len(ncFile.variables[var]), min, max, stddev, variance, mean]
+        return stats
+
+# Print statistic values in clearly separated columns 
+def print_cols(ncFile):
+    var_array = [["name", "npoints", "min", "max", "stddev", "variance", "mean"]]
+    for var in ncFile.variables:
+        if args.vars:
+            for arg in args.vars:
+                if var == arg:
+                    var_array.append(stats(var))
+        else:
+            var_array.append(stats(var))
+  
+    col_width = max(len(str(var)) for row in var_array for var in row) + 2
+
+    for var in var_array:
+        print "".join(str(word).ljust(col_width) for word in var)    
+
+# Print Staticstic values comma separated 
+def print_default(ncFile):
+    print('name,npoints,min,max,stddev,variance,mean')
+    for var in ncFile.variables:
+        if args.vars:
+            for arg in args.vars:
+                if var == arg:
+                    stat = stats(var)
+                    print "%s, %s, %s, %s, %s, %s, %s" %(stat[0], stat[1], stat[2], stat[3], stat[4], stat[5], stat[6])
+        else:
+            stat = stats(var)
+            print "%s, %s, %s, %s, %s, %s, %s" %(stat[0], stat[1], stat[2], stat[3], stat[4], stat[5], stat[6])
+
+#if len(sys.argv) != 2:
+ #   sys.stderr.write('Error: expected exactly one argument\n')
+ #   exit(1)
 
 ncFileName = sys.argv[1]
-
 ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
 
-print('name,npoints,min,max,stddev,variance,mean')
-for var in ncFile.variables:
-    print_stats(var)
+parser = argparse.ArgumentParser()
+parser.add_argument("-c", "--cols", help="Print stats in columns", action='store_true')
+parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables")
+args, unknown = parser.parse_known_args()
+
+if args.cols:
+    print_cols(ncFile)
+else:
+    print_default(ncFile)
+
+
 ncFile.close()
 
 # Test
