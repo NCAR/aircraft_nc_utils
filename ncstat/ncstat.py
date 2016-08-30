@@ -63,23 +63,36 @@ def print_cols(ncFile):
             var_array.append(stats(var))
   
     col_width = max(len(str(var)) for row in var_array for var in row) + 2
+  
+    if args.vars: 
+        if len(var_array) < len(args.vars) + 1:
+            sys.stderr.write("Error: One or more variables entered does not exist.\n")
+            exit(2)
 
     for var in var_array:
         print "".join(str(word).ljust(col_width) for word in var)    
 
 # Print Staticstic values comma separated 
 def print_default(ncFile):
-    print('name,npoints,min,max,stddev,variance,mean')
+    var_array = [["name", "npoints", "min", "max", "stddev", "variance", "mean"]]
     for var in ncFile.variables:
         if args.vars:
             for arg in args.vars:
                 if var == arg:
-                    stat = stats(var)
-                    print "%s, %s, %s, %s, %s, %s, %s" %(stat[0], stat[1], stat[2], stat[3], stat[4], stat[5], stat[6])
+                    var_array.append(stats(var))
+                    
         else:
-            stat = stats(var)
-            print "%s, %s, %s, %s, %s, %s, %s" %(stat[0], stat[1], stat[2], stat[3], stat[4], stat[5], stat[6])
-
+            var_array.append(stats(var))
+    
+    if args.vars:
+        if len(var_array) < len(args.vars) + 1:
+            sys.stderr.write("Error: One or more variables entered does not exist.\n")
+            exit(2)
+    
+    for var in var_array:
+        print "%s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5])
+   
+   
 if len(sys.argv) == 1:
     sys.stderr.write('Error: netCDF file expected as program argument. Use the -h argument to see other usage.\n')
     exit(1)
@@ -88,8 +101,8 @@ ncFileName = sys.argv[1]
 ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-c", "--cols", help="Print stats in columns", action='store_true')
-parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables")
+parser.add_argument("-c", "--cols", help="Print statistics in separated columns", action='store_true')
+parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. Variables entered should be space separated.")
 args, unknown = parser.parse_known_args()
 
 if args.cols:
