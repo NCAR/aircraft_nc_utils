@@ -29,8 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Author: Nicholas DeCicco. <decicco@ucar>
-#                           <nsd.cicco@gmail.com>
+# Authors: Nicholas DeCicco <nsd.cicco@gmail.com> - initial version
+# 	   Tyler Lugger <tlugger@ucar.edu> - major revisions and added functionality
 
 import sys
 import numpy as np
