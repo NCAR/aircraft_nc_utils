@@ -48,6 +48,12 @@ args, unknown = parser.parse_known_args()
 ncFileName = args.file[0]
 ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
 
+def multiply(numbers):
+    total = 1
+    for x in numbers:
+	total *=x
+    return total
+
 def stats(var):
 	# Remove missing values from statistics calculations
 	ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
@@ -58,7 +64,7 @@ def stats(var):
 	stddev = math.sqrt(variance)
 	mean = np.mean(ncFile.variables[var])
 
-        stats = [var.encode('UTF-8'), len(ncFile.variables[var]), nmissing, min, max, stddev, variance, mean]
+	stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, stddev, variance, mean]
         return stats
 
 def print_stats(ncFile):
