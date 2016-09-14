@@ -42,7 +42,7 @@ import re
 # Add flags to parser for more customized output
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", help="Print statistics in separated columns", action='store_true')
-parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated.")
+parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated. A '+' can be used to match multiple VARS")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
 args, unknown = parser.parse_known_args()
 
