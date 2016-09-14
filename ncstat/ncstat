@@ -60,11 +60,11 @@ def stats(var):
 	# Remove missing values from statistics calculations
 	ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
 	nmissing = np.ma.count_masked(ncFile.variables[var])
-        min = np.min(ncFile.variables[var])
-	max = np.max(ncFile.variables[var])
-	mean = np.mean(ncFile.variables[var])
-	variance = np.var(ncFile.variables[var])
-	stddev = math.sqrt(variance)
+        min = round(np.min(ncFile.variables[var]), 3)
+	max = round(np.max(ncFile.variables[var]), 3)
+	mean = round(np.mean(ncFile.variables[var]), 3)
+	variance = round(np.var(ncFile.variables[var]), 3)
+	stddev = round(math.sqrt(variance), 3)
 
 	stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
         return stats
@@ -74,11 +74,14 @@ def print_stats(ncFile):
     for var in ncFile.variables:
         if args.vars: # Only append -v Variables if flag was used
             for arg in args.vars:
-		if arg[-1] == '+':
-		    arg = arg[:-1]
-                    regex = re.compile(arg)
-                    if re.match(regex, var): #var == arg:
+		if arg[-1] == '+' and arg[0] == '+':
+                    regex = re.compile(arg[1:-1])
+                    if re.search(regex, var):
                         var_array.append(stats(var))
+                elif arg[-1] == '+':
+                    regex = re.compile(arg[:-1])
+                    if re.match(regex, var):
+		        var_array.append(stats(var))
                 elif var == arg:
 		    var_array.append(stats(var))
 
