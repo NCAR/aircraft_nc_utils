@@ -37,6 +37,7 @@ import numpy as np
 from netCDF4 import Dataset
 import math
 import argparse
+import re
 
 # Add flags to parser for more customized output
 parser = argparse.ArgumentParser()
@@ -44,6 +45,7 @@ parser.add_argument("-c", help="Print statistics in separated columns", action='
 parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated.")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
 args, unknown = parser.parse_known_args()
+
 
 ncFileName = args.file[0]
 ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
@@ -72,8 +74,13 @@ def print_stats(ncFile):
     for var in ncFile.variables:
         if args.vars: # Only append -v Variables if flag was used
             for arg in args.vars:
-                if var == arg:
-                    var_array.append(stats(var))
+		if arg[-1] == '+':
+		    arg = arg[:-1]
+                    regex = re.compile(arg)
+                    if re.match(regex, var): #var == arg:
+                        var_array.append(stats(var))
+                elif var == arg:
+		    var_array.append(stats(var))
 
         else:
             var_array.append(stats(var))
@@ -89,7 +96,7 @@ def print_stats(ncFile):
         col_width = max(len(str(var)) for row in var_array for var in row) + 2
         for var in var_array:
             print "".join(str(word).ljust(col_width) for word in var)
-
+    
     # Display stats in default comma separated view
     else:
         for var in var_array:
