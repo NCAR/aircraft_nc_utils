@@ -61,8 +61,8 @@ def stats(var):
         min = np.min(ncFile.variables[var])
 	max = np.max(ncFile.variables[var])
 	mean = np.mean(ncFile.variables[var])
-	stddev = math.sqrt(variance)
 	variance = np.var(ncFile.variables[var])
+	stddev = math.sqrt(variance)
 
 	stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
         return stats
