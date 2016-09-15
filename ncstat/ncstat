@@ -40,10 +40,11 @@ import argparse
 import re
 
 # Add flags to parser for more customized output
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Display stats for netCDF file')
 parser.add_argument("-c", help="Print statistics in separated columns", action='store_true')
 parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated. A '+' can be used to match multiple VARS")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
+parser.usage = parser.print_help()
 args, unknown = parser.parse_known_args()
 
 
@@ -57,16 +58,20 @@ def multiply(numbers):
     return total
 
 def stats(var):
-	# Remove missing values from statistics calculations
-	ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
+	
+	np.set_printoptions(precision=5)	
+	
+        # Remove missing values from statistics calculations
+        ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
 	nmissing = np.ma.count_masked(ncFile.variables[var])
-        min = round(np.min(ncFile.variables[var]), 3)
-	max = round(np.max(ncFile.variables[var]), 3)
-	mean = round(np.mean(ncFile.variables[var]), 3)
-	variance = round(np.var(ncFile.variables[var]), 3)
-	stddev = round(math.sqrt(variance), 3)
+        min = "%14g" %np.min(ncFile.variables[var])
+	max = "%14g" %np.max(ncFile.variables[var])
+	mean = "%14g" %np.mean(ncFile.variables[var])
+	variance = np.var(ncFile.variables[var])
+	stddev = "%14g" %math.sqrt(variance)
+        variance = "%14g" %variance # Reformat variance after it is used in stddev
 
-	stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
+        stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
         return stats
 
 def print_stats(ncFile):
@@ -98,7 +103,7 @@ def print_stats(ncFile):
     if args.c:
         col_width = max(len(str(var)) for row in var_array for var in row) + 2
         for var in var_array:
-            print "".join(str(word).ljust(col_width) for word in var)
+            print "".join(str(word).rjust(col_width) for word in var)
     
     # Display stats in default comma separated view
     else:
