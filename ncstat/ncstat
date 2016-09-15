@@ -44,7 +44,8 @@ parser = argparse.ArgumentParser(description='Display stats for netCDF file')
 parser.add_argument("-c", help="Print statistics in separated columns", action='store_true')
 parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated. A '+' can be used to match multiple VARS")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
-parser.usage = parser.print_help()
+parser.add_argument("-p", "--prec", nargs=1, help="Set precision of output")
+parser.print_help()
 args, unknown = parser.parse_known_args()
 
 
@@ -59,17 +60,21 @@ def multiply(numbers):
 
 def stats(var):
 	
-	np.set_printoptions(precision=5)	
+	# Set precision and linewidth for stats being printed
+	if args.prec:
+	    np.set_printoptions(precision=args.prec[0], linewidth=14)	
 	
-        # Remove missing values from statistics calculations
+	else:
+	    np.set_printoptions(precision=5, linewidth=14)
+        
+	# Remove missing values from statistics calculations
         ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
 	nmissing = np.ma.count_masked(ncFile.variables[var])
-        min = "%14g" %np.min(ncFile.variables[var])
-	max = "%14g" %np.max(ncFile.variables[var])
-	mean = "%14g" %np.mean(ncFile.variables[var])
+        min = np.min(ncFile.variables[var])
+	max = np.max(ncFile.variables[var])
+	mean = np.mean(ncFile.variables[var])
 	variance = np.var(ncFile.variables[var])
-	stddev = "%14g" %math.sqrt(variance)
-        variance = "%14g" %variance # Reformat variance after it is used in stddev
+	stddev = math.sqrt(variance)
 
         stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
         return stats
