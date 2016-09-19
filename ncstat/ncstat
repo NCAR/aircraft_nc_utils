@@ -44,7 +44,7 @@ parser = argparse.ArgumentParser(description='Display stats for netCDF file')
 parser.add_argument("-c", help="Print statistics in separated columns", action='store_true')
 parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated. A '+' can be used to match multiple VARS")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
-parser.add_argument("-p", "--prec", nargs=1, help="Set precision of output")
+parser.add_argument("-p", "--precision", nargs=1, help="Set precision of output")
 parser.print_help()
 args, unknown = parser.parse_known_args()
 
@@ -59,19 +59,27 @@ def multiply(numbers):
     return total
 
 def stats(var):
-	
-	# Remove missing values from statistics calculations
-        ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
-	nmissing = np.ma.count_masked(ncFile.variables[var])
-        min = np.min(ncFile.variables[var])
-	max = np.max(ncFile.variables[var])
-	mean = np.mean(ncFile.variables[var])
-        variance = np.var(ncFile.variables[var])
-	stddev = math.sqrt(variance)
-	
 
-        stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, "%14g" %min, "%14g" %max, "%14g" %mean, "%14g" %stddev, "%14g" %variance]
-        return stats
+
+    # Remove missing values from statistics calculations
+    ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
+    nmissing = np.ma.count_masked(ncFile.variables[var])
+    min = np.min(ncFile.variables[var])
+    max = np.max(ncFile.variables[var])
+    mean = np.mean(ncFile.variables[var])
+    variance = np.var(ncFile.variables[var])
+    stddev = math.sqrt(variance)
+
+    # Round all numbers to set purecision
+    if args.precision:
+        min = round(min, int(args.precision[0]))
+        max = round(max, int(args.precision[0]))
+        mean = round(mean, int(args.precision[0]))
+        variance = round(variance, int(args.precision[0]))
+        stddev = round(stddev, int(args.precision[0]))
+
+    stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, "%14g" %min, "%14g" %max, "%14g" %mean, "%14g" %stddev, "%14g" %variance]
+    return stats
 
 def print_stats(ncFile):
     var_array = [["Name", "nPoints", "nMissing", "Min", "Max", "Mean", "StdDev", "Variance"]]
