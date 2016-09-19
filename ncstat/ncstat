@@ -40,12 +40,17 @@ import argparse
 import re
 
 # Add flags to parser for more customized output
-parser = argparse.ArgumentParser(description='Display stats for netCDF file')
+class StatParser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
+
+parser = StatParser()
 parser.add_argument("-c", help="Print statistics in separated columns", action='store_true')
 parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated. A '+' can be used to match multiple VARS")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
 parser.add_argument("-p", "--precision", nargs=1, help="Set precision of output")
-parser.print_help()
 args, unknown = parser.parse_known_args()
 
 
