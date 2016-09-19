@@ -60,23 +60,17 @@ def multiply(numbers):
 
 def stats(var):
 	
-	# Set precision and linewidth for stats being printed
-	if args.prec:
-	    np.set_printoptions(precision=args.prec[0], linewidth=14)	
-	
-	else:
-	    np.set_printoptions(precision=5, linewidth=14)
-        
 	# Remove missing values from statistics calculations
         ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
 	nmissing = np.ma.count_masked(ncFile.variables[var])
         min = np.min(ncFile.variables[var])
 	max = np.max(ncFile.variables[var])
 	mean = np.mean(ncFile.variables[var])
-	variance = np.var(ncFile.variables[var])
+        variance = np.var(ncFile.variables[var])
 	stddev = math.sqrt(variance)
+	
 
-        stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
+        stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, "%14g" %min, "%14g" %max, "%14g" %mean, "%14g" %stddev, "%14g" %variance]
         return stats
 
 def print_stats(ncFile):
@@ -108,12 +102,13 @@ def print_stats(ncFile):
     if args.c:
         col_width = max(len(str(var)) for row in var_array for var in row) + 2
         for var in var_array:
-            print "".join(str(word).rjust(col_width) for word in var)
+            print "%s%s" %(var[0].ljust(col_width), "".join(str(var[stat]).rjust(col_width) for stat in range(1,8)))
+
     
     # Display stats in default comma separated view
     else:
         for var in var_array:
-            print "%s, %s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5], var[6])
+            print "%s, %s, %s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5], var[6], var[7])
    
    
 print_stats(ncFile)
