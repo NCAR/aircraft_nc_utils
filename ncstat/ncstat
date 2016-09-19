@@ -42,7 +42,6 @@ import re
 # Add flags to parser for more customized output
 class StatParser(argparse.ArgumentParser):
     def error(self, message):
-        sys.stderr.write('error: %s\n' % message)
         self.print_help()
         sys.exit(2)
 
@@ -83,7 +82,10 @@ def stats(var):
         variance = round(variance, int(args.precision[0]))
         stddev = round(stddev, int(args.precision[0]))
 
-    stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, "%14g" %min, "%14g" %max, "%14g" %mean, "%14g" %stddev, "%14g" %variance]
+    if args.c:
+        stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, "%14g" %min, "%14g" %max, "%14g" %mean, "%14g" %stddev, "%14g" %variance]
+    else:
+        stats = [var.encode('UTF-8'), multiply(np.shape(ncFile.variables[var])), nmissing, min, max, mean, stddev, variance]
     return stats
 
 def print_stats(ncFile):
@@ -113,7 +115,7 @@ def print_stats(ncFile):
   
     # Display stats in columns if -c flag is used
     if args.c:
-        col_width = max(len(str(var)) for row in var_array for var in row) + 2
+        col_width = max(len(str(var)) for row in var_array for var in row)
         for var in var_array:
             print "%s%s" %(var[0].ljust(col_width), "".join(str(var[stat]).rjust(col_width) for stat in range(1,8)))
 
@@ -125,6 +127,5 @@ def print_stats(ncFile):
    
    
 print_stats(ncFile)
-
 ncFile.close()
 
