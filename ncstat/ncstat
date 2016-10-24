@@ -54,7 +54,7 @@ args, unknown = parser.parse_known_args()
 
 
 ncFileName = args.file[0]
-ncFile = Dataset(ncFileName, 'a') # for netCDF4 module
+ncFile = Dataset(ncFileName, 'r') # for netCDF4 module
 
 def multiply(numbers):
     total = 1
