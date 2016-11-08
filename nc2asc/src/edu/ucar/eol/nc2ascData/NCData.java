@@ -8,6 +8,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
@@ -251,7 +252,9 @@ public class NCData {
 
 	/**
 	 * Retrieve attribute information such as name, unit, OR/len, etc
-	 * for the variables-time var is the first one.
+	 * for the variables. Store all metadata for each variable in an array 
+	 * of comma-separated string.
+	 * (Time var is NOT necessarily the first one = JAA 11/8/2016)
 	 * 
 	 * @throws NCDataException ArrayIndexOutOfBoundsException InvalidRangeException IOException
 	 */
@@ -264,7 +267,7 @@ public class NCData {
 		lvars = new ArrayList<Variable>();
 		List<Variable> tmp = new ArrayList<Variable>();
 		tmp = fin.getVariables();
-		checklvars(tmp, lvars); //check the time-base and time_offset && sign valid vars to lvars
+		checklvars(tmp, lvars); //check the time-base and time_offset && assign valid vars to lvars
 		int len = lvars.size();
 		gDataInf[0] = 1;
 		dataInf = new ArrayList<String>();
@@ -368,7 +371,14 @@ public class NCData {
 			throw new  NCDataException("getTimeMilSec: Variables are not read... Please get variables from the netcdf file.");
 		}
 		//nc2asc.NC2Act.wrtMsg(dataInf[0]);
-		String tmVar= dataInf.get(0);
+		// Find Time variable - it may be anywhere in the file
+		String tmVar = " ";
+		for (int i=0; i<dataInf.size(); i++) {
+		    tmVar= dataInf.get(i);
+		    if (Pattern.matches("^Time.*", tmVar)) {
+			break;
+		    }
+		}
 		String date = tmVar.split(DataFmt.COMMAVAL)[1].split(" ")[2];
 		String tm   = tmVar.split(DataFmt.COMMAVAL)[1].split(" ")[3];
 		String[] dInf = date.split("-");

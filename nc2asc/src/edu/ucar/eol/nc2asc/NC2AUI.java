@@ -124,7 +124,7 @@ public class NC2AUI  implements ActionListener, PropertyChangeListener{
 	private NCData     ncdata  = new NCData();
 	private DataFmt    datafmt = new DataFmt();
 
-	private List<String>   dataInf;   //dataInf contains all the variable data information = lvars-ncdata-- first one is the time var
+	private List<String>   dataInf;   //dataInf contains all the variable data information = lvars-ncdata-- the Time var is not necessarily the first one
 	private List<Integer>  idxSearch; //search result list  -- skip time var
 	private int            idxCount;  //search count		-- skip time var
 	private List<String>   selStatus; //select status 		-- skip the time var 
