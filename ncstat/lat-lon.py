@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os, subprocess
 
 output = ''
@@ -14,9 +15,9 @@ for filename in os.listdir('.'):
     output += subprocess.check_output(["ncstat", "-c", "-v", "LAT", "LON", "-f", filename])
 
 # save output to file for error checking
-# file = open("lat-lon-output.txt", "w")
-# file.write(output)
-# file.close
+file = open("lat-lon-output.txt", "w")
+file.write(output)
+file.close
 
 for line in output.splitlines():
   if line.startswith("LAT"):  
@@ -27,11 +28,7 @@ for line in output.splitlines():
     min_lon.append(float(line.split()[3]))
 
 
-print('Maximum Latitude (North): ')
-print(max(max_lat))
-print('Minimum Latitude (South): ')
-print(min(min_lat))
-print('Maximum Longitude (East): ')
-print(max(max_lon))
-print('Minimum Longitude (West): ')
-print(min(min_lon))
+print 'Maximum Latitude (North): ', max(max_lat)
+print 'Minimum Latitude (South): ', min(min_lat)
+print 'Maximum Longitude (East): ', max(max_lon)
+print 'Minimum Longitude (West): ', min(min_lon)
