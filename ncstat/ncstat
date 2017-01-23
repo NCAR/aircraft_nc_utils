@@ -52,7 +52,7 @@ parser.add_argument("-c", help="Print statistics in separated columns", action='
 parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variables. VARS should be space separated. A '+' can be used to match multiple VARS")
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
 parser.add_argument("-p", "--precision", nargs=1, help="Set precision of output")
-parser.add_argument("-t", "--time", nargs=2, help="Set time range of output. Accepts two time variables in the format HH:mm:SS")
+parser.add_argument("-t", "--time", nargs=4, help="Set time range of output. Accepts two time variables in the format YYYY-MM-DD HH:mm:SS")
 args, unknown = parser.parse_known_args()
 
 
@@ -131,31 +131,47 @@ def print_stats(ncFile):
         for var in var_array:
             print "%s, %s, %s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5], var[6], var[7])
  
-
 if args.time:
     
     # Calculate the beginning time of the file in seconds
     bt = ncFile.variables["Time"].units.split(' ')[3]
-    x = time.strptime(bt, '%H:%M:%S')
-    begin_t = int(datetime.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds())
-
-    print datetime(2011, 11, 8).total_seconds()
-
-    # Calculate the start time that the user specifies in seconds
-    st = args.time[0]
-    y = time.strptime(st, '%H:%M:%S')
-    start_t = int(datetime.timedelta(hours=y.tm_hour, minutes=y.tm_min, seconds=y.tm_sec).total_seconds())
-
-    # Calculate the end time that the user specifies in seconds
-    et = args.time[1]
-    z = time.strptime(et, '%H:%M:%S')
-    end_t = int(datetime.timedelta(hours=z.tm_hour, minutes=z.tm_min, seconds=z.tm_sec).total_seconds())
+    xt = time.strptime(bt, '%H:%M:%S')
+    begin_t = int(datetime.timedelta(hours=xt.tm_hour, minutes=xt.tm_min, seconds=xt.tm_sec).total_seconds())
     
-    # Calculate the correct subsection of variables to preform calclations on
-    start_tot = start-begin
-    end_tot = end-begin
+    bd = ncFile.variables["Time"].units.split(' ')[2].split('-')
+    xd = datetime.datetime(int(bd[0]), int(bd[1]), int(bd[2]), 0, 0)
+    begin_d = time.mktime(xd.timetuple())
+   
+    begin = begin_t + begin_d
+    
+    # Calculate the start time that the user specifies in seconds
+    st = args.time[1]
+    yt = time.strptime(st, '%H:%M:%S')
+    start_t = int(datetime.timedelta(hours=yt.tm_hour, minutes=yt.tm_min, seconds=yt.tm_sec).total_seconds())
 
-#print_stats(ncFile)
+    sd = args.time[0].split('-')
+    yd = datetime.datetime(int(sd[0]), int(sd[1]), int(sd[2]), 0, 0)
+    start_d = time.mktime(yd.timetuple())
+
+    start = start_t + start_d
+ 
+    # Calculate the end time that the user specifies in seconds
+    et = args.time[3]
+    zt = time.strptime(et, '%H:%M:%S')
+    end_t = int(datetime.timedelta(hours=zt.tm_hour, minutes=zt.tm_min, seconds=zt.tm_sec).total_seconds())
+    
+    ed = args.time[2].split('-')
+    zd = datetime.datetime(int(ed[0]), int(ed[1]), int(ed[2]), 0, 0)
+    end_d = time.mktime(zd.timetuple())
+
+    end = end_t + end_d
+
+    # Calculate the correct subsection of variables to preform calclations on
+    start_tot = int(start-begin)
+    end_tot = int(end-begin)
+
+
+print_stats(ncFile)
 
 ncFile.close()
 
