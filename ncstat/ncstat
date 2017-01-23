@@ -68,7 +68,7 @@ def multiply(numbers):
 
 def stats(var):
     if args.time:
-	ncFile.variables[var] = ncFile.variables[var][start_t:end_t]
+	ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
 
     # Remove missing values from statistics calculations
     ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
@@ -135,25 +135,27 @@ def print_stats(ncFile):
 if args.time:
     
     # Calculate the beginning time of the file in seconds
-    b = ncFile.variables["Time"].units.split(' ')[3]
-    x = time.strptime(b, '%H:%M:%S')
-    begin = int(datetime.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds())
+    bt = ncFile.variables["Time"].units.split(' ')[3]
+    x = time.strptime(bt, '%H:%M:%S')
+    begin_t = int(datetime.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds())
+
+    print datetime(2011, 11, 8).total_seconds()
 
     # Calculate the start time that the user specifies in seconds
-    s = args.time[0]
-    y = time.strptime(s, '%H:%M:%S')
-    start = int(datetime.timedelta(hours=y.tm_hour, minutes=y.tm_min, seconds=y.tm_sec).total_seconds())
+    st = args.time[0]
+    y = time.strptime(st, '%H:%M:%S')
+    start_t = int(datetime.timedelta(hours=y.tm_hour, minutes=y.tm_min, seconds=y.tm_sec).total_seconds())
 
     # Calculate the end time that the user specifies in seconds
-    e = args.time[1]
-    z = time.strptime(e, '%H:%M:%S')
-    end = int(datetime.timedelta(hours=z.tm_hour, minutes=z.tm_min, seconds=z.tm_sec).total_seconds())
+    et = args.time[1]
+    z = time.strptime(et, '%H:%M:%S')
+    end_t = int(datetime.timedelta(hours=z.tm_hour, minutes=z.tm_min, seconds=z.tm_sec).total_seconds())
     
     # Calculate the correct subsection of variables to preform calclations on
-    start_t = start-begin
-    end_t = end-begin
+    start_tot = start-begin
+    end_tot = end-begin
 
-print_stats(ncFile)
+#print_stats(ncFile)
 
 ncFile.close()
 
