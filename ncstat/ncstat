@@ -53,6 +53,8 @@ parser.add_argument("-v", "--vars", nargs="+", help="Print subset of file variab
 parser.add_argument("-f", "--file", nargs=1, help="Input netCDF file", required=True)
 parser.add_argument("-p", "--precision", nargs=1, help="Set precision of output")
 parser.add_argument("-t", "--time", nargs=4, help="Set time range of output. Accepts two time variables in the format YYYY-MM-DD HH:mm:SS")
+parser.add_argument("-ft", help="Set time range of output to the takeoff and landing times of the flight.", action='store_true')
+
 args, unknown = parser.parse_known_args()
 
 
@@ -67,7 +69,7 @@ def multiply(numbers):
     return total
 
 def stats(var):
-    if args.time:
+    if args.time or args.ft:
 	ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
 
     # Remove missing values from statistics calculations
@@ -130,7 +132,23 @@ def print_stats(ncFile):
     else:
         for var in var_array:
             print "%s, %s, %s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5], var[6], var[7])
- 
+
+if args.ft:
+   
+    # Initialize start and end indices to beginning of file 
+    start_tot = 0
+    end_tot = 0
+
+    # Increase starting index until speed is above 25 m/s (beginning of flight time)
+    while ncFile.variables["TASX"][start_tot] < 25:
+        start_tot+=1
+        
+    # Increase ending index until it is after the start time and the speed is below 25 m/s. If file ends before speed drops enough, use last time in file
+    while (end_tot < start_tot or ncFile.variables["TASX"][start_tot] > 25) and end_tot < len(ncFile.variables["TASX"])-1:
+        end_tot+=1
+    print end_tot
+
+    
 if args.time:
     
     # Calculate the beginning time of the file in seconds
