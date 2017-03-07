@@ -122,10 +122,13 @@ def print_stats(ncFile):
   
     # Display stats in columns if -c flag is used
     if args.c:
+        int_width = 10
         col_width = 14
         name_width = max(len(str(var[0])) for var in var_array)
         for var in var_array:
-            print "%s%s" %(var[0].ljust(name_width), "".join(str(var[stat]).rjust(col_width) for stat in range(1,8)))
+            print "%s%s%s" %(var[0].ljust(name_width),
+		"".join(str(var[i]).rjust(int_width) for i in range(1,3)),
+		"".join(str(var[i]).rjust(col_width) for i in range(3,8)))
 
     
     # Display stats in default comma separated view
