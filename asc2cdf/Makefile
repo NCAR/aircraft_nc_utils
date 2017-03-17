@@ -12,7 +12,7 @@ LIBS=		-L/jnet/solaris/lib -lVarDB -Wl,-Bstatic -lnetcdf -Wl,-Bdynamic
 ANONFTP=	/jnet/ftp/pub/src/bin.Solaris2.9
 
 # Linux
-LIBS=	-L${JLOCAL}/lib -lVarDB -lraf++ -lraf -lnetcdf -lhdf5 -lhdf5_hl
+LIBS=	-L${JLOCAL}/lib -lVarDB -lraf -lnetcdf -lhdf5 -lhdf5_hl
 ANONFTP=/net/ftp/pub/archive/RAF-src/bin.RHEL6
 WWWDOC=	/net/www/raf/Software
 
