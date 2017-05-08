@@ -60,7 +60,6 @@ args, unknown = parser.parse_known_args()
 
 ncFileName = args.file[0]
 ncFile = Dataset(ncFileName, 'r') # for netCDF4 module
-#print ncFile
 
 def multiply(numbers):
     total = 1
@@ -70,11 +69,11 @@ def multiply(numbers):
 
 def stats(var):
     if args.time or args.ft:
-	if len(ncFile.variables[var]) < end_tot:
+	if 'Time' in ncFile.variables[var].dimensions:
+	    ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
             # Variable contains different values and cannot be shortened
-            ncFile.variables[var] = ncFile.variables[var]
         else:
-            ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
+	    ncFile.variables[var] = ncFile.variables[var]
 
     # Remove missing values from statistics calculations
     ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
@@ -153,7 +152,6 @@ if args.ft:
     # Increase ending index until it is after the start time and the speed is below 25 m/s. If file ends before speed drops enough, use last time in file
     while (end_tot < start_tot or ncFile.variables["TASX"][start_tot] > 25) and end_tot < len(ncFile.variables["TASX"])-1:
         end_tot+=1
-    print end_tot
 
     
 if args.time:
