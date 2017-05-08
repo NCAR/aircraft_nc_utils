@@ -73,7 +73,7 @@ def stats(var):
 	    ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
             # Variable contains different values and cannot be shortened
         else:
-	    ncFile.variables[var] = ncFile.variables[var]
+	    return ["", "", "", "", "", "", "", ""]
 
     # Remove missing values from statistics calculations
     ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
