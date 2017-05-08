@@ -70,7 +70,11 @@ def multiply(numbers):
 
 def stats(var):
     if args.time or args.ft:
-	ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
+	if len(ncFile.variables[var]) < end_tot:
+            # Variable contains different values and cannot be shortened
+            ncFile.variables[var] = ncFile.variables[var]
+        else:
+            ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
 
     # Remove missing values from statistics calculations
     ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
