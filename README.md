@@ -9,8 +9,8 @@ The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/s
 | flt_time | Scan a netCDF flight and report take-off and landing times.  Based on ground speed. |
 | g2n | GENPRO to netCDF translator. |
 | mkcdf | Cheezy utility to make small test netCDF file. |
-| n2asc | Old Motif based netCDF to ASCII downloader. |
-| nc2asc | Newer Java based netCDF to ASCII downloader. |
+| n2asc | Old Motif based netCDF to ASCII translator. Plain CSV or Ames DEF output. |
+| nc2asc | Newer Java based netCDF to ASCII translator. Plain CSV or ICARTT output. |
 | nc2iwg1 | Program to read netCDF file and produce an ASCII file conforming to the IWG1.  http://www.eol.ucar.edu/raf/software/iwgadts/IWG1_Def.html |
 | ncReorder | Reorder unlimited time dimension to fixed length. |
 | nc_compare | Compare two netCDF files.  Useful for differing runs of the same flight. |
