@@ -1,4 +1,4 @@
-netcdf MRLA3_RF05_20080728_010636_100.nc {
+netcdf \100hz {
 dimensions:
 	Time = UNLIMITED ; // (1 currently)
 	sps100 = 100 ;
@@ -8,13 +8,13 @@ variables:
 		base_time:long_name = "Start time of data recording." ;
 	int Time(Time) ;
 		Time:_FillValue = -32767 ;
-		Time:units = "seconds since 2008-07-28 01:27:49 +0000" ;
+		Time:units = "seconds since 2008-07-28 00:00:00 +0000" ;
 		Time:standard_name = "time" ;
 		Time:long_name = "time of measurement" ;
 		Time:strptime_format = "seconds since %F %T %z" ;
 	float time_offset(Time) ;
 		time_offset:_FillValue = -32767.f ;
-		time_offset:units = "seconds since 2008-07-28 01:27:49 +0000" ;
+		time_offset:units = "seconds since 2008-07-28 00:00:00 +0000" ;
 		time_offset:long_name = "Seconds since base_time." ;
 	float MRLA3(Time, sps100) ;
 		MRLA3:_FillValue = -32767.f ;
@@ -23,7 +23,7 @@ variables:
 
 // global attributes:
 		:Conventions = "NCAR-RAF/nimbus" ;
-		:DateConvertedFromASCII = "May 08 19:53 GMT 2009" ;
+		:DateConvertedFromASCII = "Jun 13 15:50 GMT 2017" ;
 		:PI = "Beaton, Stuart, (NCAR)" ;
 		:Source = "NCAR/RAF" ;
 		:SNAME = "NCAR Lyman Alpha Hygrometer" ;
@@ -37,16 +37,16 @@ variables:
 		:REMARKS = "H2O mixing ratio in g/kg dry air." ;
 data:
 
- base_time = 1217208469 ;
+ base_time = 1217203200 ;
 
- Time = 0 ;
+ Time = 5269 ;
 
- time_offset = 0 ;
+ time_offset = 5269 ;
 
  MRLA3 =
-  _, _, _, _, _, _, _, _, _, _, _, _, _, 9.489, 9.567, 9.569, 9.54, 9.56, 
-    9.526, 9.571, 9.521, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 
+  _, _, _, _, _, _, _, _, _, _, _, _, 9.489, 9.567, 9.569, 9.54, 9.56, 9.526, 
+    9.571, 9.521, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 
     _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 
     _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 
-    _, _, _, _, _, _, _, _, _, _, _, _, _, _ ;
+    _, _, _, _, _, _, _, _, _, _, _, _ ;
 }
