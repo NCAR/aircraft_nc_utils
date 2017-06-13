@@ -28,6 +28,12 @@ int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS], nVariables;
 time_t	BaseTime = 0;
 float	scale[MAX_VARS], offset[MAX_VARS], missingVals[MAX_VARS];
 
+int	hour, minute, second, firstSecond, prevSecond = -1;
+float	currSecond;
+int	subsec;
+int	startHour, startMinute, startSecond;
+float	dataValue;
+
 char FlightDate[50];
 
 static FILE	*inFP;
@@ -51,19 +57,17 @@ void addGlobalAttrs(const char *p), WriteBaseTime();
 void handle_error(const int);
 
 static int ProcessArgv(int argc, char **argv);
+static size_t ProcessTime(char *p);
 static void WriteMissingData(int, int);
 
 
 /* -------------------------------------------------------------------- */
 int main(int argc, char *argv[])
 {
-  int	i, hz, hour, minute, second, firstSecond, prevSecond = -1;
-  float currSecond;
-  int   subsec;
-  int	startHour, startMinute, startSecond;
+  int	i, hz;
   char	*p;
-  float	dataValue;
   size_t index[3];
+  size_t rec;
 
   putenv((char *)"TZ=UTC");	// All time calcs in UTC.
   FlightDate[0] = 0;
@@ -136,88 +140,9 @@ int main(int argc, char *argv[])
     if (fileType == NASA_LANGLEY)	/* Skip Julian day	*/
       p = strtok(NULL, ", \t");
 
-
-    if (secondsSinceMidnight)
-      {
-      /* Save the seconds with any possible subsecond component */
-      currSecond = atof(p);
-
-      hour = int(currSecond) / 3600; currSecond -= hour * 3600;
-      minute = int(currSecond) / 60; currSecond -= minute * 60;
-      second = int(currSecond);
-
-      if (nRecords == 0 && fileType != PLAIN_FILE)
-        SetNASABaseTime(hour, minute, second);
-      }
-    else
-      {
-      if (Colonless)
-        {
-	/* Save the seconds with any possible subsecond component */
-	currSecond = atof(&p[4]);
-        second = atoi(&p[4]); p[4] = '\0';
-        minute = atoi(&p[2]); p[2] = '\0';
-        hour = atoi(p);
-        }
-      else
-        //sscanf(p, "%d:%d:%d", &hour, &minute, &second);
-        sscanf(p, "%d:%d:%f", &hour, &minute, &currSecond);
-        second = int(currSecond);
-      }
-
-    if (dataRate > 1) 
-      {
-      /* parse out the subsecond component */
-      currSecond -= second; subsec = int(currSecond*dataRate);
-      }
-    else
-      {
-      subsec = 0;
-      }
-
-    if (hour > 23)
-      hour -= 24;
-
-    currSecond = hour * 3600 + minute * 60 + second;
-
-
-    if (prevSecond == -1) // 1st time through loop.
-    {
-      firstSecond = int(currSecond);
-    }
-
-    // Watch for midnight wrap around.
-    if (currSecond < firstSecond)
-      currSecond += 86400;
-
-    if (nRecords == 0)
-      {
-      startHour = hour;
-      startMinute = minute;
-      startSecond = second;
-      }
-    else
-    if (currSecond == prevSecond)
-      {
-      printf("Duplicate time stamp, ignoring, utsecs = %ld\n", (long int)currSecond);
-      prevSecond = int(currSecond);
-      continue;
-      }
-    else
-    if (currSecond > prevSecond + BaseDataRate)
-      {
-      if (currSecond - prevSecond > 2)
-        printf("last time = %d, new time = %d\n", prevSecond, int(currSecond));
-//      WriteMissingData(currSecond, prevSecond);
-      }
-
-    prevSecond = int(currSecond);
-    dataValue = currSecond;
-    size_t rec = int(dataValue) - firstSecond;
-    status = nc_put_var1_float(ncid, timeVarID, &rec, &dataValue);
-    if (status != NC_NOERR) handle_error(status);
-    status = nc_put_var1_float(ncid, timeOffsetID, &rec, &dataValue);
-    if (status != NC_NOERR) handle_error(status);
+    rec = ProcessTime(p);
+    // Ignore duplicate timestamp
+    if (int(rec) == -1) continue;
     
 
 //    dataValue = (float)(nRecords * BaseDataRate);
@@ -407,5 +332,92 @@ static int ProcessArgv(int argc, char **argv)
   return(i);
 
 }	/* END PROCESSARGV */
+/* -------------------------------------------------------------------- */
+size_t ProcessTime(char *p)
+{
+    if (secondsSinceMidnight)
+      {
+      /* Save the seconds with any possible subsecond component */
+      currSecond = atof(p);
+
+      hour = int(currSecond) / 3600; currSecond -= hour * 3600;
+      minute = int(currSecond) / 60; currSecond -= minute * 60;
+      second = int(currSecond);
+
+      if (nRecords == 0 && fileType != PLAIN_FILE)
+        SetNASABaseTime(hour, minute, second);
+      }
+    else
+      {
+      if (Colonless)
+        {
+	/* Save the seconds with any possible subsecond component */
+	currSecond = atof(&p[4]);
+        second = atoi(&p[4]); p[4] = '\0';
+        minute = atoi(&p[2]); p[2] = '\0';
+        hour = atoi(p);
+        }
+      else
+        //sscanf(p, "%d:%d:%d", &hour, &minute, &second);
+        sscanf(p, "%d:%d:%f", &hour, &minute, &currSecond);
+        second = int(currSecond);
+      }
+
+    if (dataRate > 1) 
+      {
+      /* parse out the subsecond component */
+      currSecond -= second; subsec = int(currSecond*dataRate);
+      }
+    else
+      {
+      subsec = 0;
+      }
+
+    if (hour > 23)
+      hour -= 24;
+
+    currSecond = hour * 3600 + minute * 60 + second;
+
+
+    if (prevSecond == -1) // 1st time through loop.
+    {
+      firstSecond = int(currSecond);
+    }
+
+    // Watch for midnight wrap around.
+    if (currSecond < firstSecond)
+      currSecond += 86400;
+
+    if (nRecords == 0)
+      {
+      startHour = hour;
+      startMinute = minute;
+      startSecond = second;
+      }
+    else
+    if (currSecond == prevSecond)
+      {
+      printf("Duplicate time stamp, ignoring, utsecs = %ld\n", (long int)currSecond);
+      prevSecond = int(currSecond);
+      return(-1);
+      }
+    else
+    if (currSecond > prevSecond + BaseDataRate)
+      {
+      if (currSecond - prevSecond > 2)
+        printf("last time = %d, new time = %d\n", prevSecond, int(currSecond));
+//      WriteMissingData(currSecond, prevSecond);
+      }
+
+    prevSecond = int(currSecond);
+    dataValue = currSecond;
+    size_t rec = int(dataValue) - firstSecond;
+    status = nc_put_var1_float(ncid, timeVarID, &rec, &dataValue);
+    if (status != NC_NOERR) handle_error(status);
+    status = nc_put_var1_float(ncid, timeOffsetID, &rec, &dataValue);
+    if (status != NC_NOERR) handle_error(status);
+
+    return(rec);
+}	/* END PROCESSTIME */
 
 /* END ASC2CDF.C */

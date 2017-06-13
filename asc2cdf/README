@@ -1,1 +1,3 @@
 To deploy this code, run make install (-:
+
+To test this code, run ./run_test
