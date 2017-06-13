@@ -1,4 +1,4 @@
-netcdf data.nc {
+netcdf rafCO {
 dimensions:
 	Time = UNLIMITED ; // (26 currently)
 	sps1 = 1 ;
@@ -8,13 +8,13 @@ variables:
 		base_time:long_name = "Start time of data recording." ;
 	int Time(Time) ;
 		Time:_FillValue = -32767 ;
-		Time:units = "seconds since 2008-04-18 15:00:00 +0000" ;
+		Time:units = "seconds since 2008-04-18 00:00:00 +0000" ;
 		Time:standard_name = "time" ;
 		Time:long_name = "time of measurement" ;
 		Time:strptime_format = "seconds since %F %T %z" ;
 	float time_offset(Time) ;
 		time_offset:_FillValue = -32767.f ;
-		time_offset:units = "seconds since 2008-04-18 15:00:00 +0000" ;
+		time_offset:units = "seconds since 2008-04-18 00:00:00 +0000" ;
 		time_offset:long_name = "Seconds since base_time." ;
 	float CO_RAF(Time) ;
 		CO_RAF:_FillValue = -32767.f ;
@@ -23,18 +23,20 @@ variables:
 
 // global attributes:
 		:Conventions = "NCAR-RAF/nimbus" ;
-		:DateConvertedFromASCII = "Apr 30 21:13 GMT 2009" ;
+		:DateConvertedFromASCII = "Jun 13 18:15 GMT 2017" ;
 		:FlightDate = "04/18/2008" ;
 		:TimeInterval = "15:00:00-15:00:25" ;
 data:
 
- base_time = 1208530800 ;
+ base_time = 1208476800 ;
 
- Time = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, _, 16, 17, _, _, 
-    20, 21, 22, 23, 24, 25 ;
+ Time = 54000, 54001, 54002, 54003, 54004, 54005, 54006, 54007, 54008, 54009, 
+    54010, 54011, 54012, 54013, 54014, _, 54016, 54017, _, _, 54020, 54021, 
+    54022, 54023, 54024, 54025 ;
 
- time_offset = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, _, 16, 17, 
-    _, _, 20, 21, 22, 23, 24, 25 ;
+ time_offset = 54000, 54001, 54002, 54003, 54004, 54005, 54006, 54007, 54008, 
+    54009, 54010, 54011, 54012, 54013, 54014, _, 54016, 54017, _, _, 54020, 
+    54021, 54022, 54023, 54024, 54025 ;
 
  CO_RAF = _, _, _, _, _, _, _, _, _, _, 136.7167, 137.2288, 136.4844, 
     137.8847, 137.4985, _, 137.9877, 134.9075, _, _, 135.7778, 137.1624, 
