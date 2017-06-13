@@ -27,6 +27,8 @@ int	status;
 int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS], nVariables;
 time_t	BaseTime = 0;
 float	scale[MAX_VARS], offset[MAX_VARS], missingVals[MAX_VARS];
+bool	getRec = true;
+bool	notLastRec = true;
 
 int	hour, minute, second, firstSecond, prevSecond = -1;
 float	currSecond;
@@ -59,6 +61,7 @@ void handle_error(const int);
 static int ProcessArgv(int argc, char **argv);
 static size_t ProcessTime(char *p);
 static void WriteMissingData(int, int);
+static char* get_buffer();
 
 
 /* -------------------------------------------------------------------- */
@@ -130,12 +133,28 @@ int main(int argc, char *argv[])
     fgets(buffer, BUFFSIZE, inFP);
 
 
-  for (nRecords = 0; fgets(buffer, BUFFSIZE, inFP); )
+  for (nRecords = 0; notLastRec; )
     {
-    if (strlen(buffer) < 5)
-      continue;
+    if (getRec)
+      {
+      if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
+      {
+        notLastRec = false;
+	break;
+      }
+      // I am not sure why this test is here. I can imagine good data in seconds since midnight with 1
+      // column of time and one of data, so "1,23". It would be rare, but is it bad data?? Is this there
+      // to catch something else??
+      if (strlen(buffer) < 5)
+        continue;
+      p = strtok(buffer, ", \t");
+      } 
+    else 
+      {
+	getRec=true;
+      }
 
-    p = strtok(buffer, ", \t");
+
 
     if (fileType == NASA_LANGLEY)	/* Skip Julian day	*/
       p = strtok(NULL, ", \t");
@@ -150,6 +169,7 @@ int main(int argc, char *argv[])
 //    nc_put_var1_float(ncid, timeOffsetID, &nRecords, &dataValue);
 
     //If subseconds are given in the time column, offset here.-JAG
+    printf("subsec: %d ; dataRate: %d\n",subsec,dataRate);
     for (hz = subsec; hz < dataRate; ++hz)
       {
       // If histogram data, zeroth data bin must be zero for legacy
@@ -191,11 +211,29 @@ int main(int argc, char *argv[])
         }
       }
 
-      if (hz != dataRate-1)
-        if (fgets(buffer, BUFFSIZE, inFP) == NULL)
-          break;
-
-      p = strtok(buffer, ", \t");
+      // Assuming continuous data, if haven't read all the sub-dataRate data,
+      // keep looping until reach next time interval. If data are not
+      // continuous, this will merge data from different seconds, so also 
+      // compare on current time. This additional fgets will also cause us to 
+      // loose a record when time passes a multiple of data rate. Set a flag
+      // so we don't repeat fgets at top of loop.
+      if (hz != dataRate-1) {
+	getRec = false;
+        if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
+        {
+          notLastRec = false;
+	  break;
+        }
+        // I am not sure why this test is here. I can imagine good data in seconds since midnight with 1
+        // column of time and one of data, so "1,23". It would be rare, but is it bad data?? Is this there
+        // to catch something else??
+        if (strlen(buffer) < 5)
+          continue;
+        p = strtok(buffer, ", \t");
+	if (atoi(p) != currSecond)
+	    break;
+      }
+      
 
       if (fileType == NASA_LANGLEY)     /* Skip Julian day      */
         p = strtok(NULL, ", \t");
