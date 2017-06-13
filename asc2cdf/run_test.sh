@@ -18,3 +18,8 @@ cd ../..
 cd test/timeSecSinceMidnight
 py.test test_timeSecSinceMidnight.py
 cd ../..
+
+# 1hz files with times in hh:mm:ss, hhmmss, and secondsSinceMidnight
+cd test/hhmmss
+py.test test_time.py
+cd ../..
