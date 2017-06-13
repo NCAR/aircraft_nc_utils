@@ -60,8 +60,11 @@ class Testames(unittest.TestCase):
 
     def tearDown(self):
 	os.system("rm hhmmss.dump")
+	os.system("rm hhmmss.nc")
 	os.system("rm secondsSinceMidnight.dump")
+	os.system("rm secondsSinceMidnight.nc")
 	os.system("rm hhmmss_nocolon.dump")
+	os.system("rm hhmmss_nocolon.nc")
 
 
 

@@ -61,7 +61,6 @@ void handle_error(const int);
 static int ProcessArgv(int argc, char **argv);
 static size_t ProcessTime(char *p);
 static void WriteMissingData(int, int);
-static char* get_buffer();
 
 
 /* -------------------------------------------------------------------- */
@@ -211,12 +210,11 @@ int main(int argc, char *argv[])
         }
       }
 
-      // Assuming continuous data, if haven't read all the sub-dataRate data,
-      // keep looping until reach next time interval. If data are not
-      // continuous, this will merge data from different seconds, so also 
-      // compare on current time. This additional fgets will also cause us to 
-      // loose a record when time passes a multiple of data rate. Set a flag
-      // so we don't repeat fgets at top of loop.
+      // If haven't read all the sub-dataRate data, keep looping until reach 
+      // next time interval. Compare on current time to avoid merging data
+      // from different seconds into a single second record. This additional
+      // fgets will cause us to loose a record when time passes a multiple 
+      // of data rate. Set a flag so we don't repeat fgets at top of loop.
       if (hz != dataRate-1) {
 	getRec = false;
         if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
