@@ -250,6 +250,9 @@ void createTime(int dims[])
 void addGlobalAttrs(const char *fileName)
 {
   FILE *fp;
+  char prev_attr[255]="";
+  char prev_value[255]="";
+  char all_atts[BUFFSIZE];
 
   if (fileName == 0)
     return;
@@ -284,8 +287,33 @@ void addGlobalAttrs(const char *fileName)
     for (value = ++p; isspace(*value); ++value)
       ;
 
+    // Attributes can have duplicate keys in input file. NetCDF only allows unique keys,
+    // so merge values for consecutive duplicate keys into a single attribute. (Assume
+    // non-consecutive keys are an error.)
+    if (strcmp(prev_attr,attr) == 0) // duplicate attribute
+    {
+	// prepend prev value to value
+	strcat(prev_value,";  ");
+	strcat(prev_value,value);
+        strcpy(value,prev_value);
+    } 
+    else 
+    {
+	if (strstr(all_atts,attr) != NULL) {
+	    //This att occured before, non-sequentially, so will be overwritten.
+	    fprintf(stderr, "WARNING: Found non-sequential duplicate attribute %s, overwriting\n",attr);
+	} 
+	else
+	{
+	    strcat(all_atts,attr);
+	}
+    }
+    // If already wrote a given attr, this will overwrite it.
     status = nc_put_att_text(ncid, NC_GLOBAL, attr, strlen(value)+1, value);
     if (status != NC_NOERR) handle_error(status);
+
+    strcpy(prev_attr,attr);
+    strcpy(prev_value,value);
   }
 
   fclose(fp);
