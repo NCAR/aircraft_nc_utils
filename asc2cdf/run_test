@@ -23,3 +23,8 @@ cd ../..
 cd test/hhmmss
 py.test test_time.py
 cd ../..
+
+# BADC files with subsecond timestep, missing times, and secondsSinceMidnight
+cd test/badc
+py.test test_badc.py
+cd ../

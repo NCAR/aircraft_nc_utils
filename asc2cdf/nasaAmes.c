@@ -96,7 +96,7 @@ void CreateNASAamesNetCDF(FILE *fp)
 
   if (FFI < 1000 || FFI > 1999)
   {
-    fprintf(stderr, "Can't handle more than one independant variable.\n");
+    fprintf(stderr, "Can't handle more than one independent variable.\n");
     exit(1);
   }
 
