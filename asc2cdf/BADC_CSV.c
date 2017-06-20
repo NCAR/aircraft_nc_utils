@@ -195,12 +195,7 @@ void CreateBADCnetCDF(FILE *fp)
 	   a++;
 	   strcpy(metadata[a].key,"units");
 	   strcpy(metadata[a].ref, ref);
-	   if (strcmp(value,"1")==0) {
-	       // BADC uses units of 1 for counts, whereas RAF uses units of #. Convert here.
-	       strcpy(metadata[a].value, "#");
-	   } else {
-	       strcpy(metadata[a].value, value);
-	   }
+	   strcpy(metadata[a].value, value);
 	} else {
 	   strcpy(metadata[a].key, key);
 	   strcpy(metadata[a].ref, ref);
@@ -292,7 +287,9 @@ void CreateBADCnetCDF(FILE *fp)
   for (a=0;a<nAtts;a++) {
      if (atoi(metadata[a].ref) != 1) { // skip time
 	if (strcmp(metadata[a].key,"type") != 0 && strcmp(metadata[a].key,"short_name") != 0) {
-           status = nc_put_att_text(ncid, varid[atoi(metadata[a].ref)-1],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
+	   // Note that -2 offset to ref is to account for base_time and time_offset in file. If
+	   // remove these, then remove this offset.
+           status = nc_put_att_text(ncid, varid[atoi(metadata[a].ref)-2],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
            if (status != NC_NOERR) handle_error(status);
        }
      }
