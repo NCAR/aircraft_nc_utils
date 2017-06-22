@@ -150,6 +150,9 @@ class ASCII_average(object):
 	    elif (re.match("#/cm3",self.unit[str(i+1)])):
 	    	# Average concentrations
 		output_rec += str(round(averages/len(self.lines_to_average),sig_count)) + ','
+	    else:
+		print "Units not recognized. Code must be updated."
+		sys.exit()
 
 	output_rec += '\n'
 	#print output_rec
