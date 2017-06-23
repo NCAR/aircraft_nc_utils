@@ -16,7 +16,7 @@ class ASCII_average(object):
 	self.unit = {}			# hash relating parameter units to reference
 	self.lines_to_average = [] 	# array of records to be parsed and averaged
 					# together by column/parameter
-	self.saveline = ""		# Place to store first line of next time period
+	self.saveline = "none"		# Place to store first line of next time period
 	
 
     def set_output_file(self):
@@ -93,11 +93,14 @@ class ASCII_average(object):
 	if (re.match("BADC_CSV",self.fileType)):
 	    if (re.match("end data",line)):
 		return(False)
-	
-	time,rest = line.split(",",1)
+
+	if (re.match(r"none",self.saveline)):
+	    time,rest = line.split(",",1)
+	else: # First line in file
+	    time,rest = self.saveline.split(",",1)
 
 	end_time = int(float(time)*self.rate)/self.rate+self.rate
-	# print "Average data from " + time + " to " + str(end_time)
+	#print "Average data from " + time + " to " + str(end_time)
 	self.timestamp = end_time - self.rate
 	# print "Averaged data is timestamped with start of averaging period"
 
@@ -124,7 +127,6 @@ class ASCII_average(object):
 	for i in range(1,len(self.unit)):
 	    averages = 0.0
 	    for line in self.lines_to_average:
-	        #print "Line: " + line
 	        columns = line.split(",")
 
 		sig_count = 0
@@ -135,7 +137,6 @@ class ASCII_average(object):
 			sig_count = len(significant_digits)
 
 		averages +=  float(columns[i])
-
 		#print "Column " + str(i+1) + ": " + columns[i]
 	        #print "Units for column: " + self.unit[str(i+1)]
 	        #print "short_name for column: " + self.short_name[str(i+1)]
