@@ -197,6 +197,11 @@ def main(args):
         output_rec = averager.average()
         averager.write_data(outfile,output_rec)
 
+
+    # BADC format has the line "end data" after the last data line. Add it here
+    if (re.match("BADC_CSV",averager.fileType)):
+	averager.write_data(outfile,"end data")
+
     infile.close()
     outfile.close()
 	
