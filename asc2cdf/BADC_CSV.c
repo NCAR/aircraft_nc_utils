@@ -289,7 +289,7 @@ void CreateBADCnetCDF(FILE *fp)
 	if (strcmp(metadata[a].key,"type") != 0 && strcmp(metadata[a].key,"short_name") != 0) {
 	   // Note that -2 offset to ref is to account for base_time and time_offset in file. If
 	   // remove these, then remove this offset.
-           status = nc_put_att_text(ncid, varid[atoi(metadata[a].ref)-2],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
+           status = nc_put_att_text(ncid, varid[vars_columns[atoi(metadata[a].ref)-2]],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
            if (status != NC_NOERR) handle_error(status);
        }
      }
@@ -297,7 +297,7 @@ void CreateBADCnetCDF(FILE *fp)
 
 
 // After the "data" line, we still have one more line of metadata - the list of reference
-// IDs. Read them in and conmpare to the IDs I used as keys to the vars array.
+// IDs. Read them in and (tbd) compare to the IDs I used as keys to the vars array.
      fgets(buffer, BUFFSIZE, fp);
      buffer[strlen(buffer)-1] = '\0';
      SkipNlines +=1;
