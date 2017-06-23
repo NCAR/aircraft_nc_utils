@@ -83,8 +83,14 @@ class Test_ascav(unittest.TestCase):
 	out_rec_control = "54481,1.0,0.333333,13,0.0,0.0,0.010256,0.0,0.0,0.0,0.0,0.010257,0.0,0.005128,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,7,1,1,0,0,0,0,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
 	self.assertEqual(out_rec.rstrip(),out_rec_control)
 
+    def test_ascav(self):
+	os.system("/net/work/dev/jaa/aircraft_nc_utils/ascav/ascav.py --input_file=test.csv")
 
-
+        f = open("test.csv.control","r")
+        c = open("test.csv.1","r")
+        for line in f:
+            cline = c.readline()
+            self.assertEqual(cline,line)
 
 
 if __name__ == '__main__':
