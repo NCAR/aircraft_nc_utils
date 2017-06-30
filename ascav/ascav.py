@@ -14,6 +14,7 @@ class ASCII_average(object):
 	self.timestamp = ""
 	self.short_name = {}		# hash relating param short name to reference
 	self.unit = {}			# hash relating parameter units to reference
+	self.ref = []			# Array relating reference to column number
 	self.lines_to_average = [] 	# array of records to be parsed and averaged
 					# together by column/parameter
 	self.saveline = "none"		# Place to store first line of next time period
@@ -34,20 +35,40 @@ class ASCII_average(object):
 	    if (re.match("data",line)):
 	        # After "data" line, there is one more line to read/write -
 	        # the column header line.
-	        outfile.write(infile.readline())
+	        line = infile.readline()
+	        outfile.write(line)
+
+		# Create hash relating column headers to index. If the column headers 
+		# are the index, then this is trivial, but column headers can be 
+		# variable names (short_names).
+	        columns = line.split(",")
+		print len(columns)
+	        for i in range(0,len(columns)): 
+		    self.ref.append(columns[i].rstrip())
 		return
 
 	    # gather column names and units
 	    key,ref,value = line.split(",",2)
 
-	    if (re.match("short_name",key)):
-	        if (re.match(r'.*:.*',ref)):
-		    # Need to unfold range of columns
-		    first,last = ref.split(":")
-		    for i in range(int(first),int(last)+1):
-	                self.short_name[str(i)] = value.rstrip()
-		else:
-	            self.short_name[ref] = value.rstrip()
+	    # BADC_CSV can either have references that are numbers, and a line with a 
+	    # key of short_name that relates the variable name (short_name) to the 
+	    # reference, or the references can be the variable names and there will 
+	    # not be a short_name line. To tell the difference, see if the ref is a 
+	    # number or not. Don't forget that ref can have a colon for a range of numbers.
+	    if (ref.isdigit() or re.match(r'.*:.*',ref)): # We have a numerical ref 
+	        if (re.match("short_name",key)):
+	            if (re.match(r'.*:.*',ref)):
+		        # Need to unfold range of columns
+		        first,last = ref.split(":")
+		        for i in range(int(first),int(last)+1):
+	                    self.short_name[str(i)] = value.rstrip()
+		    else:
+	                self.short_name[ref] = value.rstrip()
+	    else: # We have an alphanumeric reference. Assume it IS the short name.
+		try:
+		    self.short_name[ref]
+		except:
+		    self.short_name[ref] = ref
 
 	    key,ref,value = line.split(",",2)
 	    if (re.match("long_name",key)):
@@ -124,33 +145,40 @@ class ASCII_average(object):
 	output_rec = str(self.timestamp) + ','
 
 	# sum all columns of data
-	for i in range(1,len(self.unit)):
+	for i in range(1,len(self.ref)):
 	    averages = 0.0
+	    sig_count = 0
 	    for line in self.lines_to_average:
 	        columns = line.split(",")
 
-		sig_count = 0
 		# Determine significant digits of the value read in
 		if (re.search(r'\.',columns[i])):
 		    integer_part,significant_digits = columns[i].split('.')
 		    if (len(significant_digits) > sig_count):
 			sig_count = len(significant_digits)
+			#print "sig_count: " + str(sig_count)
 
 		averages +=  float(columns[i])
-		#print "Column " + str(i+1) + ": " + columns[i]
-	        #print "Units for column: " + self.unit[str(i+1)]
-	        #print "short_name for column: " + self.short_name[str(i+1)]
-	        #print "---"
-	    if (re.match(r"^#$",self.unit[str(i+1)])):
+		#print "Column " + self.ref[i] + ": " + columns[i]
+	        #print "Units for column: " + self.unit[self.ref[i]]
+	        #print "short_name for column: " + self.short_name[self.ref[i]]
+		#print columns[i]
+	    #print "---"
+	    #print averages;
+	    if (re.match(r"^#$",self.unit[self.ref[i]])):
 	        # Sum unitless parameters, except flags
-	        if (re.match(r".*flag.*",self.short_name[str(i+1)])):
+	        if (re.match(r".*flag.*",self.short_name[self.ref[i]])):
 	 	    # Confirm all the flags are the same, else warn user
 		    output_rec += str(averages/len(self.lines_to_average)) + ','
 		else:
 		    output_rec += str(int(averages)) + ','
-	    elif (re.match("#/cm3",self.unit[str(i+1)])):
+	    elif (re.match("#/cm3",self.unit[self.ref[i]])):
 	    	# Average concentrations
-		output_rec += str(round(averages/len(self.lines_to_average),sig_count)) + ','
+		#print float(len(self.lines_to_average));
+		#print sig_count
+		#print round(averages/float(len(self.lines_to_average)),sig_count) 
+	        #print "\n\n";
+		output_rec += str(round(averages/float(len(self.lines_to_average)),sig_count)) + ','
 	    else:
 		print "Units not recognized. Code must be updated."
 		sys.exit()
