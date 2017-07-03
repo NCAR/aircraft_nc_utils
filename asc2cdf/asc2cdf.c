@@ -19,14 +19,25 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1996-2007
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <iostream>
 
 char	buffer[BUFFSIZE];
+char    histo_vars[MAX_VARS][256] = {"\0"};
+int     vars_columns[MAX_VARS];
 
 int	ncid;
 int	status;
 int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS], nVariables;
 time_t	BaseTime = 0;
 float	scale[MAX_VARS], offset[MAX_VARS], missingVals[MAX_VARS];
+bool	getRec = true;
+bool	notLastRec = true;
+
+int	hour, minute, second, firstSecond, prevSecond = -1;
+double	currSecond;
+int	subsec;
+int	startHour, startMinute, startSecond;
+float	dataValue;
 
 char FlightDate[50];
 
@@ -51,19 +62,18 @@ void addGlobalAttrs(const char *p), WriteBaseTime();
 void handle_error(const int);
 
 static int ProcessArgv(int argc, char **argv);
+static size_t ProcessTime(char *p);
 static void WriteMissingData(int, int);
 
 
 /* -------------------------------------------------------------------- */
 int main(int argc, char *argv[])
 {
-  int	i, hz, hour, minute, second, firstSecond, prevSecond = -1;
-  float currSecond;
-  int   subsec;
-  int	startHour, startMinute, startSecond;
+  int	i, j, k, hz;
+  int	count;
   char	*p;
-  float	dataValue;
   size_t index[3];
+  size_t rec;
 
   putenv((char *)"TZ=UTC");	// All time calcs in UTC.
   FlightDate[0] = 0;
@@ -72,7 +82,7 @@ int main(int argc, char *argv[])
 
   if ((argc - i) < 2)
     {
-    fprintf(stderr, "Usage: asc2cdf [-b time_t] [-a] [-l] [-m] [-r n] [-s n] ascii_file output.nc\n");
+    fprintf(stderr, "Usage: asc2cdf [-b time_t] [-a] [-l] [-c] [-m] [-r n] [-s n] ascii_file output.nc\n");
     exit(1);
     }
 
@@ -108,10 +118,15 @@ int main(int argc, char *argv[])
     case NASA_LANGLEY:
       CreateNASAlangNetCDF(inFP);
       break;
+
+    case BADC_CSV:
+      CreateBADCnetCDF(inFP);
+      break;
     }
 
   addGlobalAttrs(globalAttrFile);
-  nc_enddef(ncid);
+  status = nc_enddef(ncid);
+  if (status != NC_NOERR) handle_error(status);
 
   WriteBaseTime();
 
@@ -126,98 +141,44 @@ int main(int argc, char *argv[])
     fgets(buffer, BUFFSIZE, inFP);
 
 
-  for (nRecords = 0; fgets(buffer, BUFFSIZE, inFP); )
+  for (nRecords = 0; notLastRec; )
     {
-    if (strlen(buffer) < 5)
-      continue;
+    if (getRec)
+      {
+      if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
+      {
+        notLastRec = false;
+	break;
+      }
+      // I am not sure why this test is here. I can imagine good data in seconds since midnight with 1
+      // column of time and one of data, so "1,23". It would be rare, but is it bad data?? Is this there
+      // to catch something else??
+      if (strlen(buffer) < 5)
+        continue;
 
-    p = strtok(buffer, ", \t");
+      p = strtok(buffer, ", \t");	// Parse the first value (Time) out of the buffer
 
-    if (fileType == NASA_LANGLEY)	/* Skip Julian day	*/
+      } 
+    else 
+      {
+	getRec=true;
+      }
+
+
+    if (fileType == NASA_LANGLEY)	/* Skip Julian day column */
       p = strtok(NULL, ", \t");
 
-
-    if (secondsSinceMidnight)
-      {
-      /* Save the seconds with any possible subsecond component */
-      currSecond = atof(p);
-
-      hour = int(currSecond) / 3600; currSecond -= hour * 3600;
-      minute = int(currSecond) / 60; currSecond -= minute * 60;
-      second = int(currSecond);
-
-      if (nRecords == 0 && fileType != PLAIN_FILE)
-        SetNASABaseTime(hour, minute, second);
+    if (fileType == BADC_CSV)   {       /* "end date" means no more data */
+      if (strncmp(p,"end",3) == 0) {
+	// Break out of hz loop
+	notLastRec = false;
+	continue;
       }
-    else
-      {
-      if (Colonless)
-        {
-	/* Save the seconds with any possible subsecond component */
-	currSecond = atof(&p[4]);
-        second = atoi(&p[4]); p[4] = '\0';
-        minute = atoi(&p[2]); p[2] = '\0';
-        hour = atoi(p);
-        }
-      else
-        //sscanf(p, "%d:%d:%d", &hour, &minute, &second);
-        sscanf(p, "%d:%d:%f", &hour, &minute, &currSecond);
-        second = int(currSecond);
-      }
-
-    if (dataRate > 1) 
-      {
-      /* parse out the subsecond component */
-      currSecond -= second; subsec = int(currSecond*dataRate);
-      }
-    else
-      {
-      subsec = 0;
-      }
-
-    if (hour > 23)
-      hour -= 24;
-
-    currSecond = hour * 3600 + minute * 60 + second;
-
-
-    if (prevSecond == -1) // 1st time through loop.
-    {
-      firstSecond = int(currSecond);
     }
 
-    // Watch for midnight wrap around.
-    if (currSecond < firstSecond)
-      currSecond += 86400;
-
-    if (nRecords == 0)
-      {
-      startHour = hour;
-      startMinute = minute;
-      startSecond = second;
-      }
-    else
-    if (currSecond == prevSecond)
-      {
-      printf("Duplicate time stamp, ignoring, utsecs = %ld\n", (long int)currSecond);
-      prevSecond = int(currSecond);
-      continue;
-      }
-    else
-    if (currSecond > prevSecond + BaseDataRate)
-      {
-      if (currSecond - prevSecond > 2)
-        printf("last time = %d, new time = %d\n", prevSecond, int(currSecond));
-//      WriteMissingData(currSecond, prevSecond);
-      }
-
-    prevSecond = int(currSecond);
-    dataValue = currSecond;
-    size_t rec = int(dataValue) - firstSecond;
-    status = nc_put_var1_float(ncid, timeVarID, &rec, &dataValue);
-    if (status != NC_NOERR) handle_error(status);
-    status = nc_put_var1_float(ncid, timeOffsetID, &rec, &dataValue);
-    if (status != NC_NOERR) handle_error(status);
+    rec = ProcessTime(p);
+    // Ignore duplicate timestamp
+    if (int(rec) == -1) continue;
     
 
 //    dataValue = (float)(nRecords * BaseDataRate);
@@ -225,18 +186,21 @@ int main(int argc, char *argv[])
 //    nc_put_var1_float(ncid, timeOffsetID, &nRecords, &dataValue);
 
     //If subseconds are given in the time column, offset here.-JAG
+    if (verbose) 
+	printf("subsec: %d ; dataRate: %d\n",subsec,dataRate);
     for (hz = subsec; hz < dataRate; ++hz)
       {
       // If histogram data, zeroth data bin must be zero for legacy
       // reasons.
-      if (histogram) {
+      if (histogram || (strcmp(histo_vars[i],"\0")!=0)) {
 	dataValue = 0;
         index[0] = rec; index[1] = hz; index[2] = 0;
         status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
         if (status != NC_NOERR) handle_error(status);
       }
+      j=0; // index for histograms
       for (i = 0; i < nVariables; ++i)
-        {
+      {
         if ((p = strtok(NULL, ", \t\n\r")) == NULL)
           fprintf(stderr, "Not enough data points in row # %zu, check your formating;\n   are there spaces in a variable name on the title line?\n", nRecords);
 
@@ -247,7 +211,7 @@ int main(int argc, char *argv[])
 
         if (fileType != PLAIN_FILE)
           {
-          if (dataValue == missingVals[i])
+          if (dataValue == missingVals[i] || dataValue == missingVals[vars_columns[i]])
             dataValue = MISSING_VALUE;
           else
             dataValue = dataValue * scale[i] + offset[i];
@@ -255,26 +219,81 @@ int main(int argc, char *argv[])
 
         if (histogram) {
           index[0] = rec; index[1] = hz; index[2] = i+1;
+	  if (verbose)
+	      printf("A: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[1],i,rec,hz,i+1);
           status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
+        } 
+	else if (strlen(histo_vars[vars_columns[i]])>0) 
+	{
+          index[0] = rec; index[1] = hz; index[2] = j;
+	  if (verbose)
+	    printf("B: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[vars_columns[i]],i,rec,hz,j);
+	  // Use variable/column mapping to figure out which variable to put this value in.
+          status = nc_put_var1_float(ncid, varid[vars_columns[i]], index, &dataValue);
+          if (status != NC_NOERR) handle_error(status);
+	  // Count number of columns in this histogram
+	  count = 0;
+ 	  for (k=0;k<nVariables;k++) {
+ 	    if (vars_columns[k]==vars_columns[i]) count++;
+ 	  }
+	  j++;
+ 	  if (j >= count) j=0;
         }
         else
         {
           index[0] = rec; index[1] = hz;
+	  if (verbose)
+	    printf("C: Writing data point %f to variable %d:%d [%lu,%d] \n",dataValue,varid[i],i,rec,hz);
           status = nc_put_var1_float(ncid, varid[i], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         }
       }
 
-      if (hz != dataRate-1)
-        if (fgets(buffer, BUFFSIZE, inFP) == NULL)
-          break;
+      // If haven't read all the sub-dataRate data, keep looping until reach 
+      // next time interval. Compare on current time to avoid merging data
+      // from different seconds into a single second record. This additional
+      // fgets will cause us to loose a record when time passes a multiple 
+      // of data rate. Set a flag so we don't repeat fgets at top of loop.
+      if (hz != dataRate-1) {
+	getRec = false;
+        if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
+        {
+          notLastRec = false;
+	  break;
+        }
+        // I am not sure why this test is here. I can imagine good data in seconds since midnight with 1
+        // column of time and one of data, so "1,23". It would be rare, but is it bad data?? Is this there
+        // to catch something else??
+        if (strlen(buffer) < 5)
+          continue;
+        p = strtok(buffer, ", \t");
+        if (fileType == BADC_CSV)	{	/* "end date" means no more data */
+          if (strncmp(p,"end",3) == 0) {
+	    // Break out of hz loop
+	    notLastRec = false;
+	    break;
+	  }
+        }
 
-      p = strtok(buffer, ", \t");
+	if (atoi(p) != int(currSecond)) // found a new second, so break out of hz loop
+	  break;
 
+        // look for data gaps and handle appropriately
+        subsec = int(atof(p)*dataRate-currSecond*dataRate);
+        if (subsec != hz+1) { // found a sub-second data gap for data with rates > 1sps
+	  hz= subsec-1;
+        }
+
+      } else {
+	getRec = true;
+      }
+
+      
       if (fileType == NASA_LANGLEY)     /* Skip Julian day      */
         p = strtok(NULL, ", \t");
-      }
+
+      } // End hz loop
 
     ++nRecords;
     }
@@ -295,7 +314,8 @@ int main(int argc, char *argv[])
   status = nc_put_att_text(ncid, NC_GLOBAL, "TimeInterval", strlen(buffer)+1, buffer);
   if (status != NC_NOERR) handle_error(status);
   printf("Time interval completed = %s\n", buffer);
-  nc_enddef(ncid);
+  status = nc_enddef(ncid);
+  if (status != NC_NOERR) handle_error(status);
   nc_close(ncid);
 
   return(0);
@@ -363,6 +383,11 @@ static int ProcessArgv(int argc, char **argv)
 	histogram = true;
 	break;
 
+      case 'c':
+	fileType = BADC_CSV;
+	secondsSinceMidnight = true;
+	break;
+
       case 'i':
         fileType = ICARTT;
         secondsSinceMidnight = true;
@@ -407,5 +432,91 @@ static int ProcessArgv(int argc, char **argv)
   return(i);
 
 }	/* END PROCESSARGV */
+/* -------------------------------------------------------------------- */
+size_t ProcessTime(char *p)
+{
+    if (secondsSinceMidnight)
+      {
+      /* Save the seconds with any possible subsecond component */
+      currSecond = atof(p);
+
+      hour = int(currSecond) / 3600; currSecond -= hour * 3600;
+      minute = int(currSecond) / 60; currSecond -= minute * 60;
+      second = int(currSecond);
+
+      if (nRecords == 0 && fileType != PLAIN_FILE)
+        SetNASABaseTime(hour, minute, second);
+      }
+    else
+      {
+      if (Colonless)
+        {
+	/* Save the seconds with any possible subsecond component */
+	currSecond = atof(&p[4]);
+        second = atoi(&p[4]); p[4] = '\0';
+        minute = atoi(&p[2]); p[2] = '\0';
+        hour = atoi(p);
+        }
+      else
+        sscanf(p, "%d:%d:%lf", &hour, &minute, &currSecond);
+        second = int(currSecond);
+      }
+
+    if (dataRate > 1) 
+      {
+      /* parse out the subseond component */
+      currSecond -= second; subsec = int(currSecond*dataRate);
+      }
+    else
+      {
+      subsec = 0;
+      }
+
+    if (hour > 23)
+      hour -= 24;
+
+    currSecond = hour * 3600 + minute * 60 + second;
+
+
+    if (prevSecond == -1) // 1st time through loop.
+    {
+      firstSecond = int(currSecond);
+    }
+
+    // Watch for midnight wrap around.
+    if (currSecond < firstSecond)
+      currSecond += 86400;
+
+    if (nRecords == 0)
+      {
+      startHour = hour;
+      startMinute = minute;
+      startSecond = second;
+      }
+    else
+    if (currSecond == prevSecond  && dataRate <= 1)
+      {
+      printf("Duplicate time stamp, ignoring, utsecs = %ld\n", (long int)currSecond);
+      prevSecond = int(currSecond);
+      return(-1);
+      }
+    else
+    if (currSecond > prevSecond + BaseDataRate)
+      {
+      if (currSecond - prevSecond > 2)
+        printf("last time = %d, new time = %d\n", prevSecond, int(currSecond));
+//      WriteMissingData(currSecond, prevSecond);
+      }
+
+    prevSecond = int(currSecond);
+    dataValue = currSecond;
+    size_t rec = int(dataValue) - firstSecond;
+    status = nc_put_var1_float(ncid, timeVarID, &rec, &dataValue);
+    if (status != NC_NOERR) handle_error(status);
+    status = nc_put_var1_float(ncid, timeOffsetID, &rec, &dataValue);
+    if (status != NC_NOERR) handle_error(status);
+
+    return(rec);
+}	/* END PROCESSTIME */
 
 /* END ASC2CDF.C */

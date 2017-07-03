@@ -1,0 +1,43 @@
+netcdf hhmmss_nocolon {
+dimensions:
+	Time = UNLIMITED ; // (6 currently)
+	sps1 = 1 ;
+variables:
+	int base_time ;
+		base_time:units = "seconds since 1970-01-01 00:00:00 +0000" ;
+		base_time:long_name = "Start time of data recording." ;
+	int Time(Time) ;
+		Time:_FillValue = -32767 ;
+		Time:units = "seconds since 1970-01-01 00:00:00 +0000" ;
+		Time:standard_name = "time" ;
+		Time:long_name = "time of measurement" ;
+		Time:strptime_format = "seconds since %F %T %z" ;
+	float time_offset(Time) ;
+		time_offset:_FillValue = -32767.f ;
+		time_offset:units = "seconds since 1970-01-01 00:00:00 +0000" ;
+		time_offset:long_name = "Seconds since base_time." ;
+	float ALT(Time) ;
+		ALT:_FillValue = -32767.f ;
+		ALT:units = "m" ;
+		ALT:long_name = "IRS Baro-Inertial Altitude" ;
+	float ATX(Time) ;
+		ATX:_FillValue = -32767.f ;
+		ATX:units = "deg_C" ;
+		ATX:long_name = "Ambient Temperature, Reference" ;
+
+// global attributes:
+		:Conventions = "NCAR-RAF/nimbus" ;
+		:DateConvertedFromASCII = "Jun 13 19:02 GMT 2017" ;
+		:TimeInterval = "19:00:00-19:00:05" ;
+data:
+
+ base_time = 0 ;
+
+ Time = 68400, 68401, 68402, 68403, 68404, 68405 ;
+
+ time_offset = 68400, 68401, 68402, 68403, 68404, 68405 ;
+
+ ALT = 1720.69, 1720.66, 1720.62, 1720.59, 1720.56, 1720.52 ;
+
+ ATX = 31.8099, 31.812, 31.8161, 31.819, 31.8212, 31.823 ;
+}

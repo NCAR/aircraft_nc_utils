@@ -20,11 +20,11 @@ REMARKS = National Center for Atmospheric Research (NCAR), POST
 REMARKS = Mission time in seconds
 REMARKS = H2O mixing ratio in g/kg dry air.
 Time MRLA3
-5269.13	9.489 
-5269.14	9.567 
-5269.15	9.569 
-5269.16	9.54 
-5269.17	9.56 
-5269.18	9.526 
-5269.19	9.571 
-5269.2	9.521 
+5299.93	9.489 
+5299.94	9.567 
+5299.95	9.569 
+5299.96	9.54 
+5299.97	9.56 
+5299.98	9.526 
+5300.0	9.521 
+5300.01	9.56
