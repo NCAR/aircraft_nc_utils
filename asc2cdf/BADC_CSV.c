@@ -28,13 +28,13 @@ typedef struct {	// Variable attributes
 /* -------------------------------------------------------------------- */
 void CreateBADCnetCDF(FILE *fp)
 {
-  int i = 0, a = 0; // a for attribute count per variable
+  int i = 0, j = 0, a = 0; // a for attribute count per variable
   int TimeDim, RateDim, VectorDim;
   int year, month, day;
   int ndims, dims[3];
   int dimid;
   int nAtts;
-  int first_bin, last_bin, numVars, extraVars = 0;
+  int first_bin, last_bin, numVars;
   char tmpbuf[BUFFSIZE];
   char *key=tmpbuf;
   char *ref;
@@ -107,6 +107,7 @@ void CreateBADCnetCDF(FILE *fp)
 
   /* Get title, add to global attributes */
   printf("Get metadata\n");
+  nVariables=0;
   while (strncmp(key,"data",4) != 0)
   {
     fgets(buffer, BUFFSIZE, fp);
@@ -205,11 +206,12 @@ void CreateBADCnetCDF(FILE *fp)
 
 	if (strcmp(key,"short_name") == 0)
 	{
+
+	    // Associate this column reference with this variable index. 
+	    strcpy(histo_vars[i],ref); 
+
             if (strchr(ref,':') == NULL) {
 	      // There is not a colon in the reference ID, so we have found a timeseries variable
-	      // Associate this column with this variable index. If there is no histogram 
-	      // data, this will be a one-to-one relationship.
-              vars_columns[column] = i;
 	      column++;	// Count of columns of data expected.
 	      ndims = 2;
 
@@ -219,12 +221,17 @@ void CreateBADCnetCDF(FILE *fp)
 	      // numVars - I chose to look when find a short_name, but any metadata field that exists for every
 	      // var will work equally well.)
 
-	      strcpy(histo_vars[i],value);
 	      first_bin = atoi(strtok(ref,":"));
 	      last_bin = atoi(strtok(NULL,":"));
 	      numVars = last_bin-first_bin;
-	      printf("Found histogram variable: %s:%d (%d)\n",histo_vars[i],i,numVars);
-	      extraVars += numVars;
+	      printf("Found histogram variable: %s:%d (%d)\n",value,i,numVars);
+
+	      // Associate this column reference with this variable index. 
+	      for (j=0;j<=numVars;j++) {
+	        strcpy(vars_columns[nVariables+j],ref); 
+	      }
+	      nVariables=nVariables+numVars;
+
               // set 3rd dimension (if not already set for another histo var)
 	      // In other words, once have Vector26, don't want to define it
 	      // again, but can define Vector10, or whatever.
@@ -241,9 +248,6 @@ void CreateBADCnetCDF(FILE *fp)
 	      
 
 	      numVars=numVars+column+1;
-	      for (;column<numVars;++column) {
-		  vars_columns[column] = i;
-	      }
 
 	      ndims = 3;
             } 
@@ -262,6 +266,7 @@ void CreateBADCnetCDF(FILE *fp)
               if (status != NC_NOERR) handle_error(status);
 	    
 	      i++;
+	      nVariables++;
 	    }
 	}
       }
@@ -269,7 +274,8 @@ void CreateBADCnetCDF(FILE *fp)
   }
 
   // Number of variables found, plus extras for histograms
-  nVariables = i + extraVars;
+  nvars = i;
+  printf("netCDF vars: %d\n",nvars);
   printf("nVariables: %d\n",nVariables);
   nAtts = a;
   printf("total nAtts: %d\n",nAtts);
@@ -286,10 +292,16 @@ void CreateBADCnetCDF(FILE *fp)
   // Now that we've read in all the metadata, add attributes to the vars in the NetCDF file.
   for (a=0;a<nAtts;a++) {
      if (atoi(metadata[a].ref) != 1) { // skip time
+	// skip type and short_name atts
 	if (strcmp(metadata[a].key,"type") != 0 && strcmp(metadata[a].key,"short_name") != 0) {
-	   // Note that -2 offset to ref is to account for base_time and time_offset in file. If
-	   // remove these, then remove this offset.
-           status = nc_put_att_text(ncid, varid[vars_columns[atoi(metadata[a].ref)-2]],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
+	   // The variable's short name is histo_vars[i]
+	   // The attribute short name is metadata[a].ref
+	   for (i=0;i<nvars; i++) {
+	       if (strcmp(histo_vars[i],metadata[a].ref) == 0) {
+	           break;
+	       }
+	   }
+           status = nc_put_att_text(ncid, varid[i],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
            if (status != NC_NOERR) handle_error(status);
        }
      }

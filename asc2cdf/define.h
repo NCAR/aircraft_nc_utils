@@ -16,7 +16,7 @@
 enum InputFileType { PLAIN_FILE, NASA_AMES, NASA_LANGLEY, ICARTT, BADC_CSV };
 
 extern char	buffer[];
-extern int	ncid, varid[], nVariables, timeOffsetID, timeVarID, baseTimeID;
+extern int	ncid, varid[], nVariables, nvars, timeOffsetID, timeVarID, baseTimeID;
 extern float	scale[], offset[], missingVals[];
 extern const char	*time_vars[];
 extern const char	*noTitle, *noUnits;
@@ -26,9 +26,8 @@ extern int	BaseDataRate, dataRate;
 extern bool	verbose;
 extern bool	histogram;
 extern char	histo_vars[][256];	// array to store names of histogram vars
-extern int	vars_columns[];		// array to relate column number (stored
-					// as array index) to variable number for
-					// which it contains data.
+extern char	vars_columns[][256];	// array to relate variable number to column 
+					// reference for which it contains data.
 
 extern int	SkipNlines;
 extern int	status;
