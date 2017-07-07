@@ -202,7 +202,10 @@ int main(int argc, char *argv[])
         if (status != NC_NOERR) handle_error(status);
       }
       j=0; // index for netCDF variables
-      k=2; // index for histogram columns; First var is written by C: loop, so start at second
+      k=1; // index for histogram columns; First var is written to index 0 of histogram by C: loop, so start at 1
+#ifdef ZEROBIN
+      k++; // With the legacy zero bin, everything is shifted to the right by one.
+#endif
       for (i = 0; i < nVariables; ++i)
       {
         if ((p = strtok(NULL, ", \t\n\r")) == NULL)
@@ -256,6 +259,7 @@ int main(int argc, char *argv[])
           status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
 
+#ifdef ZEROBIN
 	  // If k=2, this is the first time through, and we already wrote the first value to the legacy zero bin.
 	  // Move it to the first bin.
 	  if (k == 2) {
@@ -268,13 +272,17 @@ int main(int argc, char *argv[])
               status = nc_put_var1_float(ncid, varid[j],index,&lastDataValue);
               if (status != NC_NOERR) handle_error(status);
 	  }
+#endif
 
 	  // The number of columns in this histogram is already in the netCDF header as the third 
 	  // dimension of this variable.
 	  k++;
 	  nc_inq_dimlen(ncid, 2,&ncol);
 	  count = int(ncol);
- 	  if (k >= count) k=2;
+ 	  if (k >= count) k=1;
+#ifdef ZEROBIN
+ 	  k++;
+#endif
         }
         else
         {
@@ -285,7 +293,9 @@ int main(int argc, char *argv[])
           if (status != NC_NOERR) handle_error(status);
         }
 	lastVar = varid[j];
+#ifdef ZEROBIN
 	lastDataValue = dataValue;
+#endif
 
       }
 

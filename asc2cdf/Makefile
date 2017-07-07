@@ -5,7 +5,7 @@ CC=		g++
 BINDIR=		${JLOCAL}/bin
 MANDIR=		${JLOCAL}/man/man1
 INCLUDES=	-I$(JLOCAL)/include
-CFLAGS=		-Wall -g ${INCLUDES} -DVARDB
+CFLAGS=		-Wall -g ${INCLUDES} -DVARDB -DZEROBIN
 
 # Solaris
 LIBS=		-L/jnet/solaris/lib -lVarDB -Wl,-Bstatic -lnetcdf -Wl,-Bdynamic
