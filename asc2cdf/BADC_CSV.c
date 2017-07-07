@@ -242,15 +242,15 @@ void CreateBADCnetCDF(FILE *fp)
 	      nVariables=nVariables+numVars;
 
               // set 3rd dimension (if not already set for another histo var)
-	      // In other words, once have Vector26, don't want to define it
+	      // In other words, once have Vector27, don't want to define it
 	      // again, but can define Vector10, or whatever.
-              sprintf(buffer, "Vector%d", numVars+1);
+              sprintf(buffer, "Vector%d", numVars+2); // 1 for legacy zero placeholder and one for ...
 
 	      status = nc_inq_dimid(ncid,buffer,&dimid);
               //if (status != NC_NOERR) handle_error(status);
 	      if (status == -46) // Invalid dimension id or name, e.g dim doesn't exist
 	      {
-                status = nc_def_dim(ncid, buffer, numVars+1, &VectorDim);
+                status = nc_def_dim(ncid, buffer, numVars+2, &VectorDim);
                 if (status != NC_NOERR) handle_error(status);
 	      }
               dims[2] = VectorDim;
@@ -325,13 +325,13 @@ void CreateBADCnetCDF(FILE *fp)
 		 // set 3rd dimension (if not already set for another histo var)
 		 // In other words, once have Vector26, don't want to define it
 		 // again, but can define Vector10, or whatever.
-		 sprintf(buffer, "Vector%d", numVars);
+		 sprintf(buffer, "Vector%d", numVars+1);
 
 		 status = nc_inq_dimid(ncid,buffer,&dimid);
 		 //if (status != NC_NOERR) handle_error(status);
 		 if (status == -46) // Invalid dimension id or name, e.g dim doesn't exist
 		 {
-		     status = nc_def_dim(ncid, buffer, numVars, &VectorDim);
+		     status = nc_def_dim(ncid, buffer, numVars+1, &VectorDim);
 		     if (status != NC_NOERR) handle_error(status);
 		 }
 	         ndims =3; // histograms have 3 dimensions
@@ -409,6 +409,10 @@ void CreateBADCnetCDF(FILE *fp)
 		   atts[++j] = atof(value);
 	       status = nc_put_att_float(ncid,varid[i],metadata[a].key,NC_FLOAT, ++j, atts);
                if (status != NC_NOERR) handle_error(status);
+
+	       // If have cell sizes, then need to add histogram note that Zeroth data bin is an unused legacy placeholder
+	       status = nc_put_att_text(ncid, varid[i],"HistogramNote",48,"Zeroth data bin is an unused legacy placeholder.");
+	       if (status != NC_NOERR) handle_error(status);
 
 	   } else 
 	   // Store SampleVolume as a float

@@ -39,7 +39,7 @@ int	hour, minute, second, firstSecond, prevSecond = -1;
 double	currSecond;
 int	subsec;
 int	startHour, startMinute, startSecond;
-float	dataValue;
+float	dataValue,lastDataValue;
 int     lastVar;
 
 char FlightDate[50];
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
         if (status != NC_NOERR) handle_error(status);
       }
       j=0; // index for netCDF variables
-      k=1; // index for histogram columns
+      k=2; // index for histogram columns; First var is written by C: loop, so start at second
       for (i = 0; i < nVariables; ++i)
       {
         if ((p = strtok(NULL, ", \t\n\r")) == NULL)
@@ -255,12 +255,26 @@ int main(int argc, char *argv[])
 	  // Use variable/column mapping to figure out which variable to put this value in.
           status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
+
+	  // If k=2, this is the first time through, and we already wrote the first value to the legacy zero bin.
+	  // Move it to the first bin.
+	  if (k == 2) {
+              index[0] = rec; index[1] = hz; index[2] = 1;
+              status = nc_put_var1_float(ncid, varid[j],index,&lastDataValue);
+              if (status != NC_NOERR) handle_error(status);
+
+              index[0] = rec; index[1] = hz; index[2] = 0;
+	      lastDataValue = MISSING_VALUE;
+              status = nc_put_var1_float(ncid, varid[j],index,&lastDataValue);
+              if (status != NC_NOERR) handle_error(status);
+	  }
+
 	  // The number of columns in this histogram is already in the netCDF header as the third 
 	  // dimension of this variable.
 	  k++;
 	  nc_inq_dimlen(ncid, 2,&ncol);
 	  count = int(ncol);
- 	  if (k >= count) k=1;
+ 	  if (k >= count) k=2;
         }
         else
         {
@@ -271,6 +285,7 @@ int main(int argc, char *argv[])
           if (status != NC_NOERR) handle_error(status);
         }
 	lastVar = varid[j];
+	lastDataValue = dataValue;
 
       }
 
