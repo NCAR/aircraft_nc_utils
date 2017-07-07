@@ -39,8 +39,10 @@ void CreateBADCnetCDF(FILE *fp)
   char *key=tmpbuf;
   char *ref;
   char *value;
+  char *lastVar = tmpbuf;
   var_atts metadata[100]; // max 100 lines of attribute header
   int column = -1;	// First data column
+  int found_short_name = 0;
 
   printf("Converting BADC-CSV file to NetCDF\n");
 
@@ -183,8 +185,8 @@ void CreateBADCnetCDF(FILE *fp)
          *	- define variable
          *	- Set attributes
 	 * We need to find short_name and type before we can define the variable
-	 * We need to define the variable before we can set attributes. Since vars and atts can come in any order,
-	 * need to queue up atts until var is defined.
+	 * We need to define the variable before we can set attributes. Since vars and 
+	 * atts can come in any order, queue up atts until var is defined.
          */
 
 	if (strcmp(key,"long_name") == 0)
@@ -197,15 +199,20 @@ void CreateBADCnetCDF(FILE *fp)
 	   strcpy(metadata[a].key,"units");
 	   strcpy(metadata[a].ref, ref);
 	   strcpy(metadata[a].value, value);
-	} else {
+	} 
+	else 
+	{
 	   strcpy(metadata[a].key, key);
 	   strcpy(metadata[a].ref, ref);
 	   strcpy(metadata[a].value, value);
 	}
 	a++;
-
+        // BADC data can have either short_name and integers for references, or 
+	// omit short name and use short names for references. Handle the first 
+	// case here.
 	if (strcmp(key,"short_name") == 0)
 	{
+	    found_short_name = 1;
 
 	    // Associate this column reference with this variable index. 
 	    strcpy(histo_vars[i],ref); 
@@ -214,6 +221,7 @@ void CreateBADCnetCDF(FILE *fp)
 	      // There is not a colon in the reference ID, so we have found a timeseries variable
 	      column++;	// Count of columns of data expected.
 	      ndims = 2;
+	      strcpy(vars_columns[nVariables],ref); 
 
 	    }  else {
 	      // There is a colon in the reference ID, so we have found a histogram
@@ -273,8 +281,99 @@ void CreateBADCnetCDF(FILE *fp)
     }
   }
 
+  // After the "data" line, we still have one more line of metadata - the list 
+  // of reference IDs. If refs are the variable short names, read them into an
+  // array to relate column number to ref. (If not, already handled above when
+  // found short_name.
+ 
+  // After the "data" line, we still have one more line of metadata - the list of reference
+  // IDs. Read them in and (tbd) compare to the IDs I used as keys to the vars array.
+  fgets(buffer, BUFFSIZE, fp);
+  buffer[strlen(buffer)-1] = '\0';
+  SkipNlines +=1;
+  printf("Read ref line: %s\n",buffer);
+
+  if (found_short_name == 0)
+  {
+
+     // Parse the column headers to get short names.
+     i =0;
+     j=0;
+     ndims = 2; // To start, assume we are reading in a timeseries variable
+     ref=strtok(buffer, ","); // Read in the first column header. Should be time.
+     first_bin = -1;
+     strcpy(lastVar,"xxx");
+     while (1)
+     {
+	 if (ref != NULL && strcmp(lastVar,ref) == 0) { 
+	     // Found a duplicate variable, which means we have a histogram
+	     if (first_bin == -1) { // Build up which columns this var spans.
+		 first_bin = i;
+	     }
+	     last_bin = i;
+	 } else { 
+	     // Vars don't match, so either end of a histogram, or just a 
+	     // single timeseries var
+	     if (first_bin == -1) { 
+		 // timeseries
+		 numVars = 1; 
+	     } else {
+		 numVars = last_bin - first_bin + 2;
+		 first_bin = -1;
+		 printf("Found histogram variable: %s  %d (%d)\n",lastVar,i,numVars);
+		 // set 3rd dimension (if not already set for another histo var)
+		 // In other words, once have Vector26, don't want to define it
+		 // again, but can define Vector10, or whatever.
+		 sprintf(buffer, "Vector%d", numVars);
+
+		 status = nc_inq_dimid(ncid,buffer,&dimid);
+		 //if (status != NC_NOERR) handle_error(status);
+		 if (status == -46) // Invalid dimension id or name, e.g dim doesn't exist
+		 {
+		     status = nc_def_dim(ncid, buffer, numVars, &VectorDim);
+		     if (status != NC_NOERR) handle_error(status);
+		 }
+	         ndims =3; // histograms have 3 dimensions
+		 dims[2] = VectorDim;
+	     }
+
+	     // Create variables
+	     if (strcmp(lastVar,"xxx") != 0 && strcmp(lastVar,"Time") != 0)  // NOT time var
+	     {
+		 // All variables are written to the RAF NetCDF file as float.
+		 status = nc_def_var(ncid, lastVar, NC_FLOAT, ndims, dims, &varid[j]);
+		 if (status != NC_NOERR) handle_error(status);
+
+
+		 // Add _FillValue attribute as float
+		 missingVals[0]=MISSING_VALUE;
+		 status = nc_put_att_float(ncid,varid[j], "_FillValue",NC_FLOAT, 1, &missingVals[0]);
+		 if (status != NC_NOERR) handle_error(status);
+
+	         strcpy(histo_vars[j],lastVar);
+	         j++;
+	     }
+
+	     nVariables=nVariables+numVars;
+	     if (ref == NULL) {break;}
+	 }
+	 if (strcmp(ref,"Time") != 0) { // Not time var
+	     strcpy(vars_columns[i],ref); 
+	     i++;
+         }
+
+	 lastVar = ref;
+	 ref=strtok(NULL, ",");
+     }
+  }
+
   // Number of variables found, plus extras for histograms
-  nvars = i;
+  if (found_short_name == 0) {
+      nvars = j;
+      nVariables = nVariables -2;
+  } else {
+      nvars = i;
+  }
   printf("netCDF vars: %d\n",nvars);
   printf("nVariables: %d\n",nVariables);
   nAtts = a;
@@ -308,12 +407,6 @@ void CreateBADCnetCDF(FILE *fp)
   }
 
 
-// After the "data" line, we still have one more line of metadata - the list of reference
-// IDs. Read them in and (tbd) compare to the IDs I used as keys to the vars array.
-     fgets(buffer, BUFFSIZE, fp);
-     buffer[strlen(buffer)-1] = '\0';
-     SkipNlines +=1;
-     printf("Read ref line: %s\n",buffer);
 
 }	/* END CREATEBADCNETCDF */
 

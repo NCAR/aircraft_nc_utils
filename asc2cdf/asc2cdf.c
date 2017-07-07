@@ -23,6 +23,7 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1996-2007
 
 char	buffer[BUFFSIZE];
 char    histo_vars[MAX_VARS][256] = {"\0"};
+char    var[256]  = {"\0"};
 char    vars_columns[MAX_VARS][256] = {"\0"};
 char    *refptr;
 
@@ -39,6 +40,7 @@ double	currSecond;
 int	subsec;
 int	startHour, startMinute, startSecond;
 float	dataValue;
+int     lastVar;
 
 char FlightDate[50];
 
@@ -193,14 +195,14 @@ int main(int argc, char *argv[])
       {
       // If histogram data, zeroth data bin must be zero for legacy
       // reasons.
-      if (histogram || (strcmp(histo_vars[i],"\0")!=0)) {
+      if (histogram) {
 	dataValue = 0;
         index[0] = rec; index[1] = hz; index[2] = 0;
         status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
         if (status != NC_NOERR) handle_error(status);
       }
       j=0; // index for netCDF variables
-      k=0; // index for histogram columns
+      k=1; // index for histogram columns
       for (i = 0; i < nVariables; ++i)
       {
         if ((p = strtok(NULL, ", \t\n\r")) == NULL)
@@ -213,8 +215,16 @@ int main(int argc, char *argv[])
 	
 	// Increment netCDF variable pointer if working with a new var
         if (fileType == BADC_CSV)	{
-	  if ((i!=0) && (strcmp(vars_columns[i],strtok_r(histo_vars[j],":",&refptr)) != 0)) {
+	  strcpy(var,histo_vars[j]);
+	  if (strstr(histo_vars[j],":") != NULL) {
+	      strtok_r(var,":",&refptr);
+	  }
+	  if (strcmp(vars_columns[i],var) != 0) {
 	    j++;
+	  }
+	  strcpy(var,histo_vars[j]);
+	  if (strstr(histo_vars[j],":") != NULL) {
+	      strtok_r(var,":",&refptr);
 	  }
 	} else { // For non-BADC, every var is a new var
 	    j=i;
@@ -237,7 +247,7 @@ int main(int argc, char *argv[])
           status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         } 
-	else if ((fileType == BADC_CSV) && (i!=0) && (strcmp(vars_columns[i],strtok_r(histo_vars[j],":",&refptr)) == 0))
+	else if (lastVar ==varid[j]) // repeating var, assume histogram
 	{
           index[0] = rec; index[1] = hz; index[2] = k;
 	  if (verbose)
@@ -250,16 +260,17 @@ int main(int argc, char *argv[])
 	  k++;
 	  nc_inq_dimlen(ncid, 2,&ncol);
 	  count = int(ncol);
- 	  if (k >= count) k=0;
+ 	  if (k >= count) k=1;
         }
         else
         {
-          index[0] = rec; index[1] = hz;
+          index[0] = rec; index[1] = hz; index[2] = 0;
 	  if (verbose)
-	    printf("C: Writing data point %f to variable %d:%d [%lu,%d] \n",dataValue,varid[j],j,rec,hz);
+	    printf("C: Writing data point %f to variable %d:%d [%lu,%d,0] \n",dataValue,varid[j],j,rec,hz);
           status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         }
+	lastVar = varid[j];
 
       }
 

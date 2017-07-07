@@ -16,7 +16,7 @@ class TestBADC(unittest.TestCase):
     def setUp(self):
         os.system("../../asc2cdf -c -r 1000 CSET-HOLODEC-H2H_GV_20150722.csv.control badc.nc")
         os.system("ncdump badc.nc > badc.dump")
-        os.system("../../asc2cdf -c -r 1000 CSET-HOLODEC-H2H_GV_20150722.alpha.csv srt.nc")
+        os.system("../../asc2cdf -c -r 1000 CSET-HOLODEC-H2H_GV_20150707.alpha.csv srt.nc")
         os.system("ncdump srt.nc > srt.dump")
 
     def tearDown(self):
@@ -70,7 +70,7 @@ class TestBADC(unittest.TestCase):
     def test_alpha_atts(self):
 	# read in global atts from NASA Ames file and ensure they all are written to netCDF
 	# file
-	a = open("CSET-HOLODEC-H2H_GV_20150722.alpha.csv","r")
+	a = open("CSET-HOLODEC-H2H_GV_20150707.alpha.csv","r")
 	for line in a:
 	    # Lines that start with a letter are all content we want to move to NetCDF atts
 	    if re.match(r"^[A-Za-z].*",line) is not None:
