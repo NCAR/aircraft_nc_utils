@@ -23,11 +23,13 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1996-2007
 
 char	buffer[BUFFSIZE];
 char    histo_vars[MAX_VARS][256] = {"\0"};
-int     vars_columns[MAX_VARS];
+char    var[256]  = {"\0"};
+char    vars_columns[MAX_VARS][256] = {"\0"};
+char    *refptr;
 
 int	ncid;
 int	status;
-int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS], nVariables;
+int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS], nVariables, nvars;
 time_t	BaseTime = 0;
 float	scale[MAX_VARS], offset[MAX_VARS], missingVals[MAX_VARS];
 bool	getRec = true;
@@ -38,6 +40,7 @@ double	currSecond;
 int	subsec;
 int	startHour, startMinute, startSecond;
 float	dataValue;
+int     lastVar;
 
 char FlightDate[50];
 
@@ -73,7 +76,7 @@ int main(int argc, char *argv[])
   int	count;
   char	*p;
   size_t index[3];
-  size_t rec;
+  size_t rec,ncol;
 
   putenv((char *)"TZ=UTC");	// All time calcs in UTC.
   FlightDate[0] = 0;
@@ -192,13 +195,14 @@ int main(int argc, char *argv[])
       {
       // If histogram data, zeroth data bin must be zero for legacy
       // reasons.
-      if (histogram || (strcmp(histo_vars[i],"\0")!=0)) {
+      if (histogram) {
 	dataValue = 0;
         index[0] = rec; index[1] = hz; index[2] = 0;
         status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
         if (status != NC_NOERR) handle_error(status);
       }
-      j=0; // index for histograms
+      j=0; // index for netCDF variables
+      k=1; // index for histogram columns
       for (i = 0; i < nVariables; ++i)
       {
         if ((p = strtok(NULL, ", \t\n\r")) == NULL)
@@ -208,46 +212,66 @@ int main(int argc, char *argv[])
           dataValue = atof(p);
         else
           dataValue = MISSING_VALUE;
+	
+	// Increment netCDF variable pointer if working with a new var
+        if (fileType == BADC_CSV)	{
+	  strcpy(var,histo_vars[j]);
+	  if (strstr(histo_vars[j],":") != NULL) {
+	      strtok_r(var,":",&refptr);
+	  }
+	  if (strcmp(vars_columns[i],var) != 0) {
+	    j++;
+	  }
+	  strcpy(var,histo_vars[j]);
+	  if (strstr(histo_vars[j],":") != NULL) {
+	      strtok_r(var,":",&refptr);
+	  }
+	} else { // For non-BADC, every var is a new var
+	    j=i;
+	}
+
 
         if (fileType != PLAIN_FILE)
           {
-          if (dataValue == missingVals[i] || dataValue == missingVals[vars_columns[i]])
+          if (dataValue == missingVals[i])
             dataValue = MISSING_VALUE;
           else
             dataValue = dataValue * scale[i] + offset[i];
           }
 
-        if (histogram) {
+        if (histogram) 
+	{
           index[0] = rec; index[1] = hz; index[2] = i+1;
 	  if (verbose)
 	      printf("A: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[1],i,rec,hz,i+1);
           status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         } 
-	else if (strlen(histo_vars[vars_columns[i]])>0) 
+	else if (lastVar ==varid[j]) // repeating var, assume histogram
 	{
-          index[0] = rec; index[1] = hz; index[2] = j;
+          index[0] = rec; index[1] = hz; index[2] = k;
 	  if (verbose)
-	    printf("B: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[vars_columns[i]],i,rec,hz,j);
+	    printf("B: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[j],j,rec,hz,k);
 	  // Use variable/column mapping to figure out which variable to put this value in.
-          status = nc_put_var1_float(ncid, varid[vars_columns[i]], index, &dataValue);
+          status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
-	  // Count number of columns in this histogram
-	  count = 0;
- 	  for (k=0;k<nVariables;k++) {
- 	    if (vars_columns[k]==vars_columns[i]) count++;
- 	  }
-	  j++;
- 	  if (j >= count) j=0;
+	  // The number of columns in this histogram is already in the netCDF header as the third 
+	  // dimension of this variable.
+	  k++;
+	  nc_inq_dimlen(ncid, 2,&ncol);
+	  count = int(ncol);
+ 	  if (k >= count) k=1;
         }
         else
         {
-          index[0] = rec; index[1] = hz;
+          index[0] = rec; index[1] = hz; index[2] = 0;
 	  if (verbose)
-	    printf("C: Writing data point %f to variable %d:%d [%lu,%d] \n",dataValue,varid[i],i,rec,hz);
-          status = nc_put_var1_float(ncid, varid[i], index, &dataValue);
+	    printf("C: Writing data point %f to variable %d:%d [%lu,%d,0] \n",dataValue,varid[j],j,rec,hz);
+          status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         }
+	lastVar = varid[j];
+
       }
 
       // If haven't read all the sub-dataRate data, keep looping until reach 
