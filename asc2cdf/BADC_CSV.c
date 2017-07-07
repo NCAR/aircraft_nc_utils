@@ -43,6 +43,7 @@ void CreateBADCnetCDF(FILE *fp)
   var_atts metadata[100]; // max 100 lines of attribute header
   int column = -1;	// First data column
   int found_short_name = 0;
+  float atts[256];
 
   printf("Converting BADC-CSV file to NetCDF\n");
 
@@ -400,8 +401,27 @@ void CreateBADCnetCDF(FILE *fp)
 	           break;
 	       }
 	   }
-           status = nc_put_att_text(ncid, varid[i],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
-           if (status != NC_NOERR) handle_error(status);
+	   // CellSizes need to be stored as an array of floats
+	   if (strcmp(metadata[a].key,"CellSizes") == 0) {
+	       j=0;
+	       atts[j] = atof(strtok(metadata[a].value,","));
+	       while ((value=strtok(NULL,",")) != NULL)
+		   atts[++j] = atof(value);
+	       status = nc_put_att_float(ncid,varid[i],metadata[a].key,NC_FLOAT, ++j, atts);
+               if (status != NC_NOERR) handle_error(status);
+
+	   } else 
+	   // Store SampleVolume as a float
+	   if (strcmp(metadata[a].key,"SampleVolume") == 0) {
+	       atts[0] = atof(metadata[a].value);
+	       status = nc_put_att_float(ncid,varid[i],metadata[a].key,NC_FLOAT,1,&atts[0]);
+               if (status != NC_NOERR) handle_error(status);
+
+	   // All other atts are stored as strings
+	   } else {
+               status = nc_put_att_text(ncid, varid[i],metadata[a].key,strlen(metadata[a].value)+1,metadata[a].value);
+               if (status != NC_NOERR) handle_error(status);
+	   }
        }
      }
   }
