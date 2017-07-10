@@ -25,6 +25,7 @@ typedef struct {	// Variable attributes
 
 void CreateVar(int index,char *value,int ndims,int dims[3]);
 void defVectorDim(int numVars, int *ndims, int dims[3]);
+int processIntRef(char *ref,char *value,int *nVariables,int *index,int column,int *ndims,int dims[3]);
 
 /* -------------------------------------------------------------------- */
 void CreateBADCnetCDF(FILE *fp)
@@ -34,7 +35,8 @@ void CreateBADCnetCDF(FILE *fp)
   int year, month, day;
   int ndims, dims[3];
   int nAtts;
-  int first_bin, last_bin, numVars;
+  int numVars;
+  int first_bin, last_bin;
   char tmpbuf[BUFFSIZE];
   char *key=tmpbuf;
   char *ref;
@@ -218,59 +220,15 @@ void CreateBADCnetCDF(FILE *fp)
 
 	a++; // attribute counter
 
-        // BADC data can have either short_name and integers for references, or 
+        // BADC data can have either short_name metadata with integers for references, or 
 	// omit short name and use short names for references. Handle the first 
 	// case here.
 	if (strcmp(key,"short_name") == 0)
 	{
 	    found_short_name = 1;
 
-	    // Associate this column reference with this variable index. 
-	    strcpy(histo_vars[i],ref); 
+            numVars = processIntRef(ref,value,&nVariables,&i,column,&ndims,dims);
 
-            if (strchr(ref,':') == NULL) {
-	      // There is not a colon in the reference ID, so we have found a timeseries variable
-	      column++;	// Count of columns of data expected.
-	      ndims = 2;
-	      printf("nVariables: %d\n",nVariables);
-	      if (strcmp(value,"Time") != 0) 	// NOT time var
-	      {
-	        strcpy(vars_columns[nVariables],ref); 
-	        nVariables++;
-	      }
-
-	    }  else {
-	      // There is a colon in the reference ID, so we have found a histogram
-              // Look for histograms (just once for each var, or will over-count 
-	      // numVars - I chose to look when find a short_name, but any metadata field that exists for every
-	      // var will work equally well.)
-
-	      first_bin = atoi(strtok(ref,":"));
-	      last_bin = atoi(strtok(NULL,":"));
-	      numVars = last_bin-first_bin+1;
-	      printf("Found histogram variable: %s:%d (%d)\n",value,i,numVars);
-
-	      // Associate this column reference with this variable index. 
-	      for (j=0;j<numVars;j++) {
-	        strcpy(vars_columns[nVariables+j],ref); 
-	      }
-	      nVariables=nVariables+numVars;
-
-	      // Add new histogram dimension
-              defVectorDim(numVars+1,&ndims,dims);
-
-	      numVars=numVars+column;
-
-            } 
-
-
-	    // Create variables
-	    if (strcmp(value,"Time") != 0) 	// NOT time var
-	    {
-              CreateVar(i,value,ndims,dims);
-	    
-	      i++;
-	    }
 	}
       }
     }
@@ -285,8 +243,8 @@ void CreateBADCnetCDF(FILE *fp)
   SkipNlines +=1;
   printf("Read ref line: %s\n",buffer);
 
-  // BADC data can have either short_name and integers for references, or 
-  // omit short name and use short names for references. Handle the second 
+  // BADC data can have either short_name metadata with integers for references, or 
+  // omit short name and use short names for references. Handle the first 
   // case here.
   if (found_short_name == 0)
   {
@@ -449,6 +407,61 @@ void defVectorDim(int numVars, int *ndims, int dims[3])
    }
    *ndims =3; // histograms have 3 dimensions
 
+}
+
+/* -------------------------------------------------------------------- */
+/* BADC data can have either short_name metadata with integers for references, or 
+ * omit short name and use short names for references. Handle the first 
+ * case here.
+ */
+int processIntRef(char *ref,char *value,int *nVariables,int *i,int column,int *ndims,int dims[3])
+{
+  int first_bin, last_bin, numVars;
+  int j;
+
+  // Associate this column reference with this variable index. 
+  strcpy(histo_vars[*i],ref); 
+
+  // There is not a colon in the reference ID, so we have found a timeseries variable
+  if (strchr(ref,':') == NULL) {
+      column++;	// Count of columns of data expected.
+      *ndims = 2;
+      if (strcmp(value,"Time") != 0) 	// NOT time var
+      {
+        strcpy(vars_columns[*nVariables],ref); 
+        *nVariables=*nVariables+1;
+      }
+  }  
+
+  // There is a colon in the reference ID, so we have found a histogram
+  // Look for histograms (just once for each var, or will over-count 
+  // numVars - I chose to look when find a short_name, but any metadata field that exists for every
+  // var will work equally well.)
+  else {
+      first_bin = atoi(strtok(ref,":"));
+      last_bin = atoi(strtok(NULL,":"));
+      numVars = last_bin-first_bin+1;
+      printf("Found histogram variable: %s:%d (%d)\n",value,*i,numVars);
+
+      // Associate this column reference with this variable index. 
+      for (j=0;j<numVars;j++) {
+        strcpy(vars_columns[*nVariables+j],ref); 
+      }
+      *nVariables=*nVariables+numVars;
+
+      // Add new histogram dimension
+      defVectorDim(numVars+1,ndims,dims);
+
+      numVars=numVars+column;
+  } 
+
+  // Create variables
+  if (strcmp(value,"Time") != 0) 	// NOT time var
+  {
+     CreateVar(*i,value,*ndims,dims);
+     *i=*i+1;
+  }
+  return(numVars);
 }
 
 /* END BADC_CSV.C */
