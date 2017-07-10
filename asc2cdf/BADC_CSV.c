@@ -24,15 +24,15 @@ typedef struct {	// Variable attributes
 } var_atts;
 
 void CreateVar(int index,char *value,int ndims,int dims[3]);
+void defVectorDim(int numVars, int *ndims, int dims[3]);
 
 /* -------------------------------------------------------------------- */
 void CreateBADCnetCDF(FILE *fp)
 {
   int i = 0, j = 0, a = 0; // a for attribute count per variable
-  int TimeDim, RateDim, VectorDim;
+  int TimeDim, RateDim;
   int year, month, day;
   int ndims, dims[3];
-  int dimid;
   int nAtts;
   int first_bin, last_bin, numVars;
   char tmpbuf[BUFFSIZE];
@@ -241,24 +241,11 @@ void CreateBADCnetCDF(FILE *fp)
 	      }
 	      nVariables=nVariables+numVars;
 
-              // set 3rd dimension (if not already set for another histo var)
-	      // In other words, once have Vector27, don't want to define it
-	      // again, but can define Vector10, or whatever.
-              sprintf(buffer, "Vector%d", numVars+2); // 1 for legacy zero placeholder and one for ...
-
-	      status = nc_inq_dimid(ncid,buffer,&dimid);
-              //if (status != NC_NOERR) handle_error(status);
-	      if (status == -46) // Invalid dimension id or name, e.g dim doesn't exist
-	      {
-                status = nc_def_dim(ncid, buffer, numVars+2, &VectorDim);
-                if (status != NC_NOERR) handle_error(status);
-	      }
-              dims[2] = VectorDim;
-	      
+	      // Add new histogram dimension
+              defVectorDim(numVars+2,&ndims,dims);
 
 	      numVars=numVars+column+1;
 
-	      ndims = 3;
             } 
 
 
@@ -266,6 +253,7 @@ void CreateBADCnetCDF(FILE *fp)
 	    if (strcmp(value,"Time") != 0) 	// NOT time var
 	    {
               CreateVar(i,value,ndims,dims);
+	      printf("ndims: %d\n",ndims);
 	    
 	      i++;
 	      nVariables++;
@@ -315,20 +303,11 @@ void CreateBADCnetCDF(FILE *fp)
 		 numVars = last_bin - first_bin + 2;
 		 first_bin = -1;
 		 printf("Found histogram variable: %s  %d (%d)\n",lastVar,i,numVars);
-		 // set 3rd dimension (if not already set for another histo var)
-		 // In other words, once have Vector26, don't want to define it
-		 // again, but can define Vector10, or whatever.
-		 sprintf(buffer, "Vector%d", numVars+1);
 
-		 status = nc_inq_dimid(ncid,buffer,&dimid);
-		 //if (status != NC_NOERR) handle_error(status);
-		 if (status == -46) // Invalid dimension id or name, e.g dim doesn't exist
-		 {
-		     status = nc_def_dim(ncid, buffer, numVars+1, &VectorDim);
-		     if (status != NC_NOERR) handle_error(status);
-		 }
-	         ndims =3; // histograms have 3 dimensions
-		 dims[2] = VectorDim;
+	         // Add new histogram dimension
+                 defVectorDim(numVars+1,&ndims,dims);
+		 printf("ndims: %d %d\n",ndims,dims[2]);
+                 printf("dims: %d %d %d\n",dims[0],dims[1],dims[2]);
 	     }
 
 	     // Create variables
@@ -428,6 +407,35 @@ void CreateVar(int index, char *value, int ndims, int dims[3])
    missingVals[0]=MISSING_VALUE;
    status = nc_put_att_float(ncid,varid[index], "_FillValue",NC_FLOAT, 1, &missingVals[0]);
    if (status != NC_NOERR) handle_error(status);
+}
+
+/* -------------------------------------------------------------------- */
+void defVectorDim(int numVars, int *ndims, int dims[3])
+{
+   int dimid;
+   int VectorDim;
+
+   // set 3rd dimension (if not already set for another histo var)
+   // In other words, once have Vector27, don't want to define it
+   // again, but can define Vector10, or whatever.
+   sprintf(buffer, "Vector%d", numVars);
+
+   status = nc_inq_dimid(ncid,buffer,&dimid);
+   if (status == -46) // Invalid dimension id or name, e.g dim doesn't exist
+   { 
+       status = nc_def_dim(ncid, buffer, numVars, &VectorDim);
+       if (status != NC_NOERR) handle_error(status);
+       dims[2] = VectorDim;
+   } else
+   if (status == NC_NOERR) // dimension exists, assign ID of dim, to dims[2]
+   {
+       dims[2] = dimid;
+   } else // unknown status; warn user
+   {
+       handle_error(status);
+   }
+   *ndims =3; // histograms have 3 dimensions
+
 }
 
 /* END BADC_CSV.C */
