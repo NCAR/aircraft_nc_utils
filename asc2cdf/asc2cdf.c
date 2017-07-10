@@ -66,7 +66,7 @@ void handle_error(const int);
 
 static int ProcessArgv(int argc, char **argv);
 static size_t ProcessTime(char *p);
-static void WriteMissingData(int, int);
+//static void WriteMissingData(int, int);
 
 
 /* -------------------------------------------------------------------- */
@@ -202,10 +202,12 @@ int main(int argc, char *argv[])
         if (status != NC_NOERR) handle_error(status);
       }
       j=0; // index for netCDF variables
+      // k values only apply to histograms stored as repeating column headers
       k=1; // index for histogram columns; First var is written to index 0 of histogram by C: loop, so start at 1
 #ifdef ZEROBIN
       k++; // With the legacy zero bin, everything is shifted to the right by one.
 #endif
+      lastVar = 0;
       for (i = 0; i < nVariables; ++i)
       {
         if ((p = strtok(NULL, ", \t\n\r")) == NULL)
@@ -246,7 +248,7 @@ int main(int argc, char *argv[])
 	{
           index[0] = rec; index[1] = hz; index[2] = i+1;
 	  if (verbose)
-	      printf("A: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[1],i,rec,hz,i+1);
+	      printf("A: Writing data point %f to variable %d:%d index[%lu,%d,%d] \n",dataValue,varid[1],i,rec,hz,i+1);
           status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         } 
@@ -254,7 +256,7 @@ int main(int argc, char *argv[])
 	{
           index[0] = rec; index[1] = hz; index[2] = k;
 	  if (verbose)
-	    printf("B: Writing data point %f to variable %d:%d [%lu,%d,%d] \n",dataValue,varid[j],j,rec,hz,k);
+	    printf("B: Writing data point %f to variable %d:%d index[%lu,%d,%d] \n",dataValue,varid[j],j,rec,hz,k);
 	  // Use variable/column mapping to figure out which variable to put this value in.
           status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
@@ -263,6 +265,8 @@ int main(int argc, char *argv[])
 	  // If k=2, this is the first time through, and we already wrote the first value to the legacy zero bin.
 	  // Move it to the first bin.
 	  if (k == 2) {
+	      if (verbose)
+		  printf("B: Move data out of legacy zero bin\n");
               index[0] = rec; index[1] = hz; index[2] = 1;
               status = nc_put_var1_float(ncid, varid[j],index,&lastDataValue);
               if (status != NC_NOERR) handle_error(status);
@@ -276,9 +280,11 @@ int main(int argc, char *argv[])
 
 	  // The number of columns in this histogram is already in the netCDF header as the third 
 	  // dimension of this variable.
-	  k++;
 	  nc_inq_dimlen(ncid, 2,&ncol);
 	  count = int(ncol);
+#ifdef ZEROBIN
+	  count = count-1; // Have count bins, but only count-1 data point because first bin is legacy placeholder.
+#endif
  	  if (k >= count) k=1;
 #ifdef ZEROBIN
  	  k++;
@@ -288,7 +294,7 @@ int main(int argc, char *argv[])
         {
           index[0] = rec; index[1] = hz; index[2] = 0;
 	  if (verbose)
-	    printf("C: Writing data point %f to variable %d:%d [%lu,%d,0] \n",dataValue,varid[j],j,rec,hz);
+	    printf("C: Writing data point %f to variable %d:%d index[%lu,%d,0] \n",dataValue,varid[j],j,rec,hz);
           status = nc_put_var1_float(ncid, varid[j], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
         }
@@ -372,24 +378,24 @@ int main(int argc, char *argv[])
 }	/* END MAIN */
 
 /* -------------------------------------------------------------------- */
-static void WriteMissingData(int currSecond, int lastSecond)
-{
-  float	dataValue;
-
-  for (int i = lastSecond; i < currSecond; i += BaseDataRate, ++nRecords)
-  {
-    dataValue = (float)(nRecords * BaseDataRate);
-    status = nc_put_var1_float(ncid, timeOffsetID, &nRecords, &dataValue);
-    if (status != NC_NOERR) handle_error(status);
-
-    dataValue = MISSING_VALUE;
-
-    for (int j = 0; j < nVariables; ++j)
-      status = nc_put_var1_float(ncid, varid[j], &nRecords, &dataValue);
-      if (status != NC_NOERR) handle_error(status);
-  }
-}	/* END WRITEMISSINGDATA */
-
+//static void WriteMissingData(int currSecond, int lastSecond)
+//{
+//  float	dataValue;
+//
+//  for (int i = lastSecond; i < currSecond; i += BaseDataRate, ++nRecords)
+//  {
+//    dataValue = (float)(nRecords * BaseDataRate);
+//    status = nc_put_var1_float(ncid, timeOffsetID, &nRecords, &dataValue);
+//    if (status != NC_NOERR) handle_error(status);
+//
+//    dataValue = MISSING_VALUE;
+//
+//    for (int j = 0; j < nVariables; ++j)
+//      status = nc_put_var1_float(ncid, varid[j], &nRecords, &dataValue);
+//      if (status != NC_NOERR) handle_error(status);
+//  }
+//}	/* END WRITEMISSINGDATA */
+//
 /* -------------------------------------------------------------------- */
 static int ProcessArgv(int argc, char **argv)
 {

@@ -54,7 +54,7 @@ void CreateNASAamesNetCDF(FILE *fp)
   int	FFI, year, month, day;
   int	ndims, dims[3], TimeDim, RateDim, VectorDim;
   char	*p, *p1, *titles[MAX_VARS], *units[MAX_VARS], tmp[32];
-  char  *varName;
+  //char  *varName;
   float	missing_val = MISSING_VALUE;
   float cellSizes[512];
   int   nCells;
@@ -395,7 +395,7 @@ void CreateNASAamesNetCDF(FILE *fp)
       printf("Creating single 2D var [%s] from AMES file\n",p);
 
 
-    varName = p;
+    //varName = p;
     if (verbose)
       printf("Adding variable [%s] with units of [%s]\n", p, units[0]);
 
