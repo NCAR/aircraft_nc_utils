@@ -124,6 +124,12 @@ int main(int argc, char *argv[])
 
     case BADC_CSV:
       CreateBADCnetCDF(inFP);
+      if (verbose) {
+          for (i=0;i< nVariables; ++i)
+	      printf("vars_columns[%d] = %s\n",i,vars_columns[i]);
+          for (j=0;j< nvars; ++j)
+	      printf("histo_vars[%d] = %s\n",j,histo_vars[j]);
+      }
       break;
     }
 
