@@ -25,7 +25,8 @@ typedef struct {	// Variable attributes
 
 void CreateVar(int index,char *value,int ndims,int dims[3]);
 void defVectorDim(int numVars, int *ndims, int dims[3]);
-int processIntRef(char *ref,char *value,int *nVariables,int *index,int column,int *ndims,int dims[3]);
+void processIntRef(char *ref,char *value,int *nVariables,int *index,int column,int *ndims,int dims[3]);
+void processCharRef(char *buffer, char *tmpbuf, int *nVariables,int *i,int *j,int *ndims,int dims[3]);
 
 /* -------------------------------------------------------------------- */
 void CreateBADCnetCDF(FILE *fp)
@@ -35,13 +36,10 @@ void CreateBADCnetCDF(FILE *fp)
   int year, month, day;
   int ndims, dims[3];
   int nAtts;
-  int numVars;
-  int first_bin, last_bin;
   char tmpbuf[BUFFSIZE];
   char *key=tmpbuf;
   char *ref;
   char *value;
-  char *lastVar = tmpbuf;
   var_atts metadata[100]; // max 100 lines of attribute header
   int column = -1;	// First data column
   int found_short_name = 0;
@@ -226,9 +224,7 @@ void CreateBADCnetCDF(FILE *fp)
 	if (strcmp(key,"short_name") == 0)
 	{
 	    found_short_name = 1;
-
-            numVars = processIntRef(ref,value,&nVariables,&i,column,&ndims,dims);
-
+            processIntRef(ref,value,&nVariables,&i,column,&ndims,dims);
 	}
       }
     }
@@ -248,65 +244,9 @@ void CreateBADCnetCDF(FILE *fp)
   // case here.
   if (found_short_name == 0)
   {
-
-     // Parse the column headers to get short names.
-     i=1;
-     j=0;
-     ndims = 2; // To start, assume we are reading in a timeseries variable
-     ref=strtok(buffer, ","); // Read in the first column header. Should be time.
-     first_bin = -1;
-     strcpy(lastVar,"xxx");
-     while (1)
-     {
-	 if (ref != NULL && strcmp(lastVar,ref) == 0) { 
-	     // Found a duplicate variable, which means we have a histogram
-	     if (first_bin == -1) { // Build up which columns this var spans.
-		 first_bin = i;
-	     }
-	     last_bin = i+1;
-	 } else { 
-	     // Vars don't match, so either end of a histogram, or just a 
-	     // single timeseries var
-	     if (first_bin == -1) { 
-		 // timeseries
-		 numVars = 1; 
-	     } else {
-		 numVars = last_bin - first_bin + 1;
-		 first_bin = -1;
-		 printf("Found histogram variable: %s  %d (%d)\n",lastVar,i,numVars);
-
-	         // Add new histogram dimension
-                 defVectorDim(numVars+1,&ndims,dims);
-		 printf("ndims: %d %d\n",ndims,dims[2]);
-                 printf("dims: %d %d %d\n",dims[0],dims[1],dims[2]);
-	     }
-
-	     // Create variables
-	     if (strcmp(lastVar,"xxx") != 0 && strcmp(lastVar,"Time") != 0)  // NOT time var
-	     {
-                 CreateVar(j,lastVar,ndims,dims);
-
-	         strcpy(histo_vars[j],lastVar);
-	         j++;
-	     }
-
-	     nVariables=nVariables+numVars;
-	     if (ref == NULL) {break;}
-	 }
-	 if (strcmp(ref,"Time") != 0) { // Not time var
-	     strcpy(vars_columns[i-1],ref); 
-	     i++;
-         }
-
-	 lastVar = ref;
-	 ref=strtok(NULL, ",");
-     }
-  }
-
-  // Number of variables found, plus extras for histograms
-  if (found_short_name == 0) {
+      processCharRef(buffer,tmpbuf,&nVariables,&i,&j,&ndims,dims);
       nvars = j;
-      nVariables = nVariables -2;
+      nVariables = nVariables -2; // Number of variables found
   } else {
       nvars = i;
   }
@@ -414,7 +354,7 @@ void defVectorDim(int numVars, int *ndims, int dims[3])
  * omit short name and use short names for references. Handle the first 
  * case here.
  */
-int processIntRef(char *ref,char *value,int *nVariables,int *i,int column,int *ndims,int dims[3])
+void processIntRef(char *ref,char *value,int *nVariables,int *i,int column,int *ndims,int dims[3])
 {
   int first_bin, last_bin, numVars;
   int j;
@@ -461,7 +401,75 @@ int processIntRef(char *ref,char *value,int *nVariables,int *i,int column,int *n
      CreateVar(*i,value,*ndims,dims);
      *i=*i+1;
   }
-  return(numVars);
+}
+
+/* -------------------------------------------------------------------- */
+/* BADC data can have either short_name metadata with integers for references, or 
+ * omit short name and use short names for references. Handle the second 
+ * case here.
+ */
+void processCharRef(char *buffer,char *tmpbuf,int *nVariables,int *i,int *j,int *ndims,int dims[3])
+{
+  int first_bin, last_bin, numVars;
+  char *lastVar = tmpbuf;
+  char *ref;
+
+  // Parse the column headers to get short names.
+  *i=1;
+  *j=0;
+
+  *ndims = 2; // To start, assume we are reading in a timeseries variable
+  ref=strtok(buffer, ","); // Read in the first column header. Should be time.
+  first_bin = -1;
+  strcpy(lastVar,"xxx");
+  while (1)
+  {
+     if (ref != NULL && strcmp(lastVar,ref) == 0) 
+     { 
+         // Found a duplicate variable, which means we have a histogram
+         if (first_bin == -1) { // Build up which columns this var spans.
+	     first_bin = *i;
+    	 }
+	 last_bin = *i+1;
+     } 
+     else 
+     { 
+	 // Vars don't match, so either end of a histogram, or just a 
+	 // single timeseries var
+	 if (first_bin == -1) { 
+	     // timeseries
+	     numVars = 1; 
+	 } else {
+	     numVars = last_bin - first_bin + 1;
+	     first_bin = -1;
+	     printf("Found histogram variable: %s  %d (%d)\n",lastVar,*i,numVars);
+
+	     // Add new histogram dimension
+             defVectorDim(numVars+1,ndims,dims);
+	     printf("ndims: %d %d\n",*ndims,dims[2]);
+             printf("dims: %d %d %d\n",dims[0],dims[1],dims[2]);
+	 }
+
+	 // Create variables
+	 if (strcmp(lastVar,"xxx") != 0 && strcmp(lastVar,"Time") != 0)  // NOT time var
+	 {
+             CreateVar(*j,lastVar,*ndims,dims);
+
+	     strcpy(histo_vars[*j],lastVar);
+	     *j=*j+1;
+	 }
+
+	 *nVariables=*nVariables+numVars;
+	 if (ref == NULL) {break;}
+     }
+     if (strcmp(ref,"Time") != 0) { // Not time var
+         strcpy(vars_columns[*i-1],ref); 
+         *i=*i+1;
+     }
+
+  lastVar = ref;
+  ref=strtok(NULL, ",");
+  }
 }
 
 /* END BADC_CSV.C */
