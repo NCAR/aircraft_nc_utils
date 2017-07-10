@@ -285,9 +285,11 @@ void CreateBADCnetCDF(FILE *fp)
 	       status = nc_put_att_float(ncid,varid[i],metadata[a].key,NC_FLOAT, ++j, atts);
                if (status != NC_NOERR) handle_error(status);
 
+#ifdef ZEROBIN
 	       // If have cell sizes, then need to add histogram note that Zeroth data bin is an unused legacy placeholder
 	       status = nc_put_att_text(ncid, varid[i],"HistogramNote",48,"Zeroth data bin is an unused legacy placeholder.");
 	       if (status != NC_NOERR) handle_error(status);
+#endif
 
 	   } else 
 	   // Store SampleVolume as a float
@@ -390,7 +392,11 @@ void processIntRef(char *ref,char *value,int *nVariables,int *i,int column,int *
       *nVariables=*nVariables+numVars;
 
       // Add new histogram dimension
+#ifdef ZEROBIN
       defVectorDim(numVars+1,ndims,dims);
+#else
+      defVectorDim(numVars,ndims,dims);
+#endif
 
       numVars=numVars+column;
   } 
@@ -445,7 +451,11 @@ void processCharRef(char *buffer,char *tmpbuf,int *nVariables,int *i,int *j,int 
 	     printf("Found histogram variable: %s  %d (%d)\n",lastVar,*i,numVars);
 
 	     // Add new histogram dimension
+#ifdef ZEROBIN
              defVectorDim(numVars+1,ndims,dims);
+#else
+             defVectorDim(numVars,ndims,dims);
+#endif
 	     printf("ndims: %d %d\n",*ndims,dims[2]);
              printf("dims: %d %d %d\n",dims[0],dims[1],dims[2]);
 	 }
