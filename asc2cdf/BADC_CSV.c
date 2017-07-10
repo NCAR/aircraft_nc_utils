@@ -23,7 +23,7 @@ typedef struct {	// Variable attributes
     char value [256];
 } var_atts;
 
-
+void CreateVar(int index,char *value,int ndims,int dims[3]);
 
 /* -------------------------------------------------------------------- */
 void CreateBADCnetCDF(FILE *fp)
@@ -265,14 +265,7 @@ void CreateBADCnetCDF(FILE *fp)
 	    // Create variables
 	    if (strcmp(value,"Time") != 0) 	// NOT time var
 	    {
-	      // All variables are written to the RAF NetCDF file as float.
-	      status = nc_def_var(ncid, value, NC_FLOAT, ndims, dims, &varid[i]);
-              if (status != NC_NOERR) handle_error(status);
-
-	      // Add _FillValue attribute as float
-	      missingVals[0]=MISSING_VALUE;
-	      status = nc_put_att_float(ncid,varid[i], "_FillValue",NC_FLOAT, 1, &missingVals[0]);
-              if (status != NC_NOERR) handle_error(status);
+              CreateVar(i,value,ndims,dims);
 	    
 	      i++;
 	      nVariables++;
@@ -341,15 +334,7 @@ void CreateBADCnetCDF(FILE *fp)
 	     // Create variables
 	     if (strcmp(lastVar,"xxx") != 0 && strcmp(lastVar,"Time") != 0)  // NOT time var
 	     {
-		 // All variables are written to the RAF NetCDF file as float.
-		 status = nc_def_var(ncid, lastVar, NC_FLOAT, ndims, dims, &varid[j]);
-		 if (status != NC_NOERR) handle_error(status);
-
-
-		 // Add _FillValue attribute as float
-		 missingVals[0]=MISSING_VALUE;
-		 status = nc_put_att_float(ncid,varid[j], "_FillValue",NC_FLOAT, 1, &missingVals[0]);
-		 if (status != NC_NOERR) handle_error(status);
+                 CreateVar(j,lastVar,ndims,dims);
 
 	         strcpy(histo_vars[j],lastVar);
 	         j++;
@@ -430,8 +415,19 @@ void CreateBADCnetCDF(FILE *fp)
      }
   }
 
-
-
 }	/* END CREATEBADCNETCDF */
+
+/* -------------------------------------------------------------------- */
+void CreateVar(int index, char *value, int ndims, int dims[3])
+{
+   // All variables are written to the RAF NetCDF file as float.
+   status = nc_def_var(ncid, value, NC_FLOAT, ndims, dims, &varid[index]);
+   if (status != NC_NOERR) handle_error(status);
+
+   // Add _FillValue attribute as float
+   missingVals[0]=MISSING_VALUE;
+   status = nc_put_att_float(ncid,varid[index], "_FillValue",NC_FLOAT, 1, &missingVals[0]);
+   if (status != NC_NOERR) handle_error(status);
+}
 
 /* END BADC_CSV.C */
