@@ -108,7 +108,9 @@ void CreateBADCnetCDF(FILE *fp)
   if (status != NC_NOERR) handle_error(status);
 
 
-  /* Get title, add to global attributes */
+  /* Read in Metadata (header)
+   * Line with just the word "data" indicates end of metadata (almost)
+   */
   printf("Get metadata\n");
   nVariables=0;
   while (strncmp(key,"data",4) != 0)
@@ -121,15 +123,14 @@ void CreateBADCnetCDF(FILE *fp)
     {
 	buffer[strlen(buffer)-1] = '\0';
     }
-    // Read in a line from the csv file
-    //printf("Read line: %s\n",buffer);
+
+    // Read in a line from the csv file and parse
     // Get attribute key from line
-    key=strtok(buffer, ",");
-    //printf("Key: x%sx\n",key);
+    key=strtok(buffer, ",");	// key
     // Get reference indicator from line
-    ref=strtok(NULL, ",");
+    ref=strtok(NULL, ",");	// ref
     // Get everything else on the line
-    value=strtok(NULL,"\0");
+    value=strtok(NULL,"\0");	// value
 
 
     // This code currently does not parse "scale_factor, add_offset, or missing via valid_min, etc.
@@ -141,6 +142,7 @@ void CreateBADCnetCDF(FILE *fp)
 	      sets these to 1,0, and -32767 respectively. BADC_CSV.c needs to be updated.");
       exit(1);
     }
+
     // If the reference indictor is null, either the line is malformed, or
     // you found the end of metadata, begin data marker.
     if (ref == NULL && strncmp(key,"data",4) != 0) 
@@ -148,6 +150,7 @@ void CreateBADCnetCDF(FILE *fp)
 	printf("Line: %s - doesn't appear to follow BADC-CSV conventions\n",buffer);
         exit(1);
     }
+
     // Parse reference indicators
     if (ref != NULL) 
     {
@@ -158,6 +161,7 @@ void CreateBADCnetCDF(FILE *fp)
         if (strcmp(key,"date_valid") == 0) {
 	   status = nc_put_att_text(ncid, NC_GLOBAL, key, strlen(value)+1, value);
            if (status != NC_NOERR) handle_error(status);
+
 	   // Parse out year, month, day and write to time struct for use in calculating
 	   // basetime in asc2cdf.c
 	   sscanf(value, "%d-%d-%d",&year, &month, &day);
@@ -179,6 +183,8 @@ void CreateBADCnetCDF(FILE *fp)
 	}
         if (status != NC_NOERR) handle_error(status);
       }
+
+      // Handle variable-specifc attributes
       else 
       {
         /* For each variable:
@@ -190,6 +196,7 @@ void CreateBADCnetCDF(FILE *fp)
 	 * atts can come in any order, queue up atts until var is defined.
          */
 
+	// long name has units appended to the end so process as a special case
 	if (strcmp(key,"long_name") == 0)
 	{
 	   strcpy(metadata[a].key, key);
@@ -201,13 +208,16 @@ void CreateBADCnetCDF(FILE *fp)
 	   strcpy(metadata[a].ref, ref);
 	   strcpy(metadata[a].value, value);
 	} 
+	// all other lines contain one value per line
 	else 
 	{
 	   strcpy(metadata[a].key, key);
 	   strcpy(metadata[a].ref, ref);
 	   strcpy(metadata[a].value, value);
 	}
-	a++;
+
+	a++; // attribute counter
+
         // BADC data can have either short_name and integers for references, or 
 	// omit short name and use short names for references. Handle the first 
 	// case here.
@@ -222,7 +232,12 @@ void CreateBADCnetCDF(FILE *fp)
 	      // There is not a colon in the reference ID, so we have found a timeseries variable
 	      column++;	// Count of columns of data expected.
 	      ndims = 2;
-	      strcpy(vars_columns[nVariables],ref); 
+	      printf("nVariables: %d\n",nVariables);
+	      if (strcmp(value,"Time") != 0) 	// NOT time var
+	      {
+	        strcpy(vars_columns[nVariables],ref); 
+	        nVariables++;
+	      }
 
 	    }  else {
 	      // There is a colon in the reference ID, so we have found a histogram
@@ -232,19 +247,19 @@ void CreateBADCnetCDF(FILE *fp)
 
 	      first_bin = atoi(strtok(ref,":"));
 	      last_bin = atoi(strtok(NULL,":"));
-	      numVars = last_bin-first_bin;
+	      numVars = last_bin-first_bin+1;
 	      printf("Found histogram variable: %s:%d (%d)\n",value,i,numVars);
 
 	      // Associate this column reference with this variable index. 
-	      for (j=0;j<=numVars;j++) {
+	      for (j=0;j<numVars;j++) {
 	        strcpy(vars_columns[nVariables+j],ref); 
 	      }
 	      nVariables=nVariables+numVars;
 
 	      // Add new histogram dimension
-              defVectorDim(numVars+2,&ndims,dims);
+              defVectorDim(numVars+1,&ndims,dims);
 
-	      numVars=numVars+column+1;
+	      numVars=numVars+column;
 
             } 
 
@@ -253,10 +268,8 @@ void CreateBADCnetCDF(FILE *fp)
 	    if (strcmp(value,"Time") != 0) 	// NOT time var
 	    {
               CreateVar(i,value,ndims,dims);
-	      printf("ndims: %d\n",ndims);
 	    
 	      i++;
-	      nVariables++;
 	    }
 	}
       }
@@ -267,19 +280,19 @@ void CreateBADCnetCDF(FILE *fp)
   // of reference IDs. If refs are the variable short names, read them into an
   // array to relate column number to ref. (If not, already handled above when
   // found short_name.
- 
-  // After the "data" line, we still have one more line of metadata - the list of reference
-  // IDs. Read them in and (tbd) compare to the IDs I used as keys to the vars array.
   fgets(buffer, BUFFSIZE, fp);
   buffer[strlen(buffer)-1] = '\0';
   SkipNlines +=1;
   printf("Read ref line: %s\n",buffer);
 
+  // BADC data can have either short_name and integers for references, or 
+  // omit short name and use short names for references. Handle the second 
+  // case here.
   if (found_short_name == 0)
   {
 
      // Parse the column headers to get short names.
-     i =0;
+     i=1;
      j=0;
      ndims = 2; // To start, assume we are reading in a timeseries variable
      ref=strtok(buffer, ","); // Read in the first column header. Should be time.
@@ -292,7 +305,7 @@ void CreateBADCnetCDF(FILE *fp)
 	     if (first_bin == -1) { // Build up which columns this var spans.
 		 first_bin = i;
 	     }
-	     last_bin = i;
+	     last_bin = i+1;
 	 } else { 
 	     // Vars don't match, so either end of a histogram, or just a 
 	     // single timeseries var
@@ -300,7 +313,7 @@ void CreateBADCnetCDF(FILE *fp)
 		 // timeseries
 		 numVars = 1; 
 	     } else {
-		 numVars = last_bin - first_bin + 2;
+		 numVars = last_bin - first_bin + 1;
 		 first_bin = -1;
 		 printf("Found histogram variable: %s  %d (%d)\n",lastVar,i,numVars);
 
@@ -323,7 +336,7 @@ void CreateBADCnetCDF(FILE *fp)
 	     if (ref == NULL) {break;}
 	 }
 	 if (strcmp(ref,"Time") != 0) { // Not time var
-	     strcpy(vars_columns[i],ref); 
+	     strcpy(vars_columns[i-1],ref); 
 	     i++;
          }
 
