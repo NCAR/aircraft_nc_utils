@@ -204,18 +204,18 @@ void CreatePlainNetCDF(FILE *fp)
 void createTime(int dims[])
 {
   int	missing_val_i = int(MISSING_VALUE);
-  float	missing_val_f = MISSING_VALUE;
+  //float	missing_val_f = MISSING_VALUE;
 
   /* Time Variables, base_time/time_offset being deprecated.  Feb05
    */
-  status = nc_def_var(ncid, "base_time", NC_INT, 0, 0, &baseTimeID);
-  if (status != NC_NOERR) handle_error(status);
-  status = nc_put_att_text(ncid, baseTimeID, "units",
-                strlen(baseTimeUnits)+1, baseTimeUnits);
-  if (status != NC_NOERR) handle_error(status);
-  strcpy(buffer, "Start time of data recording.");
-  status = nc_put_att_text(ncid, baseTimeID, "long_name", strlen(buffer)+1, buffer);
-  if (status != NC_NOERR) handle_error(status);
+  //status = nc_def_var(ncid, "base_time", NC_INT, 0, 0, &baseTimeID);
+  //if (status != NC_NOERR) handle_error(status);
+  //status = nc_put_att_text(ncid, baseTimeID, "units",
+  //              strlen(baseTimeUnits)+1, baseTimeUnits);
+  //if (status != NC_NOERR) handle_error(status);
+  //strcpy(buffer, "Start time of data recording.");
+  //status = nc_put_att_text(ncid, baseTimeID, "long_name", strlen(buffer)+1, buffer);
+  //if (status != NC_NOERR) handle_error(status);
 
   status = nc_def_var(ncid, "Time", NC_INT, 1, dims, &timeVarID);
   if (status != NC_NOERR) handle_error(status);
@@ -234,16 +234,16 @@ void createTime(int dims[])
 		strlen(timeUnitsFormat)+1, timeUnitsFormat);
   if (status != NC_NOERR) handle_error(status);
 
-  status = nc_def_var(ncid, "time_offset", NC_FLOAT, 1, dims, &timeOffsetID);
-  if (status != NC_NOERR) handle_error(status);
-  status = nc_put_att_float(ncid, timeOffsetID, "_FillValue", NC_FLOAT, 1, &missing_val_f);
-  if (status != NC_NOERR) handle_error(status);
-  status = nc_put_att_text(ncid, timeOffsetID, "units",
-                strlen(baseTimeUnits)+1, baseTimeUnits);
-  if (status != NC_NOERR) handle_error(status);
-  strcpy(buffer, "Seconds since base_time.");
-  status = nc_put_att_text(ncid, timeOffsetID, "long_name", strlen(buffer)+1, buffer);
-  if (status != NC_NOERR) handle_error(status);
+  //status = nc_def_var(ncid, "time_offset", NC_FLOAT, 1, dims, &timeOffsetID);
+  //if (status != NC_NOERR) handle_error(status);
+  //status = nc_put_att_float(ncid, timeOffsetID, "_FillValue", NC_FLOAT, 1, &missing_val_f);
+  //if (status != NC_NOERR) handle_error(status);
+  //status = nc_put_att_text(ncid, timeOffsetID, "units",
+  //              strlen(baseTimeUnits)+1, baseTimeUnits);
+  //if (status != NC_NOERR) handle_error(status);
+  //strcpy(buffer, "Seconds since base_time.");
+  //status = nc_put_att_text(ncid, timeOffsetID, "long_name", strlen(buffer)+1, buffer);
+  //if (status != NC_NOERR) handle_error(status);
 }
 
 /* -------------------------------------------------------------------- */

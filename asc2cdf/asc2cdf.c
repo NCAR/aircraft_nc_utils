@@ -61,7 +61,8 @@ const int	rateOne = 1;
 const char	*noTitle = "No Title";
 const char	*noUnits = "Unk";
 
-void addGlobalAttrs(const char *p), WriteBaseTime();
+void addGlobalAttrs(const char *p);
+//void WriteBaseTime(); // Base time is depricated.
 void handle_error(const int);
 
 static int ProcessArgv(int argc, char **argv);
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
   status = nc_enddef(ncid);
   if (status != NC_NOERR) handle_error(status);
 
-  WriteBaseTime();
+  //WriteBaseTime();
 
   printf("Averaging Period = %d, Data Rate = %dHz\n", BaseDataRate, dataRate);
 
@@ -364,7 +365,7 @@ int main(int argc, char *argv[])
   // If FlightDate was specified, we need to re-write the base_time & Time::units
   // since we didn't know the start time of the first data record, just the date
   // of the flight.
-  WriteBaseTime();
+  //WriteBaseTime();
 
   nc_redef(ncid);
   SetPlainBaseTime();
