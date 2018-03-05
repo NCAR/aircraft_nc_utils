@@ -21,6 +21,12 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 2011
 using namespace std;
 
 static bool checkWholeFile = false;	// Just check when speed above 25 m/s (take-off).
+static bool checkDerived = false;	// 
+static bool gapGreaterThan = false;	// Only check for gaps greater than minGap
+static bool gapLessThan = false;	// Only check for gaps less than maxGap
+
+static int maxGap = 0;
+static int minGap = 0;
 
 void processArgs(char **argv);
 
@@ -31,6 +37,9 @@ usage()
   cerr << "netCDF to IWG1.\n  Usage: nc_gap [-a] file.nc\n";
   cerr << "    Scan a netCDF file for time gaps and output gaps by variable.\n";
   cerr << "    -a : Check whole file.  By default only check GSF/TAS above 25 m/s.\n";
+  cerr << "    -d : Include derived variables.  By default derived variables are skipped.\n";
+  cerr << "    -l maxGap : Check for gaps less than maxGap seconds.\n";
+  cerr << "    -g minGap : Check for gaps greater than minGap seconds.\n";
   exit(1);
 }
 
@@ -146,7 +155,8 @@ main(int argc, char *argv[])
     if (var->num_dims() > 1)	// Stick to time-series scalars for the time being.
       continue;
 
-    if (var->get_att("Dependencies"))	// Skip derived vars for now.
+    // Are we skipping derived?
+    if (checkDerived == false && var->get_att("Dependencies"))
       continue;
 
 
@@ -157,17 +167,21 @@ main(int argc, char *argv[])
     {
       if (data[j] == -32767.0)	// Get missing value first.
       {
-        cout << left << setw(20) << var->name();
-        cout << formatTime(timeVar, time_data, j);
         int start = j;
         for (; j < var->num_vals() && data[j] == -32767.0; ++j)
           ;
 
+        int gap = j-start;
+        if ((gapLessThan && gap > maxGap) || (gapGreaterThan && gap < minGap))
+          continue;
+
+        cout << left << setw(20) << var->name();
+        cout << formatTime(timeVar, time_data, j);
         cout << " - " << formatTime(timeVar, time_data, (j-1)) << " : ";
-        if (j-start == var->num_vals())
+        if (gap == var->num_vals())
           cout << " whole flight.\n";
         else
-          cout << setw(6) << j-start << " seconds\n";
+          cout << setw(6) << gap << " seconds\n";
       }
     }
 
@@ -183,14 +197,29 @@ processArgs(char **argv)
   while (*++argv)
     if ((*argv)[0] == '-')
       switch ((*argv)[1])
-        {
+      {
         case 'a':
           checkWholeFile = true;	// normally just check starting at take-off
+          break;
+
+        case 'd':
+          checkDerived = true;
+          break;
+
+        case 'l':
+          gapLessThan = true;
+          ++argv;
+          maxGap = atoi(*argv);
+          break;
+
+        case 'g':
+          gapGreaterThan = true;
+          ++argv;
+          minGap = atoi(*argv);
           break;
 
         case 'h':
           usage();
           break;
-
-        }
+      }
 }
