@@ -30,7 +30,7 @@ usage()
 {
   cerr << "netCDF to IWG1.\n  Usage: nc_gap [-a] file.nc\n";
   cerr << "    Scan a netCDF file for time gaps and output gaps by variable.\n";
-  cerr << "    -a : Check whole file.  By default only check GSF/TAS abouve 25 m/s.\n";
+  cerr << "    -a : Check whole file.  By default only check GSF/TAS above 25 m/s.\n";
   exit(1);
 }
 
