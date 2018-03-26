@@ -263,7 +263,7 @@ void addGlobalAttrs(const char *fileName)
     exit(1);
   }
 
-  while (fgets(buffer, BUFFSIZE, fp) > 0)
+  while (fgets(buffer, BUFFSIZE, fp) > (char *)0)
   {
     char *p, *attr, *value;
 
