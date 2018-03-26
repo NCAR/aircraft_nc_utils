@@ -1,0 +1,21 @@
+# -*- python -*-
+
+env = Environment()
+env.Append(CCFLAGS='-g -Wall')
+env.Append(CPPPATH=["../vardb"])
+env.Append(LIBPATH=["../vardb/lib"])
+
+
+env.Append(LIBS = ['VarDB', 'raf', 'netcdf', 'hdf5_hl', 'hdf5'])
+
+sources = Split("""
+asc2cdf.cpp
+plain.cpp
+nasaAmes.cpp
+nasaLangley.cpp
+""")
+
+asc2cdfH = env.Program(target = 'asc2cdfH', source = sources)
+env.Default(asc2cdfH)
+
+env.Install("$INSTALL_PREFIX/bin", 'asc2cdfH')
