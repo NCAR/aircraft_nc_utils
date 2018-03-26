@@ -4,7 +4,6 @@ env = Environment()
 env.Append(CCFLAGS='-g -Wall')
 
 
-#env.Append(LIBS = ['VarDB', 'raf', 'netcdf', 'hdf5_hl', 'hdf5'])
 env.Append(LIBS = ['netcdf', 'hdf5_hl', 'hdf5'])
 
 sources = Split("""
@@ -21,5 +20,4 @@ error.cpp
 asc2cdf = env.Program(target = 'asc2cdf', source = sources)
 env.Default(asc2cdf)
 
-#Alias('install', env.Install(env['INSTALL_PREFIX']+'/bin', asc2cdf))
 env.Install ("$INSTALL_PREFIX/bin", 'asc2cdf')
