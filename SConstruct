@@ -16,15 +16,8 @@ if env['INSTALL_PREFIX'] == '#':
     SConscript('vardb/raf/SConscript')
 
 SConscript('asc2cdf/SConscript')
-#subdirs = Split("""
-#	asc2cdf
-#""")
-
-#for subdir in subdirs:
-#    SConscript(os.path.join(subdir, '/SConscript'))
-
-#asc2cdf_HRT/
-#ascav/
+SConscript('asc2cdf_HRT/SConscript')
+#ascav
 #flt_time/
 #g2n/
 #gndproc/
