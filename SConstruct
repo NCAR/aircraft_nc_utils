@@ -5,6 +5,7 @@ import eol_scons
 
 def NC_utils(env):
     env.Require(['prefixoptions'])
+    env.Append(CPPPATH=[env['OPT_PREFIX']+'/vardb'])
     env.Append(LIBPATH=[env['OPT_PREFIX']+'/vardb'])
     env.Append(LIBPATH=[env['OPT_PREFIX']+'/vardb/raf'])
 
