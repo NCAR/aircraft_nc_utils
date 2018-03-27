@@ -1,10 +1,12 @@
 # -*- python -*-
 
 env = Environment()
-env.Append(CCFLAGS='-g -Wall')
+env.Append(CCFLAGS='-g -Wall -DVARDB -DZEROBIN')
+env.Append(CPPPATH=["../vardb"])
+env.Append(LIBPATH=["../vardb/lib"])
 
 
-env.Append(LIBS = ['netcdf', 'hdf5_hl', 'hdf5'])
+env.Append(LIBS = ['VarDB','raf','netcdf', 'hdf5_hl', 'hdf5'])
 
 sources = Split("""
 asc2cdf.cpp
