@@ -3,19 +3,12 @@ dimensions:
 	Time = UNLIMITED ; // (6 currently)
 	sps1 = 1 ;
 variables:
-	int base_time ;
-		base_time:units = "seconds since 1970-01-01 00:00:00 +0000" ;
-		base_time:long_name = "Start time of data recording." ;
 	int Time(Time) ;
 		Time:_FillValue = -32767 ;
 		Time:units = "seconds since 1970-01-01 00:00:00 +0000" ;
 		Time:standard_name = "time" ;
 		Time:long_name = "time of measurement" ;
 		Time:strptime_format = "seconds since %F %T %z" ;
-	float time_offset(Time) ;
-		time_offset:_FillValue = -32767.f ;
-		time_offset:units = "seconds since 1970-01-01 00:00:00 +0000" ;
-		time_offset:long_name = "Seconds since base_time." ;
 	float ALT(Time) ;
 		ALT:_FillValue = -32767.f ;
 		ALT:units = "m" ;
@@ -31,11 +24,7 @@ variables:
 		:TimeInterval = "00:00:00-00:00:05" ;
 data:
 
- base_time = 0 ;
-
  Time = 0, 1, 2, 3, 4, 5 ;
-
- time_offset = 0, 1, 2, 3, 4, 5 ;
 
  ALT = 1720.69, 1720.66, 1720.62, 1720.59, 1720.56, 1720.52 ;
 

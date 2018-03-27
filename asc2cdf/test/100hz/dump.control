@@ -3,19 +3,12 @@ dimensions:
 	Time = UNLIMITED ; // (2 currently)
 	sps100 = 100 ;
 variables:
-	int base_time ;
-		base_time:units = "seconds since 1970-01-01 00:00:00 +0000" ;
-		base_time:long_name = "Start time of data recording." ;
 	int Time(Time) ;
 		Time:_FillValue = -32767 ;
 		Time:units = "seconds since 2008-07-28 00:00:00 +0000" ;
 		Time:standard_name = "time" ;
 		Time:long_name = "time of measurement" ;
 		Time:strptime_format = "seconds since %F %T %z" ;
-	float time_offset(Time) ;
-		time_offset:_FillValue = -32767.f ;
-		time_offset:units = "seconds since 2008-07-28 00:00:00 +0000" ;
-		time_offset:long_name = "Seconds since base_time." ;
 	float MRLA3(Time, sps100) ;
 		MRLA3:_FillValue = -32767.f ;
 		MRLA3:units = "g/kg" ;
@@ -37,11 +30,7 @@ variables:
 		:REMARKS = "National Center for Atmospheric Research (NCAR), POST;  Mission time in seconds;  H2O mixing ratio in g/kg dry air." ;
 data:
 
- base_time = 1217203200 ;
-
  Time = 5299, 5300 ;
-
- time_offset = 5299, 5300 ;
 
  MRLA3 =
   _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 
