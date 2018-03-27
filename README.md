@@ -5,7 +5,7 @@ The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/s
 
 | Program | Description |
 |  ------ | --------------- |
-| asc2cdf | ASCII to netCDF uploader.  Can read a plain file, NASA Ames, or ICARTT |
+| asc2cdf | ASCII to netCDF uploader.  Can read a plain file, NASA Ames, BADC, or ICARTT |
 | flt_time | Scan a netCDF flight and report take-off and landing times.  Based on ground speed. |
 | g2n | GENPRO to netCDF translator. |
 | mkcdf | Cheezy utility to make small test netCDF file. |
