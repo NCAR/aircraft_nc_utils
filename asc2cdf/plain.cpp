@@ -64,7 +64,7 @@ void CreatePlainNetCDF(FILE *fp)
     {
     fprintf(stderr, "No VarDB in local directory, trying $PROJ_DIR/Configuration/raf/VarDB.\n");
 
-    if (getenv("PROJ_DIR") > 0)
+    if (getenv("PROJ_DIR") > (char *) 0)
       strcpy(buffer, getenv("PROJ_DIR"));
     else
       {
