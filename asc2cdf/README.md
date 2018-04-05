@@ -1,5 +1,5 @@
 In order to compile this code, you must download the entire aicraft_nc_utils repo. This code
-requires libraries located in other parts of the repo. 
+requires libraries located in other parts of the repo. See the [Wiki](https://github.com/NCAR/aircraft_nc_utils/wiki) page associated with this GitHub repo for a list of dependencies.
 
  * git clone --recursive https://github.com/NCAR/aircraft_nc_utils
 
