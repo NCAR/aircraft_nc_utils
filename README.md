@@ -1,5 +1,5 @@
 # aircraft_nc_utils
-Collection of utilities that can operate on the RAF aircraft netCDF files.
+Collection of utilities that can operate on the RAF aircraft netCDF files. See the [Wiki](https://github.com/NCAR/aircraft_nc_utils/wiki) page associated with this GitHub repo for dependencies and installation instructions.
 
 The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/software/netCDF.html
 
