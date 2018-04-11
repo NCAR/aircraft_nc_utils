@@ -21,6 +21,7 @@ variables:
 		:Source = "NCAR/RAF" ;
 		:SNAME = "NCAR Lyman Alpha Hygrometer" ;
 		:ProjectName = "Physics Of Stratocumulus Tops (POST)" ;
+		:IVOL_NVOL = "1 1" ;
 		:FlightDate = "07/28/2008" ;
 		:DateProcessed = "05/07/2009" ;
 		:TimeInterval = "01:28:19-01:28:20" ;
