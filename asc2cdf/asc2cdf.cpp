@@ -28,7 +28,7 @@ char    vars_columns[MAX_VARS][256] = {"\0"};
 char    *refptr;
 
 int	ncid;
-int	status;
+int	status, nComments;
 int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS], nVariables, nvars;
 time_t	BaseTime = 0;
 float	scale[MAX_VARS], offset[MAX_VARS], missingVals[MAX_VARS];
@@ -52,6 +52,7 @@ static char	*globalAttrFile = 0;
  */
 InputFileType	fileType = PLAIN_FILE;
 bool	secondsSinceMidnight = false, Colonless = false;
+bool    RAFconventions = true;
 bool    verbose = false, histogram = false;
 int	SkipNlines = 1;
 
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 
   if ((argc - i) < 2)
     {
-    fprintf(stderr, "Usage: asc2cdf [-b time_t] [-a] [-l] [-c] [-m] [-r n] [-s n] ascii_file output.nc\n");
+    fprintf(stderr, "Usage: asc2cdf [-b time_t] [-a] [-l] [-c] [-m] [-r n] [-s n] [-n] ascii_file output.nc\n");
     exit(1);
     }
 
@@ -478,6 +479,10 @@ static int ProcessArgv(int argc, char **argv)
         SkipNlines = atoi(argv[++i]);
         break;
 
+      case 'n':
+        RAFconventions = false;
+        break;
+
       case 'v':
         verbose = true;
         break;
@@ -507,7 +512,16 @@ size_t ProcessTime(char *p)
       second = int(currSecond);
 
       if (nRecords == 0 && fileType != PLAIN_FILE)
-        SetNASABaseTime(hour, minute, second);
+        {
+        if (RAFconventions)
+          {
+          SetNASABaseTime(0, 0, 0);
+          }
+        else
+          {
+          SetNASABaseTime(hour, minute, second);
+          }
+        }
       }
     else
       {

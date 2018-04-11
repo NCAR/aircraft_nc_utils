@@ -27,9 +27,9 @@ void SetNASABaseTime(int hour, int min, int sec)
   struct tm	*gt;
   char buff[512];
 
-  StartFlight.tm_hour	= 0;
-  StartFlight.tm_min	= 0;
-  StartFlight.tm_sec	= 0;
+  StartFlight.tm_hour	= hour;
+  StartFlight.tm_min	= min;
+  StartFlight.tm_sec	= sec;
   StartFlight.tm_isdst	= -1;
 
   BaseTime = mktime(&StartFlight);
@@ -53,9 +53,10 @@ void CreateNASAamesNetCDF(FILE *fp)
   int	i, start;
   int	FFI, year, month, day;
   int	ndims, dims[3], TimeDim, RateDim, VectorDim;
-  char	*p, *p1, *titles[MAX_VARS], *units[MAX_VARS], tmp[32];
+  char	*p, *p1, *p2, *titles[MAX_VARS], *units[MAX_VARS], tmp[32];
+  char  *timeUnits, *varUnits, *xname;
   //char  *varName;
-  float	missing_val = MISSING_VALUE;
+  float missing_val = MISSING_VALUE;
   float cellSizes[512];
   int   nCells;
 
@@ -131,7 +132,10 @@ void CreateNASAamesNetCDF(FILE *fp)
 
   /* Skip IVOL NVOL */
   fgets(buffer, BUFFSIZE, fp);
-  printf("skipping IVOL NVOL: %s", buffer);
+  buffer[strlen(buffer)-1] = '\0';
+  status = nc_put_att_text(ncid, NC_GLOBAL, "IVOL_NVOL", strlen(buffer)+1, buffer);
+  if (status != NC_NOERR) handle_error(status);
+  printf("IVOL NVOL: %s", buffer);
 
 
   /* get data start date and processing date */
@@ -188,15 +192,47 @@ void CreateNASAamesNetCDF(FILE *fp)
   dims[0] = TimeDim;
   dims[1] = RateDim;
 
+  /* Get XNAME - independent variable */
+  fgets(buffer, BUFFSIZE, fp);
+  buffer[strlen(buffer)-1] = '\0';
+  printf("Reading independent variable [XNAME]: %s\n", buffer);
+  xname = (char *)GetMemory(strlen(buffer)+1);
+  strcpy(xname, buffer);
+  p = strrchr(xname, '(');
+  if ( (p = strrchr(xname, '(')) )
+    *(p-1) = '\0';
+  
+  if ( (p = strrchr(buffer, '(')) && (p1 = strchr(p, ')')))
+  {
+    timeUnits = (char *)GetMemory(p1 - p + 1);
+    *p1 = '\0';
+    strcpy(timeUnits, p+1);
+  }
+  else
+  {
+    timeUnits = (char *)GetMemory(10);
+    strcpy(timeUnits, "Unk");
+  }
+  printf("Independent var: %s has units: %s\n", xname,timeUnits);
 
   /* Time Variables.
    */
-  createTime(dims);
+  if (RAFconventions)
+  {
+    createTime(dims);
+  }
+  else
+  {
+      status = nc_def_var(ncid, xname, NC_FLOAT, 1, dims, &timeVarID);
+      if (status != NC_NOERR) handle_error(status);
 
+      // The problem is that this gets overwritten when the first time is read 
+      // and ProcessTime is called. Currently this is a bug in the code.
+      status = nc_put_att_text(ncid, timeVarID, "units",
+                strlen(timeUnits)+1, timeUnits);
+      if (status != NC_NOERR) handle_error(status);
+  }
 
-  /* Skip XNAME */
-  fgets(buffer, BUFFSIZE, fp);
-  printf("skipping XNAME: %s", buffer);
 
 
   /* For each variable:
@@ -271,6 +307,20 @@ void CreateNASAamesNetCDF(FILE *fp)
     printf("  titles[%d]: %s\n", i, titles[i]);
   }
 
+  /* Get number of comment lines */
+  fgets(buffer, BUFFSIZE, fp);
+  nComments = atoi(buffer);
+  printf("Number of comment lines: %d\n",nComments);
+  for (i = 0; i < nComments; i++)
+  {
+    fgets(buffer, BUFFSIZE, fp);
+    buffer[strlen(buffer)-1] = '\0';
+    sprintf(tmp,"comment%d",i);
+    status = nc_put_att_text(ncid, NC_GLOBAL, tmp, strlen(buffer)+1, buffer);
+    if (status != NC_NOERR) handle_error(status);
+  }
+
+    
 
   /* Scan in Auxilary variables.
    */
@@ -326,7 +376,9 @@ void CreateNASAamesNetCDF(FILE *fp)
         units[i] = (char *)GetMemory(10);
         strcpy(units[i], "Unk");
       }
+
     }
+
   }
 
   if (verbose)
@@ -399,8 +451,11 @@ void CreateNASAamesNetCDF(FILE *fp)
     if (verbose)
       printf("Adding variable [%s] with units of [%s]\n", p, units[0]);
 
+    //Under RAF conventions, missing is always set to -32767
+    if (RAFconventions)
+      missingVals[i]=missing_val;
 
-    status = nc_put_att_float(ncid,varid[i], "_FillValue",NC_FLOAT, 1, &missing_val);
+    status = nc_put_att_float(ncid,varid[i], "_FillValue",NC_FLOAT, 1, &missingVals[i]);
     if (status != NC_NOERR) handle_error(status);
     p = units[i];
     status = nc_put_att_text(ncid, varid[i], "units", strlen(p)+1, p);
@@ -436,14 +491,32 @@ void CreateNASAamesNetCDF(FILE *fp)
     {
       // return pointer to next variable in buffer
       p = strtok(NULL, " \t\n\r");
-      status = nc_def_var(ncid, p, NC_FLOAT, ndims, dims, &varid[i]);
-      if (status != NC_NOERR) handle_error(status);
 
+      // If variable contains units in parenthesis, remove units
+      if ( (p1 = strchr(p, '('))  && (p2 = strchr(p1, ')')) )
+      {
+        varUnits =  (char *)GetMemory(p2 - p1 + 1);
+        *p2 = '\0';
+        strcpy(varUnits, p1+1);
+        *p1 = '\0';
+        if (strcmp(varUnits,units[i]) != 0) 
+        {
+          printf("WARNING: Units in titles [%s] and units in column header line [%s] don't match for variable [%s]\n",units[i],varUnits,p);
+        }
+      }
 
       if (verbose)
         printf("Adding variable [%s] with units of [%s]\n", p, units[i]);
 
-      status = nc_put_att_float(ncid,varid[i], "_FillValue",NC_FLOAT, 1, &missing_val);
+      status = nc_def_var(ncid, p, NC_FLOAT, ndims, dims, &varid[i]);
+      if (status != NC_NOERR) handle_error(status);
+
+      //Under RAF conventions, missing is always set to -32767
+      if (RAFconventions)
+        missingVals[i]=missing_val;
+
+
+      status = nc_put_att_float(ncid,varid[i], "_FillValue",NC_FLOAT, 1, &missingVals[i]);
       if (status != NC_NOERR) handle_error(status);
       p = units[i];
       status = nc_put_att_text(ncid, varid[i], "units", strlen(p)+1, p);
