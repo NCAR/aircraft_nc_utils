@@ -25,3 +25,29 @@ The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/s
 | ncvarlist | ASCII output of variable list.  Var name, title, units. |
 | repair | |
 | skel | |
+
+### Documentation ###
+
+Documentation is available on a per-program basis.
+
+asc2cdf - The users manual can be found online at https://www.eol.ucar.edu/raf/Software/asc2cdf.html.
+
+### Environment ###
+
+The aircraft NC utilities are written in C. They require **netCDF** library 3.0 or later.
+
+The utilities build and run on any Unix/Linux operating system, including Mac OS X.
+
+### Dependencies ###
+ * netcdf-cxx-devel (will pull in netcdf-cxx, netcdf-devel, and netcdf)
+ * log4cpp-devel (needed by vardb)
+ * xerces-c-devel (needed by vardb)
+
+### Installation ###
+
+To compile this code for your platform:
+* git clone --recursive https://github.com/NCAR/aircraft_nc_utils
+* cd aircraft_nc_utils
+* scons install --site-dir=vardb/site_scons
+
+Tool will be installed in aircraft_nc_utils/bin
