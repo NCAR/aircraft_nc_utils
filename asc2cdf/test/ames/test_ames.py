@@ -13,7 +13,7 @@ import unittest
 
 class Testames(unittest.TestCase):
     def test_compare_with_control(self):
-	os.system("../../asc2cdf -r 10 -g PVM10TO01.TXT.globalatts.control -a PVM_RF01_20080716_170129_10.ames.control PVM_RF01_20080716_170129_10.nc")
+	os.system("../../asc2cdf -n -r 10 -g PVM10TO01.TXT.globalatts.control -a PVM_RF01_20080716_170129_10.ames.control PVM_RF01_20080716_170129_10.nc")
         os.system("ncdump PVM_RF01_20080716_170129_10.nc > ames.dump")
 	os.system("diff ames.dump control.dump")
 
@@ -26,8 +26,23 @@ class Testames(unittest.TestCase):
 	    	print line
 		self.assertEqual(cline,line)
 
-    #def tearDown(self):
-	#os.system("rm ames.dump")
+    def test_RAF_compare_with_control(self):
+	os.system("../../asc2cdf -r 10 -g PVM10TO01.TXT.globalatts.control -a PVM_RF01_20080716_170129_10.ames.control PVM_RF01_20080716_170129_10.nc")
+        os.system("ncdump PVM_RF01_20080716_170129_10.nc > RAFames.dump")
+	os.system("diff RAFames.dump RAFcontrol.dump")
+
+	f = open("RAFames.dump","r")
+	c = open("RAFcontrol.dump","r")
+	for line in f:
+	    cline = c.readline()
+	    result = re.match(r".*DateConvertedFromASCII.*",line)
+	    if result is None:
+	    	print line
+		self.assertEqual(cline,line)
+
+    def tearDown(self):
+	os.system("rm ames.dump")
+	os.system("rm RAFames.dump")
 
 
 

@@ -10,15 +10,15 @@ variables:
 		Time:long_name = "time of measurement" ;
 		Time:strptime_format = "seconds since %F %T %z" ;
 	float LWC3(Time, sps10) ;
-		LWC3:_FillValue = -999.f ;
+		LWC3:_FillValue = -32767.f ;
 		LWC3:units = "volts" ;
 		LWC3:long_name = "liquid water content (GSI)" ;
 	float PSA(Time, sps10) ;
-		PSA:_FillValue = -999.f ;
+		PSA:_FillValue = -32767.f ;
 		PSA:units = "volts" ;
 		PSA:long_name = "particle surface area" ;
 	float SYNCH(Time, sps10) ;
-		SYNCH:_FillValue = -999.f ;
+		SYNCH:_FillValue = -32767.f ;
 		SYNCH:units = "volts" ;
 		SYNCH:long_name = "1/2-hz GPS synch signal" ;
 
