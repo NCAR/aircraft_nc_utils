@@ -48,6 +48,6 @@ The utilities build and run on any Unix/Linux operating system, including Mac OS
 To compile this code for your platform:
 * git clone --recursive https://github.com/NCAR/aircraft_nc_utils
 * cd aircraft_nc_utils
-* scons install
+* scons install --site-dir=vardb/site_scons
 
 Tool will be installed in aircraft_nc_utils/bin
