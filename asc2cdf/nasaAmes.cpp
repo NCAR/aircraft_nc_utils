@@ -27,9 +27,9 @@ void SetNASABaseTime(int hour, int min, int sec)
   struct tm	*gt;
   char buff[512];
 
-  StartFlight.tm_hour	= hour;
-  StartFlight.tm_min	= min;
-  StartFlight.tm_sec	= sec;
+  StartFlight.tm_hour	= 0;
+  StartFlight.tm_min	= 0;
+  StartFlight.tm_sec	= 0;
   StartFlight.tm_isdst	= -1;
 
   BaseTime = mktime(&StartFlight);
@@ -54,7 +54,7 @@ void CreateNASAamesNetCDF(FILE *fp)
   int	FFI, year, month, day;
   int	ndims, dims[3], TimeDim, RateDim, VectorDim;
   char	*p, *p1, *p2, *titles[MAX_VARS], *units[MAX_VARS], tmp[32];
-  char  *timeUnits, *varUnits, *xname;
+  char *varUnits;
   //char  *varName;
   float missing_val = MISSING_VALUE;
   float cellSizes[512];
@@ -130,7 +130,7 @@ void CreateNASAamesNetCDF(FILE *fp)
   printf("ProjectName: %s\n", buffer);
 
 
-  /* Skip IVOL NVOL */
+  /* Get IVOL NVOL */
   fgets(buffer, BUFFSIZE, fp);
   buffer[strlen(buffer)-1] = '\0';
   status = nc_put_att_text(ncid, NC_GLOBAL, "IVOL_NVOL", strlen(buffer)+1, buffer);
@@ -192,48 +192,14 @@ void CreateNASAamesNetCDF(FILE *fp)
   dims[0] = TimeDim;
   dims[1] = RateDim;
 
-  /* Get XNAME - independent variable */
-  fgets(buffer, BUFFSIZE, fp);
-  buffer[strlen(buffer)-1] = '\0';
-  printf("Reading independent variable [XNAME]: %s\n", buffer);
-  xname = (char *)GetMemory(strlen(buffer)+1);
-  strcpy(xname, buffer);
-  p = strrchr(xname, '(');
-  if ( (p = strrchr(xname, '(')) )
-    *(p-1) = '\0';
-  
-  if ( (p = strrchr(buffer, '(')) && (p1 = strchr(p, ')')))
-  {
-    timeUnits = (char *)GetMemory(p1 - p + 1);
-    *p1 = '\0';
-    strcpy(timeUnits, p+1);
-  }
-  else
-  {
-    timeUnits = (char *)GetMemory(10);
-    strcpy(timeUnits, "Unk");
-  }
-  printf("Independent var: %s has units: %s\n", xname,timeUnits);
 
   /* Time Variables.
    */
-  if (RAFconventions)
-  {
-    createTime(dims);
-  }
-  else
-  {
-      status = nc_def_var(ncid, xname, NC_FLOAT, 1, dims, &timeVarID);
-      if (status != NC_NOERR) handle_error(status);
+  createTime(dims);
 
-      // The problem is that this gets overwritten when the first time is read 
-      // and ProcessTime is called. Currently this is a bug in the code.
-      status = nc_put_att_text(ncid, timeVarID, "units",
-                strlen(timeUnits)+1, timeUnits);
-      if (status != NC_NOERR) handle_error(status);
-  }
-
-
+  /* Skip XNAME */
+  fgets(buffer, BUFFSIZE, fp);
+  printf("skipping XNAME: %s", buffer);
 
   /* For each variable:
    *	- Set dimensions
@@ -320,7 +286,6 @@ void CreateNASAamesNetCDF(FILE *fp)
     if (status != NC_NOERR) handle_error(status);
   }
 
-    
 
   /* Scan in Auxilary variables.
    */

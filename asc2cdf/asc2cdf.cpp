@@ -512,16 +512,7 @@ size_t ProcessTime(char *p)
       second = int(currSecond);
 
       if (nRecords == 0 && fileType != PLAIN_FILE)
-        {
-        if (RAFconventions)
-          {
-          SetNASABaseTime(0, 0, 0);
-          }
-        else
-          {
-          SetNASABaseTime(hour, minute, second);
-          }
-        }
+        SetNASABaseTime(hour, minute, second);
       }
     else
       {
