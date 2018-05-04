@@ -98,6 +98,10 @@ int main(int argc, char *argv[])
         break;
       case ncInt:
         outFile.add_att(att->name(), att->num_vals(), (const int *)att->values()->base());
+      case ncNoType:
+      case ncByte:
+      case ncShort:
+      case ncDouble:
         break;
     }
   }
