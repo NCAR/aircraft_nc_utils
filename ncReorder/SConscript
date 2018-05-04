@@ -1,0 +1,10 @@
+# -*- python -*-
+
+tools=['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+ncReorder = env.Program('ncReorder.cc')
+env.Default(ncReorder)
+
+env.Install('$INSTALL_PREFIX/bin', 'ncReorder')

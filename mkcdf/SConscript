@@ -1,0 +1,10 @@
+# -*- python -*-
+
+tools  = ['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+mkcdf = env.Program('mkcdf.cc')
+env.Default(mkcdf)
+
+env.Install('$INSTALL_PREFIX/bin', 'mkcdf')

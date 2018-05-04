@@ -54,11 +54,10 @@ else:
 
 SConscript('asc2cdf/SConscript')
 SConscript('asc2cdf_HRT/SConscript')
-#ascav
 SConscript('flt_time/SConscript')
 #g2n/
 #gndproc/
-#mkcdf/
+SConscript('mkcdf/SConscript')
 #n2asc/
 #n2aTest/
 #nc2asc/
@@ -70,7 +69,7 @@ SConscript('flt_time/SConscript')
 #ncfillvar/
 #nc_gap/
 #ncmerge/
-#ncReorder/
+SConscript('ncReorder/SConscript')
 #nc_sane/
 #ncstat/
 #ncvarlist/
