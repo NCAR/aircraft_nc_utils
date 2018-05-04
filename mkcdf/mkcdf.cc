@@ -49,11 +49,11 @@ void makeLRTfile()
   for (size_t i = 0; i < nVariables; ++i)
   {
     char name[64];
-    sprintf(name, "VAR%d", i);
+    sprintf(name, "VAR%lu", i);
     vars[i] = file.add_var(name, ncFloat, time_d);
     vars[i]->add_att("_FillValue", (float)-32767.0);
     vars[i]->add_att("units", "test_units");
-    sprintf(name, "Title for variable %d", i);
+    sprintf(name, "Title for variable %lu", i);
     vars[i]->add_att("long_name", name);
     varData[i] = new float[nRecords];
   }
@@ -110,7 +110,7 @@ void makeHRTfile()
   for (size_t i = 0; i < nVariables; ++i)
   {
     char name[64];
-    sprintf(name, "VAR%d", i);
+    sprintf(name, "VAR%lu", i);
     if (rates[i] == 5)
       vars[i] = file.add_var(name, ncFloat, time_d, rate5_d);
     if (rates[i] == 25)
@@ -118,7 +118,7 @@ void makeHRTfile()
 
     vars[i]->add_att("_FillValue", (float)-32767.0);
     vars[i]->add_att("units", "test_units");
-    sprintf(name, "Title for variable %d", i);
+    sprintf(name, "Title for variable %lu", i);
     vars[i]->add_att("long_name", name);
     varData[i] = new float[nRecords * rates[i]];
   }
