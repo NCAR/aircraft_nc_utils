@@ -1,8 +1,5 @@
 # -*- python -*-
 
-import os
-import sys
-
 def asciidoc(env):
     man = Builder(action='a2x --doctype manpage --format manpage $SOURCE',
                   src_suffix='.1.txt', suffix='.1')
@@ -11,15 +8,8 @@ def asciidoc(env):
     env['BUILDERS']['AsciidocMan'] = man
     env['BUILDERS']['AsciidocHTML'] = html
 
-# This is for building in the RAF source tree.  When building standalone,
-# site_scons is checked out directly into this directory (or else into
-# ~/.scons/site_scons) and that takes precedence.
-sys.path.append(os.path.abspath("../../caledit/site_scons"))
-import eol_scons
-
-tools=['default', 'netcdf', 'prefixoptions', 'buildmode', 'jlocal', 'gsl',
+tools=['default', 'netcdf', 'prefixoptions', 'buildmode', 'gsl',
        'boost_program_options', asciidoc]
-
 env = Environment(tools=tools)
 
 objs = env.StaticObject(Split("""NcCache.cc NcComparison.cc"""))
@@ -30,8 +20,8 @@ manpage = env.AsciidocMan('nc_compare.1.txt')
 env.AsciidocHTML('nc_compare.1.txt')
 
 env.Default(nccompare)
-env.Install('$JLOCAL/bin', nccompare)
-env.Install('$JLOCAL/man/man1', manpage)
+env.Install('$INSTALL_PREFIX/bin', nccompare)
+env.Install('$INSTALL_PREFIX/man/man1', manpage)
 
 env = Environment(tools=tools+['testing', 'gtest_main'])
 

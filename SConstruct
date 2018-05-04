@@ -63,7 +63,7 @@ SConscript('mkcdf/SConscript')
 #nc2asc/
 #nc2iwg1/
 #ncav/
-#nc_compare/
+SConscript('nc_compare/SConscript')
 #nc_dips/
 #ncextr/
 #ncfillvar/
