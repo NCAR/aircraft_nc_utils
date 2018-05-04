@@ -42,6 +42,7 @@ The utilities build and run on any Unix/Linux operating system, including Mac OS
  * netcdf-cxx-devel (will pull in netcdf-cxx, netcdf-devel, and netcdf)
  * log4cpp-devel (needed by vardb)
  * xerces-c-devel (needed by vardb)
+ * asciidoc (needed by nc_compare to generate man pages)
 
 ### Installation ###
 
