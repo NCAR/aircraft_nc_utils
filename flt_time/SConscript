@@ -1,0 +1,10 @@
+# -*- python -*-
+
+tools  = ['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+flt_time = env.Program('flt_time.cc')
+env.Default(flt_time)
+
+env.Install('$INSTALL_PREFIX/bin', 'flt_time')
