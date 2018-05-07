@@ -1,0 +1,15 @@
+# -*- python -*-
+
+tools  = ['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CCFLAGS='-g -Wall')
+
+sources = ('ncfillvar.cc')
+
+ncfillvar = env.Program(target = 'ncfillvar', source = sources)
+env.Default(ncfillvar)
+
+manpages = ('ncfillvar.man')
+
+env.Install("$INSTALL_PREFIX/bin", 'ncfillvar')
+env.Install("$INSTALL_PREFIX/man/man1",manpages)

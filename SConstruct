@@ -53,7 +53,7 @@ SConscript('ncav/SConscript')
 SConscript('nc_compare/SConscript')
 SConscript('nc_dips/SConscript')
 SConscript('ncextr/SConscript')
-#ncfillvar/
+SConscript('ncfillvar/SConscript')
 SConscript('nc_gap/SConscript')
 SConscript('ncmerge/SConscript')
 SConscript('ncReorder/SConscript')
