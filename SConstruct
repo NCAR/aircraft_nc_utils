@@ -64,10 +64,10 @@ SConscript('mkcdf/SConscript')
 #nc2iwg1/
 #ncav/
 SConscript('nc_compare/SConscript')
-#nc_dips/
+SConscript('nc_dips/SConscript')
 #ncextr/
 #ncfillvar/
-#nc_gap/
+SConscript('nc_gap/SConscript')
 #ncmerge/
 SConscript('ncReorder/SConscript')
 #nc_sane/

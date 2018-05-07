@@ -1,0 +1,11 @@
+# -*- python -*-
+
+tools=['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+nc_dips = env.Program('nc_dips.cc')
+env.Default(nc_dips)
+
+env.Install('$INSTALL_PREFIX/bin', 'nc_dips')
+env.Install('$INSTALL_PREFIX/bin', 'cnt_dips')
