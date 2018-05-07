@@ -43,7 +43,7 @@ The utilities build and run on any Unix/Linux operating system, including Mac OS
  * log4cpp-devel (needed by vardb)
  * xerces-c-devel (needed by vardb)
  * asciidoc (needed by nc_compare to generate man pages)
- * netcdf4-python (download from https://github.com/Unidata/netcdf4-python; needed by ncstat)
+ * netcdf4-python (For Mac, download from https://github.com/Unidata/netcdf4-python; needed by ncstat)
 
 The tests for nc_compare require gtest. (On linux you can just yum install gtest-devel.) If you want to be able to run the tests on a MAC, install gtest by doiing the following as root:
 * cd /usr/local
