@@ -1,0 +1,11 @@
+# -*- python -*-
+
+tools=['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+
+nc_sane = env.Program('nc_sane.cc')
+env.Default(nc_sane)
+
+env.Install('$INSTALL_PREFIX/bin', 'nc_sane')
