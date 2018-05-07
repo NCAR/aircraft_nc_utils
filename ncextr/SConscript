@@ -1,0 +1,29 @@
+# -*- python -*-
+
+tools  = ['default', 'prefixoptions', 'raf', 'netcdf', 'openmotif']
+env = Environment(tools=tools)
+env.Append(CCFLAGS='-g -Wall')
+
+
+sources = Split("""
+Xwin.c
+cb_pause.c
+error.c
+init.c
+netcdf.c
+sort.c
+cb_main.c
+cb_time.c
+globals.c
+ncextr.c
+search.c
+timeseg.c
+""")
+
+ncextr = env.Program(target = 'ncextr', source = sources)
+env.Default(ncextr)
+
+manpages = ('ncextr.man')
+
+env.Install("$INSTALL_PREFIX/bin",'ncextr')
+env.Install("$INSTALL_PREFIX/man/man1",manpages)

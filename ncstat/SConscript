@@ -1,4 +1,6 @@
 # -*- python -*-
 
-env.Install('$INSTALL_PREFIX/bin', 'ncstat'))
-env.Install('$INSTALL_PREFIX/bin', 'lat-lon'))
+env = Environment()
+
+env.Install('$INSTALL_PREFIX/bin', 'ncstat')
+env.Install('$INSTALL_PREFIX/bin', 'lat-lon.py')

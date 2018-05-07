@@ -52,13 +52,13 @@ SConscript('n2asc/SConscript')
 SConscript('ncav/SConscript')
 SConscript('nc_compare/SConscript')
 SConscript('nc_dips/SConscript')
-#ncextr/
+SConscript('ncextr/SConscript')
 #ncfillvar/
 SConscript('nc_gap/SConscript')
 SConscript('ncmerge/SConscript')
 SConscript('ncReorder/SConscript')
 SConscript('nc_sane/SConscript')
-#ncstat/
+SConscript('ncstat/SConscript')
 SConscript('ncvarlist/SConscript')
 #repair/
 #skel/
