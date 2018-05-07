@@ -1,0 +1,10 @@
+# -*- python -*-
+
+tools=['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+ncmerge = env.Program('ncmerge.cc')
+env.Default(ncmerge)
+
+env.Install('$INSTALL_PREFIX/bin', 'ncmerge')

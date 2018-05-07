@@ -55,7 +55,7 @@ SConscript('nc_dips/SConscript')
 #ncextr/
 #ncfillvar/
 SConscript('nc_gap/SConscript')
-#ncmerge/
+SConscript('ncmerge/SConscript')
 SConscript('ncReorder/SConscript')
 SConscript('nc_sane/SConscript')
 #ncstat/

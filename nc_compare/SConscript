@@ -1,10 +1,17 @@
 # -*- python -*-
 
 def asciidoc(env):
-    man = Builder(action='a2x --doctype manpage --format manpage $SOURCE',
+    if env['PLATFORM'] == 'darwin':
+        man = Builder(action='a2x --no-xmllint --doctype manpage --format manpage $SOURCE',
                   src_suffix='.1.txt', suffix='.1')
-    html = Builder(action='a2x --doctype manpage --format xhtml $SOURCE',
+        html = Builder(action='a2x --no-xmllint --doctype manpage --format xhtml $SOURCE',
                    src_suffix='.1.txt', suffix='.1.html')
+    else:
+        man = Builder(action='a2x --doctype manpage --format manpage $SOURCE',
+                  src_suffix='.1.txt', suffix='.1')
+        html = Builder(action='a2x --doctype manpage --format xhtml $SOURCE',
+                   src_suffix='.1.txt', suffix='.1.html')
+
     env['BUILDERS']['AsciidocMan'] = man
     env['BUILDERS']['AsciidocHTML'] = html
 
