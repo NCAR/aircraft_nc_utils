@@ -45,11 +45,11 @@ SConscript('flt_time/SConscript')
 #g2n/
 #gndproc/
 SConscript('mkcdf/SConscript')
-#n2asc/
+SConscript('n2asc/SConscript')
 #n2aTest/
 #nc2asc/
 #nc2iwg1/
-#ncav/
+SConscript('ncav/SConscript')
 SConscript('nc_compare/SConscript')
 SConscript('nc_dips/SConscript')
 #ncextr/

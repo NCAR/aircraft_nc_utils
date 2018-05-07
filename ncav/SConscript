@@ -1,0 +1,28 @@
+# -*- python -*-
+
+
+tools=['default', 'prefixoptions', 'netcdf', 'openmotif']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+env.Append(LIBS=['raf'])
+
+sources = Split("""
+ncav.c
+globals.c
+init.c
+timeseg.c
+sort.c
+search.c
+netcdf.c
+cb_main.c
+cb_time.c
+cb_pause.c
+Xwin.c
+error.c
+""")
+
+ncav = env.Program(target = 'ncav', source = sources)
+env.Default(ncav)
+
+env.Install("$INSTALL_PREFIX/bin", 'ncav')

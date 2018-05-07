@@ -1,0 +1,35 @@
+# -*- python -*-
+
+tools  = ['default', 'prefixoptions', 'vardb', 'raf', 'netcdf', 'openmotif']
+env = Environment(tools=tools)
+env.Append(CCFLAGS='-g -Wall')
+
+sources = Split("""
+n2asc.cc
+globals.cc
+init.cc
+timeseg.cc
+search.cc
+lrloop.cc
+netcdf.cc
+cb_main.cc
+cb_time.cc
+cb_pause.cc
+Xwin.cc
+error.cc
+Xerror.cc
+Xfile.cc
+Xquery.cc
+Xwarn.cc
+""")
+
+n2asc = env.Program(target = 'n2asc', source = sources)
+env.Default(n2asc)
+
+manpages = Split("""
+n2asc.html
+n2asc.man
+""")
+
+env.Install("$INSTALL_PREFIX/bin", 'n2asc')
+env.Install('$INSTALL_PREFIX/man/man1', manpages)
