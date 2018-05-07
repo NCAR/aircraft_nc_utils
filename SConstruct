@@ -72,6 +72,6 @@ SConscript('nc_gap/SConscript')
 SConscript('ncReorder/SConscript')
 #nc_sane/
 #ncstat/
-#ncvarlist/
+SConscript('ncvarlist/SConscript')
 #repair/
 #skel/

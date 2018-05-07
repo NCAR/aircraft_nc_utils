@@ -1,0 +1,10 @@
+# -*- python -*-
+
+tools=['default', 'prefixoptions', 'netcdf']
+env = Environment(tools=tools)
+env.Append(CXXFLAGS='-g -Werror')
+
+ncvarlist = env.Program('ncvarlist.cc')
+env.Default(ncvarlist)
+
+env.Install('$INSTALL_PREFIX/bin', 'ncvarlist')

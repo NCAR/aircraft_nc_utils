@@ -90,6 +90,7 @@ main(int argc, char *argv[])
     NcAtt *long_name = var->get_att("long_name");
 
     if (var)
+    {
       if (csv)
       {
         cout << "\"" << var->name() << "\",\"";
@@ -105,6 +106,7 @@ main(int argc, char *argv[])
         if (long_name) cout << long_name->as_string(0);
         cout << endl;
       }
+    }
   }
 }
 
