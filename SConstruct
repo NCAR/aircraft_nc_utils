@@ -19,21 +19,19 @@ AddOption('--prefix',
 def NC_utils(env):
     if GetOption('prefix') != "#":
         env.Replace(DEFAULT_INSTALL_PREFIX = GetOption('prefix'))
+        env.Replace(DEFAULT_OPT_PREFIX = GetOption('prefix'))
     else:
         env['DEFAULT_INSTALL_PREFIX']="#"
+        env['DEFAULT_OPT_PREFIX']="#"
 
-    env['DEFAULT_OPT_PREFIX']="#"
     env.Require(['prefixoptions'])
-
-    env.Append(CPPPATH=[env['OPT_PREFIX']+'/include'])
-    env.Append(LIBPATH=[env['OPT_PREFIX']+'/lib'])
 
 env = Environment(GLOBAL_TOOLS = [NC_utils])
 
 def VARDB_opt(env):
     env.Append(CPPPATH=[env['OPT_PREFIX']+'/vardb'])
 
-if env['INSTALL_PREFIX'] == '$DEFAULT_INSTALL_PREFIX':
+if env['DEFAULT_OPT_PREFIX'] == "#":
     SConscript('vardb/SConscript')
 else:
    vardb = VARDB_opt
