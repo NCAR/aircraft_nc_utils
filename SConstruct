@@ -43,11 +43,8 @@ else:
 SConscript('asc2cdf/SConscript')
 SConscript('asc2cdf_HRT/SConscript')
 SConscript('flt_time/SConscript')
-#g2n/
-#gndproc/
 SConscript('mkcdf/SConscript')
 SConscript('n2asc/SConscript')
-#n2aTest/
 #nc2asc/
 #nc2iwg1/
 SConscript('ncav/SConscript')
@@ -61,5 +58,3 @@ SConscript('ncReorder/SConscript')
 SConscript('nc_sane/SConscript')
 SConscript('ncstat/SConscript')
 SConscript('ncvarlist/SConscript')
-#repair/
-#skel/
