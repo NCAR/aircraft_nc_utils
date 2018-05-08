@@ -26,10 +26,13 @@ def NC_utils(env):
 
     env.Require(['prefixoptions'])
 
+    env.Append(CPPPATH=[env['OPT_PREFIX']+'/include']) 
+
 env = Environment(GLOBAL_TOOLS = [NC_utils])
 
 def VARDB_opt(env):
     env.Append(CPPPATH=[env['OPT_PREFIX']+'/vardb'])
+    env.Append(LIBS=['VarDB'])
 
 if env['DEFAULT_OPT_PREFIX'] == "#":
     SConscript('vardb/SConscript')

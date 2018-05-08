@@ -60,6 +60,6 @@ The tests for nc_compare require gtest. (On linux you can just yum install gtest
 To compile this code for your platform:
 * git clone --recursive https://github.com/NCAR/aircraft_nc_utils
 * cd aircraft_nc_utils
-* scons install --site-dir=vardb/site_scons
+* scons install 
 
 Tool will be installed in aircraft_nc_utils/bin

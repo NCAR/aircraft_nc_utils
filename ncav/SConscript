@@ -1,11 +1,9 @@
 # -*- python -*-
 
 
-tools=['default', 'prefixoptions', 'netcdf', 'openmotif']
+tools=['default', 'prefixoptions', 'netcdf', 'openmotif', 'raf']
 env = Environment(tools=tools)
 env.Append(CXXFLAGS='-g -Werror')
-
-env.Append(LIBS=['raf'])
 
 sources = Split("""
 ncav.c
