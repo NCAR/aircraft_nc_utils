@@ -2,7 +2,7 @@
 
 tools  = ['default', 'prefixoptions', 'vardb', 'raf', 'netcdf', 'openmotif']
 env = Environment(tools=tools)
-env.Append(CCFLAGS='-g -Wall')
+env.Append(CCFLAGS='-g -Wall -Wno-write-strings')
 
 sources = Split("""
 n2asc.cc

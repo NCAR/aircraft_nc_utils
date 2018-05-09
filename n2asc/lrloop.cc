@@ -142,7 +142,7 @@ int LowRateLoop(long starttime, long endtime)
     if (outputList[i]->VectorLength > 1)
     {
       for (size_t j = 1; j < outputList[i]->VectorLength; ++j)
-        fprintf(OutputFile, " %3d", j);
+        fprintf(OutputFile, " %3u", j);
     }
 
     highestRate = std::max(highestRate, outputList[i]->OutputRate);
