@@ -335,7 +335,7 @@ void LogMessage(char msg[])
     XmTextSetInsertionPosition(logText, position);
   }
   else
-    fprintf(stderr, msg);
+    fprintf(stderr, "%s", msg);
 
 }	/* END LOGMESSAGE */
 

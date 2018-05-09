@@ -29,7 +29,7 @@ int	baseTimeID, timeOffsetID, timeVarID, varid[MAX_VARS],
 time_t	BaseTime = 0;
 float	scale[MAX_VARS], offset[MAX_VARS], missingVals[MAX_VARS];
 
-char	*time_vars[] = {"HOUR", "MINUTE", "SECOND", 0 };
+const char	*time_vars[] = {"HOUR", "MINUTE", "SECOND", 0 };
 struct tm StartFlight;
 
 static FILE     *inFP;
