@@ -301,13 +301,13 @@ void PassThroughData(long * start, long * end)
   int		* iData;
   NR_TYPE	* data;
 
-  sprintf(buffer, "%02d:%02d:%02d", start[0], start[1], start[2]);
+  sprintf(buffer, "%02ld:%02ld:%02ld", start[0], start[1], start[2]);
   StartInputRecordNumber = GetFlightRecordNumber(InputFile, buffer);
 
   if (end[0] < start[0])
     end[0] += 24;
 
-  sprintf(buffer, "%02d:%02d:%02d", end[0], end[1], end[2]);
+  sprintf(buffer, "%02ld:%02ld:%02ld", end[0], end[1], end[2]);
   EndInputRecordNumber = GetFlightRecordNumber(InputFile, buffer);
 
   nInputRecords = EndInputRecordNumber - StartInputRecordNumber+1;
