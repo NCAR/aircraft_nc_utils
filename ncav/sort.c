@@ -18,6 +18,8 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1992-8
 -------------------------------------------------------------------------
 */
 
+#include <string.h>
+
 static char	*mid, *temp, **sort_table;
 
 static void sort_the_table();
