@@ -34,11 +34,11 @@ struct tm StartFlight;
 
 static FILE     *inFP;
 static size_t   nRecords;
-static char     *globalAttrFile = 0;
 
 /* Command line option flags.
  */
-bool	fileType = PLAIN_FILE, sexSinceMidnight = false;
+InputFileType	fileType = PLAIN_FILE;
+bool	sexSinceMidnight = false;
 int	SkipNlines = 1;
 
 int		BaseDataRate = 1, dataRate = 10;

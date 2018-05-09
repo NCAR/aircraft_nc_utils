@@ -51,7 +51,8 @@ void CreateNASAamesNetCDF(FILE *fp)
   int	i, start;
   int	FFI, year, month, day;
   int	ndims, dims[3], TimeDim, RateDim;
-  char	*p, *p1, *titles[MAX_VARS], *units[MAX_VARS], tmp[32];
+  const char	*p;
+  char	*p1, *titles[MAX_VARS], *units[MAX_VARS], tmp[32];
   float	missing_val = MISSING_VALUE;
 
 

@@ -36,7 +36,7 @@ void SetPlainBaseTime()
 void CreatePlainNetCDF(FILE *fp)
 {
   int	i, ndims, dims[3], TimeDim, RateDim;
-  char	*p, *p1;
+  char	*p;
   float	missing_val = MISSING_VALUE;
   bool	varDB = TRUE;
 

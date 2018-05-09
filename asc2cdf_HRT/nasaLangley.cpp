@@ -28,7 +28,8 @@ void CreateNASAlangNetCDF(FILE *fp)
   int	i, j, cnt;
   int	year, month, day;
   int	ndims, dims[3], TimeDim, RateDim;
-  char	*p, name[16], units[16], tmp[32];
+  const char	*p;
+  char	name[16], units[16], tmp[32];
   float	missingVal = MISSING_VALUE;
 
 
