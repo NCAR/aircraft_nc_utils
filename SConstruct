@@ -46,7 +46,7 @@ SConscript('flt_time/SConscript')
 SConscript('mkcdf/SConscript')
 SConscript('n2asc/SConscript')
 #nc2asc/
-#nc2iwg1/
+SConscript('nc2iwg1/SConscript')
 SConscript('ncav/SConscript')
 SConscript('nc_compare/SConscript')
 SConscript('nc_dips/SConscript')
