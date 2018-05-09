@@ -22,6 +22,8 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1992
 -------------------------------------------------------------------------
 */
 
+#include <string.h>
+
 static char	*mid, *temp, **sort_table;
 
 static void sort_the_table();
@@ -42,8 +44,8 @@ static void sort_the_table(beg, end)
 int	beg;		/* Beggining array index        */
 int	end;		/* Last array index             */
 {
-	register	x = beg,
-			y = end;
+	int	x = beg,
+		y = end;
 
 	mid = sort_table[(x + y) / 2];
 

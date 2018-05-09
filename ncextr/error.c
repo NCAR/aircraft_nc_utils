@@ -17,6 +17,9 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1993
 
 #include "define.h"
 
+void ShowError(char str[]);
+void WarnUser(char str[], XtCallbackProc okCB, XtCallbackProc cancelCB);
+
 
 /* -------------------------------------------------------------------- */
 void HandleError(err_msg)

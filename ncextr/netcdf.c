@@ -30,18 +30,23 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1993
 
 #include <errno.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include "define.h"
 #include <netcdf.h>
+#include <Xm/TextF.h>
+
 
 #define DEFAULT_TI_LENGTH  (19 * MAX_TIME_SLICES)
 
 static int	baseTimeID;
 char		*passThrough[] = { "HOUR", "MINUTE", "SECOND", NULL };
 
+int SortTable(char **, int, int);
+
 
 /* -------------------------------------------------------------------- */
-ReadInputFile(fileName)
+int ReadInputFile(fileName)
 char  fileName[];
 {
   VARTBL	*vp;
@@ -111,7 +116,7 @@ char  fileName[];
       vp->VectorLength = 1;
     }
 
-  SortTable(Variable, 0, nVariables - 1);
+  SortTable((char **)Variable, 0, nVariables - 1);
 
   /* Turn on variables for Pass through.
    */
@@ -128,7 +133,6 @@ char  fileName[];
 void SetBaseTime()
 {
   static bool  first_time = TRUE;
-  long    BaseTime;
 
   if (first_time)
     {
@@ -153,10 +157,7 @@ char  file_name[];
   int	ndims, dims[3],
 	TimeDim,
 	LowRateDim, HighRateDim, Dim5Hz, Dim10Hz, Dim50Hz, Dim250Hz,
-	Vector16Dim, Vector32Dim, Vector64Dim, Dim2Hz, Dim1000Hz,
-	AsyncDim;
-  int	j, indx;
-  char	*p;
+	Vector16Dim, Vector32Dim, Vector64Dim, Dim2Hz, Dim1000Hz;
 
 
   OutputFile = nccreate(file_name, NC_CLOBBER);
@@ -176,7 +177,6 @@ char  file_name[];
   Dim250Hz	= ncdimdef(OutputFile, "sps250", 250);
   Dim1000Hz	= ncdimdef(OutputFile, "sps1000", 1000);
 
-  AsyncDim	= ncdimdef(OutputFile, "Async", 3);
   Vector16Dim	= ncdimdef(OutputFile, "Vector16", 16);
   Vector32Dim	= ncdimdef(OutputFile, "Vector32", 32);
   Vector64Dim	= ncdimdef(OutputFile, "Vector64", 64);
@@ -236,7 +236,6 @@ char  file_name[];
 
   /* ALL variables.
    */
-  indx = 1;  /* Index for data_p  */
 
   /* For each variable:
    *  - Set dimensions
@@ -415,7 +414,7 @@ long  *reqEnd;
   otoid = ncvarid(OutputFile, "time_offset");
 
   FlushXEvents();
-printf("%d %d - %d %d\n", inStart[0], inStart[1], count[0], count[1]);
+printf("%ld %ld - %ld %ld\n", inStart[0], inStart[1], count[0], count[1]);
   if (nPasses <= 1)
     {
     ncvarget(InputFile, itoid, inStart, count, (void *)data);

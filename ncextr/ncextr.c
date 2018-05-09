@@ -39,9 +39,10 @@ Widget CreateSetupWindow();
 Widget CreateEditWindow();
 Widget CreateTimeSliceWindow();
 
+void ProcessArgv();
 
 /* -------------------------------------------------------------------- */
-main(argc, argv)
+int main(argc, argv)
 int	argc;
 char	**argv;
 {

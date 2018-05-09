@@ -53,7 +53,7 @@ static char	InputFileName[MAXPATHLEN], OutputFileName[MAXPATHLEN];
 long	start, finish;
 
 void		StopProcessing();
-static void	FillListWidget(), CheckForProductionSetup();
+static void	FillListWidget();
 static int	ValidateFileNames();
 
 extern XtAppContext context;
@@ -116,8 +116,6 @@ Widget w;
 XtPointer client;
 XtPointer call;
 {
-	int		hdrfd;
-
 	XtSetSensitive(readHeaderButton, FALSE);
 	XtSetSensitive(inputFileText, FALSE);
 	XtSetSensitive(outputFileText, FALSE);
@@ -169,8 +167,7 @@ XtPointer client;
 XtPointer call;
 {
 	XmString	label;
-	Arg			args[1];
-	int			rc;
+	Arg		args[1];
 	long		*btim, *etim;
 
 	DismissTimeSliceWindow(NULL, NULL, NULL);
@@ -262,11 +259,8 @@ XtPointer call;
 }
 
 /* -------------------------------------------------------------------- */
-static ValidateFileNames()
+static int ValidateFileNames()
 {
-	char	scratch[16];	/* character scratch area */
-	int		proj_num;
-
 	if (strcmp(&InputFileName[strlen(InputFileName)-4], ".nc") != 0)
 		{
 		strcat(InputFileName, ".nc");
@@ -293,6 +287,7 @@ static ValidateFileNames()
 		}
 
 	if (access(OutputFileName, R_OK) == ERR)
+		{
 		if (errno == ENOENT)
 			return(OK);
 		else
@@ -300,6 +295,7 @@ static ValidateFileNames()
 			HandleError("Permission denied on output file.");
 			return(ERR);
 			}
+		}
 	else
 		{
 		HandleWarning("Output file exists.", ReadHeader);
@@ -312,8 +308,6 @@ static ValidateFileNames()
 XmString CreateListLineItem(vp)
 VARTBL	*vp;
 {
-	int			i;
-	char		tmp[16];
 	static char	*list1lineFrmt = "%-13s  %c   %4d    %4d";
 
 	sprintf(buffer, list1lineFrmt,

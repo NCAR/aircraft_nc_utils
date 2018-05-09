@@ -21,32 +21,32 @@ DESCRIPTION:	Header File for Nimbus Skeleton.
  * used to determine the size of the circular buffer.  This number should
  * be odd.
  */
-#define NBUFFERS		1
+#define NBUFFERS	1
 #define CURRENT_BUFFER	-((NBUFFERS >> 1) + 1))
 
 
-#define NAMELEN			20
+#define NAMELEN		20
 #define MAX_VARIABLES	2000
 #define MAX_TIME_SLICES	5
 
 
 /* Values for "VariableType"	*/
-#define SDI				0
-#define RAW				1
-#define DERIVED			2
+#define SDI		0
+#define RAW		1
+#define DERIVED		2
 
 
 /* PauseWhatToDo values.		*/
-#define P_QUIT			0
-#define P_CONTINUE		1
+#define P_QUIT		0
+#define P_CONTINUE	1
 
 
-#define BEG_OF_TAPE		(-1)
-#define END_OF_TAPE		(-1)
+#define BEG_OF_TAPE	(-1)
+#define END_OF_TAPE	(-1)
 
 /* OpenProjectFile action values	*/
-#define RETURN			0
-#define EXIT			1
+#define RETURN		0
+#define EXIT		1
 
 
 #define LOW_RATE	1
@@ -61,24 +61,24 @@ DESCRIPTION:	Header File for Nimbus Skeleton.
 typedef struct
 	{
 	char	name[NAMELEN];
-	int		inVarID;
-	int		outVarID;
-	int		SampleRate;
-	int		OutputRate;
-	int		VectorLength;
+	int	inVarID;
+	int	outVarID;
+	int	SampleRate;
+	int	OutputRate;
+	int	VectorLength;
 	bool	Output;
 	} VARTBL;
 
 
 /*		Global Variables
  */
-extern char		*ProjectNumber, *ProjectName, *TimeInterval;
-extern char		*Aircraft, *FlightNumber, *FlightDate, *Defaults;
+extern char	*ProjectNumber, *ProjectName, *TimeInterval;
+extern char	*Aircraft, *FlightNumber, *FlightDate, *Defaults;
 extern VARTBL	*Variable[];
-extern bool		PauseFlag, Interactive;
-extern int		nVariables, InputFile, OutputFile, PauseWhatToDo;
-extern char		buffer[];
-extern long		nRecords, CurrentInputRecordNumber, CurrentOutputRecordNumber;
+extern bool	PauseFlag, Interactive;
+extern int	nVariables, InputFile, OutputFile, PauseWhatToDo;
+extern char	buffer[];
+extern long	nRecords, CurrentInputRecordNumber, CurrentOutputRecordNumber;
 
 
 /* Setup window widgets */
@@ -94,23 +94,24 @@ extern Widget	ts_text[];
 
 double	atof();
 
-/*		Local Functions
+/*	Local Functions
  */
 char	*SearchList(), *GetMemory();
-int		ReadTextFile(), AccessProjectFile();
+int	ReadTextFile(), AccessProjectFile(), SearchTable();
 void	FreeTextFile(), ReadBatchFile();
+bool	NextTimeInterval();
 
 void	CreateNetCDF(), WriteNetCDF(), CloseNetCDF(),
-		SetBaseTime(), FlushXEvents(), GetUserTimeIntervals(), Initialize(),
-		LogMessage(), FormatTimeSegmentsForOutputFile(),
-		AllocateDataArrays(), FreeDataArrays(), HandleError(), HandleWarning();
+	SetBaseTime(), FlushXEvents(), GetUserTimeIntervals(), Initialize(),
+	LogMessage(), FormatTimeSegmentsForOutputFile(),
+	AllocateDataArrays(), FreeDataArrays(), HandleError(), HandleWarning();
 
 /* Callbacks	*/
 void	CancelWarning(), ApplyVariableMods(), CancelSetup(), EditTimeSlices(),
-		DismissEditWindow(), EditVariable(), MapCalCof(), Quit(), ReadHeader(),
-		StartProcessing(), ValidateTime(), Proceed(), ToggleOutput(),
-		PauseProcessing(), VerifyLagText(), ResetTimeSliceWindow(),
-		PauseStop(), PauseContinue(), DismissTimeSliceWindow();
+	DismissEditWindow(), EditVariable(), MapCalCof(), Quit(), ReadHeader(),
+	StartProcessing(), ValidateTime(), Proceed(), ToggleOutput(),
+	PauseProcessing(), VerifyLagText(), ResetTimeSliceWindow(),
+	PauseStop(), PauseContinue(), DismissTimeSliceWindow();
 
 
 #endif

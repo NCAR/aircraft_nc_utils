@@ -52,7 +52,6 @@ Widget CreateMainWindow(Widget parent)
   Widget	topLevelForm;
   Widget	buttonFrame, buttonRC, quitButton;
   Widget	FNframe, fileNameRC, form[3];
-  int		i;
 
   n = 0;
   topLevelForm = XmCreateForm(parent, "topLevelForm", args, n);
@@ -132,7 +131,6 @@ Widget CreateSetupWindow(Widget parent)
   Cardinal	n;
   XmString	xmstr[1];
   Widget	setupForm;
-  Widget	rateFrame, rateRB;
   Widget	pullDown[2], cascadeButton[2], b[6];
   Widget	listRC, listTitle, separ1, separ2;
 

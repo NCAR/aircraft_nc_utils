@@ -60,10 +60,10 @@ void GetUserTimeIntervals() /* From TimeSliceWindow	*/
 		if (strlen(bp) == 0 && strlen(ep) == 0)
 			continue;
 
-		sscanf(bp, "%02d:%02d:%02d", &BtimeInt[i][0], &BtimeInt[i][1],
+		sscanf(bp, "%02ld:%02ld:%02ld", &BtimeInt[i][0], &BtimeInt[i][1],
 									 &BtimeInt[i][2]);
 
-		sscanf(ep, "%02d:%02d:%02d", &EtimeInt[i][0], &EtimeInt[i][1],
+		sscanf(ep, "%02ld:%02ld:%02ld", &EtimeInt[i][0], &EtimeInt[i][1],
 									 &EtimeInt[i][2]);
 
 		if (BtimeInt[i][0] > 23)
@@ -83,10 +83,10 @@ void GetUserTimeIntervals() /* From TimeSliceWindow	*/
 
         for (i = 0; i < nTimeIntervals; ++i)
             {
-			sscanf(&TimeInterval[i * 19], "%02d:%02d:%02d", &BtimeInt[i][0],
+			sscanf(&TimeInterval[i * 19], "%02ld:%02ld:%02ld", &BtimeInt[i][0],
 					&BtimeInt[i][1], &BtimeInt[i][2]);
 
-			sscanf(&TimeInterval[i * 19 + 9], "%02d:%02d:%02d", &EtimeInt[i][0],
+			sscanf(&TimeInterval[i * 19 + 9], "%02ld:%02ld:%02ld", &EtimeInt[i][0],
 					&EtimeInt[i][1], &EtimeInt[i][2]);
             }
 		}
@@ -94,7 +94,7 @@ void GetUserTimeIntervals() /* From TimeSliceWindow	*/
 }	/* END GETUSERTIMEINTERVALS */
 
 /* -------------------------------------------------------------------- */
-NextTimeInterval(start, end)
+bool NextTimeInterval(start, end)
 long	**start;
 long	**end;
 {
