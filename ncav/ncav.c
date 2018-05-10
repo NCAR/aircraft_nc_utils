@@ -28,10 +28,10 @@ Widget	Shell003, TimeSliceWindow;
 XtAppContext context;
 
 
-Widget CreateMainWindow();
-Widget CreateSetupWindow();
-Widget CreateEditWindow();
-Widget CreateTimeSliceWindow();
+Widget CreateMainWindow(Widget);
+Widget CreateSetupWindow(Widget);
+Widget CreateEditWindow(Widget);
+Widget CreateTimeSliceWindow(Widget);
 
 void CreatePauseWindows(Widget);
 void CreateErrorBox(Widget);

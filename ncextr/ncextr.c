@@ -34,19 +34,23 @@ Widget	Shell003, TimeSliceWindow;
 XtAppContext context;
 
 
-Widget CreateMainWindow();
-Widget CreateSetupWindow();
-Widget CreateEditWindow();
-Widget CreateTimeSliceWindow();
+Widget CreateMainWindow(Widget);
+Widget CreateSetupWindow(Widget);
+Widget CreateEditWindow(Widget);
+Widget CreateTimeSliceWindow(Widget);
 
-void ProcessArgv();
+void CreatePauseWindows(Widget);
+void CreateErrorBox(Widget);
+void CreateQueryBox(Widget);
+void CreateWarningBox(Widget);
+void CreateFileSelectionBox(Widget);
+
+void ProcessArgv(int, char **);
 
 /* -------------------------------------------------------------------- */
-int main(argc, argv)
-int	argc;
-char	**argv;
+int main(int argc, char **argv)
 {
-  Arg			args[8];
+  Arg		args[8];
   Cardinal	n;
 
   n = 0;
