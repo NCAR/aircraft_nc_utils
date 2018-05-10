@@ -1,0 +1,46 @@
+#!python
+# This is a hack. The java commands that come with scons don't seem to work very well.
+
+import os
+
+env = Environment()
+env.Append(CLASSPATH='lib/commons-logging-1.1.jar:lib/netcdfUI-4.1.jar:lib/nlog4j-1.2.25.jar')
+classpath = env['CLASSPATH']
+Export('classpath')
+
+# The Java command won't bring in two different source subdirs, so I can't use it.
+# So for now hardcode what we need.
+#Java(target = 'classes', source = ['../src/edu/ucar/eol/nc2asc*'])
+os.system('javac -classpath lib/commons-logging-1.1.jar:lib/netcdfUI-4.1.jar:lib/nlog4j-1.2.25.jar -d classes ../src/edu/ucar/eol/nc2asc/*.java ../src/edu/ucar/eol/nc2ascData/*.java')
+
+# The Jar command works from a SConstruct file, but not from a SConscript file.
+# So for now hardcode what we need.
+#Jar(target = 'nc2asc.jar', source = 'classes')
+os.system('jar cvfm nc2asc.jar manifest.txt -C classes .')
+
+
+manpages = Split("""
+../doc/nc2asc.html
+../doc/example.batch
+../doc/nc2asc.readme.txt
+""")
+
+
+# Create the shell script that calls the jar file. This is the executable we 
+# deploy to bin.
+file = open('./nc2asc', 'w+')
+file.write("#!/bin/csh -x\n\n")
+if env['DEFAULT_INSTALL_PREFIX']=="#":
+    file.write("setenv JNC2ASC "+str(Dir('#'))+"/lib\n\n")
+else:
+    file.write("setenv JNC2ASC "+env['DEFAULT_INSTALL_PREFIX']+"/lib/nc2asc\n\n")
+file.write("java -jar ${JNC2ASC}/nc2asc.jar $* ")
+file.close
+
+
+env.Install("$INSTALL_PREFIX/lib", 'nc2asc.jar')
+env.Install("$INSTALL_PREFIX/lib", 'lib/commons-logging-1.1.jar')
+env.Install("$INSTALL_PREFIX/lib", 'lib/netcdfUI-4.1.jar')
+env.Install("$INSTALL_PREFIX/lib", 'lib/nlog4j-1.2.25.jar')
+env.Install("$INSTALL_PREFIX/bin", 'nc2asc')
+env.Install('$INSTALL_PREFIX/man/man1', manpages)
