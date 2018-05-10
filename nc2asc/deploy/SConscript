@@ -36,6 +36,7 @@ else:
     file.write("setenv JNC2ASC "+env['DEFAULT_INSTALL_PREFIX']+"/lib/nc2asc\n\n")
 file.write("java -jar ${JNC2ASC}/nc2asc.jar $* ")
 file.close
+os.chmod("./nc2asc", 0755)
 
 
 env.Install("$INSTALL_PREFIX/lib", 'nc2asc.jar')
