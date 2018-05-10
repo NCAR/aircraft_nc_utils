@@ -40,21 +40,7 @@ else:
    vardb = VARDB_opt
    Export('vardb')
 
-SConscript('asc2cdf/SConscript')
-SConscript('asc2cdf_HRT/SConscript')
-SConscript('flt_time/SConscript')
-SConscript('mkcdf/SConscript')
-SConscript('n2asc/SConscript')
-#nc2asc/
-SConscript('nc2iwg1/SConscript')
-SConscript('ncav/SConscript')
-SConscript('nc_compare/SConscript')
-SConscript('nc_dips/SConscript')
-SConscript('ncextr/SConscript')
-SConscript('ncfillvar/SConscript')
-SConscript('nc_gap/SConscript')
-SConscript('ncmerge/SConscript')
-SConscript('ncReorder/SConscript')
-SConscript('nc_sane/SConscript')
-SConscript('ncstat/SConscript')
-SConscript('ncvarlist/SConscript')
+subdirs = ['asc2cdf', 'asc2cdf_HRT', 'flt_time', 'mkcdf', 'n2asc', 'nc2asc/deploy', 'nc2iwg1', 'ncav', 'nc_compare', 'nc_dips', 'ncextr', 'ncfillvar', 'nc_gap', 'ncmerge', 'ncReorder', 'nc_sane', 'ncstat', 'ncvarlist']
+
+for subdir in subdirs:
+        SConscript(os.path.join(subdir, 'SConscript'))
