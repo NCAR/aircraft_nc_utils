@@ -46,7 +46,12 @@ The utilities build and run on any Unix/Linux operating system, including Mac OS
  * numpy (needed by ncstat)
  * netcdf4 (needed by ncstat; on mac, "pip install netCDF4")
  * JDK (needed for nc2asc)
-
+ 
+ As long as master runs against qt4:
+ * brew tap cartr/qt4
+ * brew tap-pin cartr/qt4
+ * brew install qt@4
+ 
 The tests for nc_compare require gtest. (On linux you can just yum install gtest-devel.) If you want to be able to run the tests on a MAC, install gtest by doiing the following as root:
 * cd /usr/local
 * git clone https://github.com/google/googletest
