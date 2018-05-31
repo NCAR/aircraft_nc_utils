@@ -39,12 +39,19 @@ The aircraft NC utilities are written in C. They require **netCDF** library 3.0 
 The utilities build and run on any Unix/Linux operating system, including Mac OS X.
 
 ### Dependencies ###
- * netcdf-cxx-devel (will pull in netcdf-cxx, netcdf-devel, and netcdf)
- * log4cpp-devel (needed by vardb)
- * xerces-c-devel (needed by vardb)
+ * netcdf-cxx-devel (on linux, will pull in netcdf-cxx, netcdf-devel, and netcdf; may just need "brew install netcdf" on a mac)
+ * log4cpp (needed by vardb)
+ * xerces-c (needed by vardb)
  * asciidoc (needed by nc_compare to generate man pages)
- * netcdf4-python (For Mac, download from https://github.com/Unidata/netcdf4-python; needed by ncstat)
-
+ * numpy (needed by ncstat)
+ * netcdf4 (needed by ncstat; on mac, "pip install netCDF4")
+ * JDK (needed for nc2asc)
+ 
+ As long as master runs against qt4:
+ * brew tap cartr/qt4
+ * brew tap-pin cartr/qt4
+ * brew install qt@4
+ 
 The tests for nc_compare require gtest. (On linux you can just yum install gtest-devel.) If you want to be able to run the tests on a MAC, install gtest by doiing the following as root:
 * cd /usr/local
 * git clone https://github.com/google/googletest
