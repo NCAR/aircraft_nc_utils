@@ -928,7 +928,7 @@ public class NCData {
 		String mdata = "18\n";	// Put # of lines plus one above meta-data
 		number_of_lines += 19;	// mdata lines plus one.
 
-		mdata += "PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, schanot@ucar.edu\n";
+		mdata += "PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, pavel@ucar.edu\n";
 		mdata += "PLATFORM: " + platform +"\n";
 		mdata += "LOCATION: Aircraft location data is given in GV nav data file\n";
 		mdata += "ASSOCIATED_DATA: Full data in netCDF file.\n";
