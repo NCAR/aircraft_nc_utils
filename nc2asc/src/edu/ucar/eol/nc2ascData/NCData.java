@@ -928,18 +928,18 @@ public class NCData {
 		String mdata = "18\n";	// Put # of lines plus one above meta-data
 		number_of_lines += 19;	// mdata lines plus one.
 
-		mdata += "PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, schanot@ucar.edu\n";
+		mdata += "PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, raf-pm@ucar.edu\n";
 		mdata += "PLATFORM: " + platform +"\n";
 		mdata += "LOCATION: Aircraft location data is given in GV nav data file\n";
 		mdata += "ASSOCIATED_DATA: Full data in netCDF file.\n";
 		mdata += "INSTRUMENT_INFO: \n";
 		mdata += "DATA_INFO: data reported in ambient condition, ambient temperature and pressure are given for conversion to STP (273.15K and 1013 mb)\n";
-		mdata += "UNCERTAINTY: contact PI Pavel Romasshkin or Jorgen Jensen, jbj@ucar.edu, 303-497-1028\n";
+		mdata += "UNCERTAINTY: contact PI Pavel Romashkin or Jorgen Jensen, jbj@ucar.edu, 303-497-1028\n";
 		mdata += "ULOD_FLAG: -77777\n";
 		mdata += "ULOD_VALUE: N/A\n";
 		mdata += "LLOD_FLAG: -88888\n";
 		mdata += "LLOD_VALUE: N/A\n";
-		mdata += "DM_CONTACT_INFO: Janine Aquino, NCAR/EOL, janine@ucar.edu\n";
+		mdata += "DM_CONTACT_INFO: NCAR/EOL Archive, eol-archive@ucar.edu\n";
 		mdata += "PROJECT_INFO: \n";
 		mdata += "STIPULATIONS_ON_USE: Final data for publication use\n";
 		mdata += "OTHER_COMMENTS: none\n";
