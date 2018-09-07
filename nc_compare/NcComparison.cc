@@ -157,22 +157,32 @@ computeDifferences()
 }
 
 
-template <typename L, typename T>
+template <typename L, typename T, typename F>
 void
-run_comparisons(CompareNetcdf* ncf, L& left, L& right, T& comps)
+run_comparisons(CompareNetcdf* ncf, L& left, L& right, T& comps, const F& ignore)
 {
   comps.clear();
-  compare_lists(ncf, left, right, comps);
+  compare_lists(ncf, left, right, comps, ignore);
   for_each(comps.begin(), comps.end(),
 	   bind(mem_fn(&T::value_type::element_type::compare), _1));
 }
+
+
+struct ignore_any_object
+{
+  bool operator()(CompareNetcdf* ncf, const std::string& name) const
+  {
+    return (ncf->isIgnored(name));
+  }
+};
 
 
 void
 CompareNetcdf::
 compareAttributes()
 {
-  run_comparisons(this, _left->global_attributes, _right->global_attributes, atts);
+  run_comparisons(this, _left->global_attributes, _right->global_attributes,
+		  atts, ignore_any_object());
 }
 
 
@@ -180,7 +190,8 @@ void
 CompareNetcdf::
 compareDimensions()
 {
-  run_comparisons(this, _left->dimensions, _right->dimensions, dims);
+  run_comparisons(this, _left->dimensions, _right->dimensions, dims,
+		  ignore_any_object());
 }
 
 
@@ -192,11 +203,21 @@ compare_relative_error(shared_ptr<CompareVariables> x,
 }
 
 
+struct ignore_variable
+{
+  bool operator()(CompareNetcdf* ncf, const std::string& name) const
+  {
+    return (!ncf->isSelected(name));
+  }
+};
+
+
 void
 CompareNetcdf::
 compareVariables()
 {
-  run_comparisons(this, _left->variables, _right->variables, vars);
+  run_comparisons(this, _left->variables, _right->variables, vars,
+		  ignore_variable());
 }
 
 
@@ -282,6 +303,22 @@ CompareNetcdf::
 isIgnored(const std::string& name)
 {
   return std::find(_ignores.begin(), _ignores.end(), name) != _ignores.end();
+}
+
+
+bool
+CompareNetcdf::
+isSelected(const std::string& name)
+{
+  if (_selects.empty())
+    return true;
+  for (std::vector<std::string>::iterator it = _selects.begin();
+       it != _selects.end(); ++it)
+  {
+    if (name.find(*it) != std::string::npos)
+      return true;
+  }
+  return false;
 }
 
 
@@ -612,7 +649,8 @@ computeDifferences()
   bool equal = meansNearEqual();
 
   // Check for attribute differences.
-  run_comparisons(this->_ncf, left->attributes, right->attributes, atts);
+  run_comparisons(this->_ncf, left->attributes, right->attributes,
+		  atts, ignore_any_object());
   int ndiff = count_if(atts.begin(), atts.end(),
 		       bind(mem_fn(&CompareAttributes::isDifferent), _1));
   equal = equal && (ndiff == 0);

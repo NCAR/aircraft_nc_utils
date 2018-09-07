@@ -381,6 +381,12 @@ public:
     _ignores = ignores;
   }
 
+  void
+  selectVariables(const std::vector<std::string>& selects)
+  {
+    _selects = selects;
+  }
+
   /**
    * This is just a convenient wrapper to the compare_floating_point
    * template method.
@@ -403,6 +409,9 @@ public:
 
   bool
   isIgnored(const std::string& name);
+
+  bool
+  isSelected(const std::string& name);
 
   void
   addWarning(const std::string, const std::string& msg)
@@ -436,6 +445,7 @@ private:
   bool _use_right_blanks;
   int _report_limit;
   std::vector<std::string> _ignores;
+  std::vector<std::string> _selects;
 
   std::vector< boost::shared_ptr<CompareDimensions> > dims;
   std::vector< boost::shared_ptr<CompareVariables> > vars;

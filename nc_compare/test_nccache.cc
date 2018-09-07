@@ -265,7 +265,7 @@ TEST(Comparison, DimensionList)
 
   std::vector< shared_ptr<Comparison> > comparisons;
   CompareNetcdf ncomp(0, 0);
-  compare_lists(&ncomp, ldims, rdims, comparisons);
+  compare_lists(&ncomp, ldims, rdims, comparisons, never_ignore());
   EXPECT_EQ(2, comparisons.size());
 }
 

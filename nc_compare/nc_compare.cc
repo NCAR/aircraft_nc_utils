@@ -33,6 +33,9 @@ nc_compare(int argc, char *argv[])
     ("ignore", po::value<std::vector<std::string> >()->composing(),
      "Ignore attributes and variables with the given name.  Pass --ignore "
      "for each name to be ignored.")
+    ("variable", po::value<std::vector<std::string> >()->composing(),
+     "Select variables for comparison by substring matching.  "
+     "Pass --variable for each substring to match.")
     ("override", po::value<std::vector<std::string> >()->composing(),
      "Override a global attribute in the left file specified in the form "
      "key=value.  "
@@ -108,6 +111,13 @@ nc_compare(int argc, char *argv[])
   if (ignores.size())
   {
     ncdiff.ignore(ignores);
+  }
+  std::vector<std::string> selects;
+  if (vm.count("variable"))
+    selects = vm["variable"].as<std::vector<std::string> >();
+  if (selects.size())
+  {
+    ncdiff.selectVariables(selects);
   }
   if (vm.count("limit"))
   {

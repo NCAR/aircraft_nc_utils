@@ -34,14 +34,27 @@ make_comparison(CompareNetcdf* ncf, T* left, T* right)
     typename comparison_type<T>::result>(ncf, left, right);
 }
 
+struct never_ignore
+{
+  bool operator()(CompareNetcdf*, const std::string&) const
+  {
+    return false;
+  }
+};
+
 /**
  * This template function is an algorithm to build up a list of comparisons
  * of two nc_object lists, a left and a right.  It works like a line
  * difference algorithm, except it matches up objects by name.
+ *
+ * cfo is a function object accepting (CompareNetcdf* ncf, const
+ * std::string& name) and returning true if the named object should be
+ * ignored.
  **/
-template <typename LIST, typename CLIST>
+template <typename LIST, typename CLIST, typename IGNORE>
 void
-compare_lists(CompareNetcdf* ncf, LIST& left, LIST& right, CLIST& comps)
+compare_lists(CompareNetcdf* ncf, LIST& left, LIST& right, CLIST& comps,
+	      const IGNORE& ignore)
 {
   typename LIST::iterator lit = left.begin();
   typename LIST::iterator rit = right.begin();
@@ -50,7 +63,7 @@ compare_lists(CompareNetcdf* ncf, LIST& left, LIST& right, CLIST& comps)
   for (lit = left.begin(); lit != left.end(); ++lit)
   {
     std::string name = (*lit)->name;
-    if (ncf->isIgnored(name))
+    if (ignore(ncf, name))
     {
       continue;
     }
@@ -70,7 +83,7 @@ compare_lists(CompareNetcdf* ncf, LIST& left, LIST& right, CLIST& comps)
   for (rit = right.begin(); rit != right.end(); ++rit)
   {
     std::string name = (*rit)->name;
-    if (ncf->isIgnored(name))
+    if (ignore(ncf, name))
     {
       continue;
     }
