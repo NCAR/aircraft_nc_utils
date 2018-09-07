@@ -368,13 +368,16 @@ struct nc_variable : public nc_object
   loadValues() = 0;
 
   virtual void
-  computeStatistics() = 0;
+  computeStatistics(nc_variable* blanks = 0) = 0;
 
   virtual std::string
   textSummary() = 0;
 
   virtual std::string
   rangeSummary(const variable_range& range) = 0;
+
+  virtual bool
+  isMissing(unsigned int i) = 0;
 
   /**
    * Add a dimension to this variable and update the total number of points
@@ -435,7 +438,7 @@ public:
   loadValues();
 
   void
-  computeStatistics();
+  computeStatistics(nc_variable* blanks = 0);
 
   virtual std::string
   textSummary();
@@ -450,6 +453,12 @@ public:
   get(const coordinates& where)
   {
     return data[where.index];
+  }
+
+  virtual bool
+  isMissing(unsigned int i)
+  {
+    return data[i] == missing_value;
   }
 
   boost::shared_array<T> data;

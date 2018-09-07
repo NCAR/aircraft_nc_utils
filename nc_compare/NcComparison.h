@@ -352,6 +352,18 @@ public:
   }
 
   void
+  useRightBlanks(bool flag)
+  {
+    _use_right_blanks = flag;
+  }
+
+  bool
+  getUseRightBlanks()
+  {
+    return _use_right_blanks;
+  }
+
+  void
   setReportLimit(int limit)
   {
     _report_limit = limit;
@@ -421,6 +433,7 @@ private:
   NcCache* _right;
   bool _show_equal;
   bool _show_index;
+  bool _use_right_blanks;
   int _report_limit;
   std::vector<std::string> _ignores;
 

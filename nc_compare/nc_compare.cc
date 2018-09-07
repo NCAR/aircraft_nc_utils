@@ -55,6 +55,11 @@ nc_compare(int argc, char *argv[])
      po::value<int>()->default_value(CompareNetcdf::DEFAULT_REPORT_LIMIT),
      "Maximum number of differences to show in the report.  Once the limit "
      "is reached, no more differences are shown.")
+    ("use-right-blanks",
+     "Fill values in a variable on the right are used to filter "
+     "out variable values on the left. In other words, values on the right "
+     "which have been blanked out are also used to blank out the left, but "
+     "only if the dimension sizes are the same.")
     ;
 
   po::positional_options_description p;
@@ -95,6 +100,7 @@ nc_compare(int argc, char *argv[])
   CompareNetcdf ncdiff(&left, &right);
   ncdiff.showEqual(vm.count("showequal") > 0);
   ncdiff.showIndex(vm.count("showindex") > 0);
+  ncdiff.useRightBlanks(vm.count("use-right-blanks") > 0);
 
   std::vector<std::string> ignores;
   if (vm.count("ignore"))

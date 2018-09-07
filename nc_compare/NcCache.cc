@@ -535,7 +535,10 @@ rangeSummary(const variable_range& range)
       out << ", ";
     }
     comma = true;
-    out << get(current);
+    if (get(current) == missing_value)
+      out << "_";
+    else
+      out << get(current);
     if (i >= 4 && (int)i < nvalues - 5)
     {
       out << " ... ";
@@ -555,6 +558,10 @@ void
 nc_var<T>::
 loadValues()
 {
+  if (data.get())
+  {
+    return;
+  }
   char name[NC_MAX_NAME];
   nc_type datatype;
 
@@ -572,16 +579,20 @@ loadValues()
 template <typename T>
 void
 nc_var<T>::
-computeStatistics()
+computeStatistics(nc_variable* blanks)
 {
-  if (!data.get())
+  loadValues();
+  if (blanks)
   {
-    loadValues();
+    blanks->loadValues();
+    if (blanks->npoints != npoints)
+      blanks = 0;
   }
   std::vector<T> cleaned_data;
   for (size_t i = 0; i < npoints; ++i)
   {
-    if (data[i] != missing_value)
+    if (data[i] != missing_value &&
+	(!blanks || !blanks->isMissing(i)))
       cleaned_data.push_back(data[i]);
   }
   ngoodpoints = cleaned_data.size();

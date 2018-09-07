@@ -470,9 +470,16 @@ compare_variables(CompareNetcdf* ncf, nc_var<T>* left, nc_variable* _right)
   coordinates coords = left->begin();
   bool inrange = false;
   variable_range range(coords);
+  nc_var<T>* blanks = 0;
+  if (ncf->getUseRightBlanks())
+  {
+    blanks = right;
+  }
   do
   {
-    if (! ncf->near_equal(left->get(coords), right->get(coords)))
+    // If not blanked on the right and not near equal, add to a range.
+    if ((!blanks || !blanks->isMissing(coords.index)) &&
+	! ncf->near_equal(left->get(coords), right->get(coords)))
     {
       if (!inrange)
       {
@@ -558,8 +565,11 @@ computeDifferences()
 {
   // Note that nothing here compares the types of the two variables, so it
   // is possible to compare a float with a double.
+  nc_variable* blanks = 0;
+  if (_ncf->getUseRightBlanks())
+    blanks = right;
   if (left)
-    left->computeStatistics();
+    left->computeStatistics(blanks);
   if (right)
     right->computeStatistics();
 
@@ -586,7 +596,13 @@ computeDifferences()
 
   // Compute statistical differences.
   absolute_error = left->getMean() - right->getMean();
-  if (fabs(right->getMean()) > fabs(left->getMean()))
+  if (absolute_error == 0)
+  {
+    // Accounts for means identical or especially both zero, in which case
+    // there's no point computing a relative error.
+    relative_error = 0;
+  }
+  else if (fabs(right->getMean()) > fabs(left->getMean()))
     relative_error = fabs(absolute_error / right->getMean());
   else
     relative_error = fabs(absolute_error / left->getMean());
