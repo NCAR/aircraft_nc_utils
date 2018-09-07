@@ -36,5 +36,4 @@ test_sources = Split("test_nccache.cc")
 
 nt = env.Program('nc_compare_tests', test_sources + objs)
 
-env.Alias('test', env.Command('xtest', nt, 
-                              "cd ${SOURCE.dir} && ./${SOURCE.file} ${GTESTS}"))
+env.Alias('test', env.Test(nt, "cd ${SOURCE.dir} && ./${SOURCE.file} ${GTESTS}"))
