@@ -32,8 +32,14 @@
  * compare_floating_point ULPS selection, since the implementation is much
  * more straightforward and probably more portable also.  However, no
  * performance testing has been done.
+ *
+ * The near_equal_ulps_float() and near_equal_ulps_double() methods below
+ * select the ULP comparison instead of the delta comparison, and that's
+ * where the _nsteps() algorithms are chosen to implement ULPS instead of
+ * 2's complement.  The almost_equal_floats() and almost_equal_doubles()
+ * choices are commented out, so currently there is not actually any way to
+ * select those implementations at run-time.
  **/
-
 
 typedef union
 {
@@ -46,6 +52,12 @@ twos_complement_float_t;
 inline bool
 almost_equal_floats(float A, float B, int maxUlps=2)
 {
+  // Because this algorithm uses aliasing to access the floating point as
+  // an integer, it requires the types to have the same size.  If this is
+  // not the case on a particular platform, don't use this algorithm.
+  // Hopefully this is just optimized out by the compiler on the platforms
+  // where this is a compile-time true.
+  assert(sizeof(int) == sizeof(float));
   // Make sure maxUlps is non-negative and small enough that the
   // default NAN won't compare as equal to anything.
   twos_complement_float_t a;
@@ -79,6 +91,12 @@ twos_complement_double_t;
 inline bool
 almost_equal_doubles(double A, double B, int maxUlps=2)
 {
+  // Because this algorithm uses aliasing to access the floating point
+  // double as a long integer, it requires the types to have the same size.
+  // If this is not the case on a particular platform, don't use this
+  // algorithm.  Hopefully this is just optimized out by the compiler on
+  // the platforms where this is a compile-time true.
+  assert(sizeof(long int) == sizeof(double));
   twos_complement_double_t a;
   a.asDouble = A;
   long int aInt = a.asInt;
@@ -185,8 +203,6 @@ public:
   compare_floating_point&
   useULPS()
   {
-    assert(sizeof(int) == sizeof(float));
-    assert(sizeof(long int) == sizeof(double));
     _float_equal = &compare_floating_point::near_equal_ulps_float;
     _double_equal = &compare_floating_point::near_equal_ulps_double;
     return *this;
@@ -218,8 +234,6 @@ public:
   setULPS(int nulps)
   {
     _nulps = nulps;
-    // This is a requirement for the 2's complement algorithm.
-    //assert(_nulps > 0 && _nulps < 4 * 1024 * 1024);
     return *this;
   }
 
