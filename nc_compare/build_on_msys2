@@ -3,6 +3,6 @@
 # Stand alone build and install nc_compare on a mingw-w64 msys2
 set -x
 
-g++ -c -DMO_MINGW32 strptime.c nc_compare.cc NcCache.cc NcComparison.cc
-g++ -o nc_compare -DMO_MINGW32 -L/mingw32/lib strptime.o nc_compare.o NcCache.o NcComparison.o -lboost_program_options-mt -lnetcdf -lgsl
+g++ -c -O2 -DMO_MINGW32 strptime.c nc_compare.cc NcCache.cc NcComparison.cc
+g++ -o nc_compare -O2 -DMO_MINGW32 -L/mingw32/lib strptime.o nc_compare.o NcCache.o NcComparison.o -lboost_program_options-mt -lnetcdf -lgsl
 cp nc_compare /mingw32/bin
