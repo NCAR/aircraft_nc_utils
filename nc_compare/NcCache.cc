@@ -15,6 +15,10 @@ using boost::shared_ptr;
 using boost::make_shared;
 using boost::posix_time::time_duration;
 
+#ifdef MO_MINGW32
+char* strptime(const char *buf, const char *fmt, struct tm *tm);
+#endif
+
 #include "gsl.hh"
 
 NcCache::
