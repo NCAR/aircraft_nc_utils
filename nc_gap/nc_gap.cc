@@ -82,16 +82,15 @@ printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
     return 0;
 
   // Get ground speed.
-  NcVar *gspdVar =  inFile.get_var("GSF");
+  NcVar *gspdVar =  inFile.get_var("GSPD");	// New INS name for ground speed.
   if (gspdVar == 0)
-  {
-    cerr << "GSF not found, trying TASX\n";
+    gspdVar =  inFile.get_var("GSF");	// Old INS name for ground speed.
+  if (gspdVar == 0)
     gspdVar = inFile.get_var("TASX");
-  }
 
   if (gspdVar == 0)
   {
-    cerr << "TASX not found\n";
+    cerr << "GSPD, GSF, and TASX not found\n";
     return 0;
   }
 
