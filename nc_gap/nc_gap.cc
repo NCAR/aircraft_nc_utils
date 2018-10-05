@@ -175,7 +175,7 @@ main(int argc, char *argv[])
           continue;
 
         cout << left << setw(20) << var->name();
-        cout << formatTime(timeVar, time_data, j);
+        cout << formatTime(timeVar, time_data, start);
         cout << " - " << formatTime(timeVar, time_data, (j-1)) << " : ";
         if (gap == var->num_vals())
           cout << " whole flight.\n";
