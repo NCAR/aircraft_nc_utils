@@ -100,7 +100,7 @@ public class NC2Act {
 
 		if (log ==null) {
 			try {
-				log=new FileWriter("nc2ascLog.txt");
+				log=new FileWriter("nc2asc.log");
 			} catch (IOException e) {
 				log=null;
 				//System.out.println("Cannot create nc2ascLog");
