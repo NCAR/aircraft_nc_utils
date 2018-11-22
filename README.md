@@ -52,7 +52,7 @@ The utilities build and run on any Unix/Linux operating system, including Mac OS
  * brew tap-pin cartr/qt4
  * brew install qt@4
  
-The tests for nc_compare require gtest. (On linux you can just yum install gtest-devel.) If you want to be able to run the tests on a MAC, install gtest by doiing the following as root:
+The tests for nc_compare require gtest. (On linux you can just yum install gtest-devel.) If you want to be able to run the tests on a MAC, install gtest by performing the following as root:
 * cd /usr/local
 * git clone https://github.com/google/googletest
 * cd googletest
@@ -69,4 +69,4 @@ To compile this code for your platform:
 * cd aircraft_nc_utils
 * scons install 
 
-Tool will be installed in aircraft_nc_utils/bin
+Tools will be installed in aircraft_nc_utils/bin
