@@ -45,6 +45,9 @@ long	start, finish;
 void		StopProcessing();
 static void	FillListWidget();
 static int	ValidateFileNames();
+void	PassThroughData(long *, long *);
+int	ReadInputFile(char *);
+int	NextTimeInterval(long **, long **);
 
 extern XtAppContext context;
 

@@ -88,7 +88,7 @@ int NextTimeInterval(long **start, long **end)
   if (++currentTimeSegment >= nTimeIntervals)
     return(FALSE);
 
-  *start	= BtimeInt[currentTimeSegment];
+  *start= BtimeInt[currentTimeSegment];
   *end	= EtimeInt[currentTimeSegment];
 
   return(TRUE);

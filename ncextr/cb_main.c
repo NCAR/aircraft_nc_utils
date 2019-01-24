@@ -55,6 +55,8 @@ long	start, finish;
 void		StopProcessing();
 static void	FillListWidget();
 static int	ValidateFileNames();
+void	PassThroughData(long *, long *);
+int	ReadInputFile(char *);
 
 extern XtAppContext context;
 
@@ -199,11 +201,11 @@ XtPointer call;
 		{
 		PassThroughData(btim, etim);
 
-        while (PauseFlag == TRUE)
-            XtAppProcessEvent(context, XtIMAll);
+		while (PauseFlag == TRUE)
+			XtAppProcessEvent(context, XtIMAll);
  
-        if (PauseWhatToDo == P_QUIT)
-            break;
+		if (PauseWhatToDo == P_QUIT)
+			break;
 		}
 
 	StopProcessing();
@@ -214,7 +216,7 @@ XtPointer call;
 void StopProcessing()
 {
 	XmString	label;
-	Arg			args[1];
+	Arg		args[1];
 	float		x;
 
 	CloseNetCDF();

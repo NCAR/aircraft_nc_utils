@@ -423,7 +423,7 @@ printf("%ld %ld - %ld %ld\n", inStart[0], inStart[1], count[0], count[1]);
   else
     {
 
-    for (j = 0; j < nPasses; )
+    for (j = 0; j < nPasses; ++j)
       {
       count[0] = nSec;
 
