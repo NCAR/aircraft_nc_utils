@@ -72,10 +72,10 @@ formatTime(NcVar *var, float *data, size_t index)
 }
 
 
-size_t
+float *
 printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
 {
-  cout	<< "Start time data file : " << formatTime(timeVar, time_data, 0) << ", "
+  cout	<< "File start time : " << formatTime(timeVar, time_data, 0) << ", "
 	<< timeVar->num_vals() << " seconds long.\n";
 
   if (checkWholeFile)
@@ -102,20 +102,34 @@ printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
   {
     if (gspd_data[spd_indx] > 5.0)
     {
-      cout << "Start taxiing : " << formatTime(timeVar, time_data, spd_indx) << endl;
+      cout << "Start taxiing   : " << formatTime(timeVar, time_data, spd_indx) << endl;
       break;
     }
+    gspd_data[spd_indx] = 0.0;	// zero out any pre-take-off missing data.
   }
 
   for (; spd_indx < gspdVar->num_vals(); ++spd_indx)
   {
     if (gspd_data[spd_indx] > 25.0)
     {
-      cout << "Start take-off : " << formatTime(timeVar, time_data, spd_indx) << endl;
+      cout << "Take-off        : " << formatTime(timeVar, time_data, spd_indx) << endl;
       break;
     }
   }
-  return spd_indx;
+  for (spd_indx = gspdVar->num_vals() - 1 ; spd_indx > 0; --spd_indx)
+  {
+    if (gspd_data[spd_indx] < 5.0)
+      gspd_data[spd_indx] = 0.0;	// zero out an trailing missing values.
+
+    if (gspd_data[spd_indx] > 25.0)
+    {
+      cout << "Landing         : " << formatTime(timeVar, time_data, spd_indx) << endl;
+      break;
+    }
+  }
+  cout	<< "File end time   : " << formatTime(timeVar, time_data, timeVar->num_vals()-1) << endl;
+
+  return gspd_data;
 }
 
 int
@@ -142,7 +156,7 @@ main(int argc, char *argv[])
   float *time_data = new float[timeVar->num_vals()];
   timeVar->get(time_data, timeVar->edges());
 
-  int start_indx = printStartTimes(inFile, timeVar, time_data);
+  float *speed_data = printStartTimes(inFile, timeVar, time_data);
 
   for (int i = 0; i < inFile.num_vars(); ++i)
   {
@@ -162,8 +176,11 @@ main(int argc, char *argv[])
     float *data = new float[var->num_vals()];
     var->get(data, var->edges());
 
-    for (int j = start_indx; j < var->num_vals(); ++j)
+    for (int j = 0; j < var->num_vals(); ++j)
     {
+      if (speed_data && speed_data[j] >= 0.0 && speed_data[j] < 20.0)
+        continue;
+
       if (data[j] == -32767.0)	// Get missing value first.
       {
         int start = j;
