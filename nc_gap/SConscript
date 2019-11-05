@@ -16,11 +16,11 @@ env.Append(CXXFLAGS='-g -Werror')
 
 conf = Configure(env.Clone())
 if not conf.CheckLibWithHeader('netcdf', 'netcdf.h', 'C'):
-    print 'netCDF must be installed!'
+    print('netCDF must be installed!')
     Exit(1)
 
 if not conf.CheckLibWithHeader('netcdf_c++', 'netcdfcpp.h', 'C++'):
-    print 'netCDF C++ must be installed!'
+    print('netCDF C++ must be installed!')
     Exit(1)
 
 
