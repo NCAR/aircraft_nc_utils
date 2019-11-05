@@ -44,3 +44,5 @@ subdirs = ['asc2cdf', 'asc2cdf_HRT', 'flt_time', 'mkcdf', 'n2asc', 'nc2iwg1', 'n
 
 for subdir in subdirs:
         SConscript(os.path.join(subdir, 'SConscript'))
+
+env.SetHelp()
