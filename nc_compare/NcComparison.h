@@ -327,52 +327,10 @@ public:
     return _right;
   }
 
-  void
-  showEqual(bool flag)
+  ReportStyle&
+  style()
   {
-    _show_equal = flag;
-  }
-
-  bool
-  getShowEqual()
-  {
-    return _show_equal;
-  }
-
-  void
-  showIndex(bool flag)
-  {
-    _show_index = flag;
-  }
-
-  bool
-  getShowIndex()
-  {
-    return _show_index;
-  }
-
-  void
-  useRightBlanks(bool flag)
-  {
-    _use_right_blanks = flag;
-  }
-
-  bool
-  getUseRightBlanks()
-  {
-    return _use_right_blanks;
-  }
-
-  void
-  setReportLimit(int limit)
-  {
-    _report_limit = limit;
-  }
-
-  int
-  getReportLimit()
-  {
-    return _report_limit;
+    return _style;
   }
 
   void
@@ -410,6 +368,10 @@ public:
   bool
   isIgnored(const std::string& name);
 
+  /**
+   * If name matches one of the select patterns or there are no selections,
+   * the name is selected, unless it matches one of the ignore patterns.
+   **/
   bool
   isSelected(const std::string& name);
 
@@ -425,8 +387,6 @@ public:
     return _warnings;
   }
 
-  static int DEFAULT_REPORT_LIMIT;
-
 private:
 
   void
@@ -440,10 +400,6 @@ private:
 
   NcCache* _left;
   NcCache* _right;
-  bool _show_equal;
-  bool _show_index;
-  bool _use_right_blanks;
-  int _report_limit;
   std::vector<std::string> _ignores;
   std::vector<std::string> _selects;
 
@@ -458,8 +414,13 @@ private:
   std::vector<std::string> _warnings;
 
   compare_floating_point _comparator;
+
+  ReportStyle _style;
 };
 
+
+bool
+match_substring(const std::string& pattern, const std::string& text);
 
 
 

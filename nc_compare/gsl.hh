@@ -21,12 +21,21 @@ namespace gsl {
   T
   gsl_stats_mean(const T data[], const size_t stride, const size_t n);
 
+  template <typename T>
+  void
+  gsl_stats_minmax(T* min, T* max,
+		   const T data[], const size_t stride, const size_t n);
+
   /* Use some CPP magic to define the specializations.
    */
 #define GSL_STATS(T, ID) \
 template <> T inline \
 gsl_stats_mean(const T data[], const size_t stride, const size_t n) { \
-  return ::gsl_stats_##ID##mean(data, stride, n);  }
+  return ::gsl_stats_##ID##mean(data, stride, n);  } \
+template <> void inline \
+gsl_stats_minmax(T* min, T* max, \
+		 const T data[], const size_t stride, const size_t n) { \
+  return ::gsl_stats_##ID##minmax(min, max, data, stride, n);  }
 
   GSL_STATS(double,)
   GSL_STATS(float,float_)

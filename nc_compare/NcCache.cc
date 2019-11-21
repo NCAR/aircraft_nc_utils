@@ -601,6 +601,8 @@ computeStatistics(nc_variable* blanks)
   }
   ngoodpoints = cleaned_data.size();
   mean = gsl::gsl_stats_mean(&cleaned_data[0], 1, cleaned_data.size());
+  if (cleaned_data.size())
+    gsl::gsl_stats_minmax(&min, &max, &cleaned_data[0], 1, cleaned_data.size());
 }
 
 
@@ -780,23 +782,6 @@ template class nc_att<float>;
 template class nc_att<int>;
 template class nc_att<short>;
 template class nc_att<std::string>;
-
-
-ReportStyle::
-ReportStyle(int indent):
-  _indent(indent),
-  _level(0)
-{}
-
-
-std::ostream&
-ReportStyle::
-prefix(std::ostream& out) const
-{
-  out << std::setw(_level*_indent) << std::left << _symbols;
-  return out;
-}
-
 
 
 unsigned int 

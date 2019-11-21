@@ -19,7 +19,7 @@ tools=['default', 'netcdf', 'prefixoptions', 'buildmode', 'gsl',
        'boost_program_options', asciidoc]
 env = Environment(tools=tools)
 
-objs = env.StaticObject(Split("""NcCache.cc NcComparison.cc"""))
+objs = env.StaticObject(Split("""NcCache.cc NcComparison.cc ReportStyle.cc"""))
 
 nccompare = env.Program(["nc_compare.cc"] + objs)
 

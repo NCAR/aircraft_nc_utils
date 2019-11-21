@@ -14,17 +14,13 @@ using boost::format;
 using boost::shared_ptr;
 using std::cout;
 using std::cerr;
-
-int CompareNetcdf::DEFAULT_REPORT_LIMIT = 10;
+using std::string;
 
 
 CompareNetcdf::
 CompareNetcdf(NcCache* left, NcCache* right):
   _left(left),
   _right(right),
-  _show_equal(false),
-  _show_index(false),
-  _report_limit(DEFAULT_REPORT_LIMIT),
   times(this)
 {
   const char* default_ignores[] =
@@ -225,20 +221,21 @@ std::ostream&
 CompareNetcdf::
 report(std::ostream& out)
 {
-  const ReportStyle& style = getLeft()->getStyle();
-  if (_show_equal || countDifferences())
+  const ReportStyle& style = _style;
+  bool show_equal = style.getShowEqual();
+  if (show_equal || countDifferences())
   {
     out << "--- " << _left->getPath() << " (left)\n";
     out << "+++ " << _right->getPath() << " (right)\n"; 
   }
-  if (_show_equal || times.isDifferent())
+  if (show_equal || times.isDifferent())
   {
     times.generateReport(out, style.derive(1));
   }
   bool header = false;
   for (unsigned int i = 0; i < dims.size(); ++i)
   {
-    if (_show_equal || dims[i]->getResult() != Comparison::Equal)
+    if (show_equal || dims[i]->getResult() != Comparison::Equal)
     {
       if (!header)
       {
@@ -251,7 +248,7 @@ report(std::ostream& out)
   header = false;
   for (unsigned int i = 0; i < atts.size(); ++i)
   {
-    if (_show_equal || atts[i]->getResult() != Comparison::Equal)
+    if (show_equal || atts[i]->getResult() != Comparison::Equal)
     {
       if (!header)
       {
@@ -264,7 +261,7 @@ report(std::ostream& out)
   header = false;
   for (unsigned int i = 0; i < vars.size(); ++i)
   {
-    if (_show_equal || vars[i]->getResult() != Comparison::Equal)
+    if (show_equal || vars[i]->getResult() != Comparison::Equal)
     {
       if (!header)
       {
@@ -284,7 +281,7 @@ report(std::ostream& out)
   header = false;
   for (unsigned int i = 0; i < evars.size(); ++i)
   {
-    if (_show_equal || !evars[i]->meansNearEqual())
+    if (show_equal || !evars[i]->meansNearEqual())
     {
       if (!header)
       {
@@ -298,11 +295,58 @@ report(std::ostream& out)
 }
 
 
+/**
+ * Return true if pattern can be found in text, using rudimentary glob
+ * parsing.  It is a match if pattern is equal to text (even if pattern and
+ * text are empty), or if pattern has an asterisk at the beginning or end
+ * and pattern is a substring of text.  An empty pattern only matches empty
+ * text.  A pattern with only asterisks matches any text.
+ **/
+bool match_substring(const std::string& pattern, const std::string& text)
+{
+  // Find the actual substring to match between any asterisks.
+  if (pattern == text)
+    return true;
+  if (pattern.empty())
+    return false;
+  string::size_type s1 = pattern.find_first_not_of("*");
+  // Check for all asterisks.
+  if (s1 == string::npos)
+    return true;
+  string::size_type s2 = pattern.find_first_of("*", s1);
+  string::size_type sublen = pattern.length() - s1;
+  if (s2 != string::npos)
+    sublen = s2 - s1;
+  string subname = pattern.substr(s1, sublen);
+
+  string::size_type m1 = text.find(subname);
+  // If not found, done.
+  if (m1 == string::npos)
+    return false;
+  // If both ends are asterisks, then the substring start doesn't matter.
+  if (s1 != 0 && s2 != string::npos)
+    return true;
+  // Check for match at the beginning.
+  if (m1 == 0 && (subname.length() == text.length() || s2 != string::npos))
+    return true;
+  // Check for match at end.
+  if (m1 + subname.length() == text.length() && (m1 == 0 || s1 != 0))
+    return true;
+  return false;
+}
+
+
 bool
 CompareNetcdf::
 isIgnored(const std::string& name)
 {
-  return std::find(_ignores.begin(), _ignores.end(), name) != _ignores.end();
+  std::vector<std::string>::iterator it = _ignores.begin();
+  for (it = _ignores.begin(); it != _ignores.end(); ++it)
+  {
+    if (match_substring(*it, name))
+      return true;
+  }
+  return false;
 }
 
 
@@ -310,15 +354,17 @@ bool
 CompareNetcdf::
 isSelected(const std::string& name)
 {
-  if (_selects.empty())
-    return true;
+  bool selected = _selects.empty();
   for (std::vector<std::string>::iterator it = _selects.begin();
-       it != _selects.end(); ++it)
+       !selected && it != _selects.end(); ++it)
   {
-    if (name.find(*it) != std::string::npos)
-      return true;
+    if (match_substring(*it, name))
+      selected = true;
   }
-  return false;
+  // Check if this name should be ignored.
+  if (isIgnored(name))
+    selected = false;
+  return selected;
 }
 
 
@@ -508,7 +554,7 @@ compare_variables(CompareNetcdf* ncf, nc_var<T>* left, nc_variable* _right)
   bool inrange = false;
   variable_range range(coords);
   nc_var<T>* blanks = 0;
-  if (ncf->getUseRightBlanks())
+  if (ncf->style().getUseRightBlanks())
   {
     blanks = right;
   }
@@ -603,7 +649,7 @@ computeDifferences()
   // Note that nothing here compares the types of the two variables, so it
   // is possible to compare a float with a double.
   nc_variable* blanks = 0;
-  if (_ncf->getUseRightBlanks())
+  if (_ncf->style().getUseRightBlanks())
     blanks = right;
   if (left)
     left->computeStatistics(blanks);
@@ -673,12 +719,12 @@ generateReport(std::ostream& out, const ReportStyle& style)
   int ndiff = count_if(atts.begin(), atts.end(),
 		       bind(mem_fn(&CompareAttributes::isDifferent), _1));
   if ((ndiff || !dimsequal ||
-       (_ncf->getShowIndex() && ranges.size()) ||
-       _ncf->getShowEqual()) && !header)
+       (style.getShowIndex() && ranges.size()) ||
+       style.getShowEqual()) && !header)
   {
     Comparison::generateReport(out, style);
   }
-  if (_ncf->getShowIndex())
+  if (style.getShowIndex())
   {
     if (!dimsequal)
     {
@@ -690,7 +736,7 @@ generateReport(std::ostream& out, const ReportStyle& style)
     for (unsigned int i = 0; i < ranges.size(); ++i)
     {
       totalpts += ranges[i].size();
-      if (i < (unsigned int)_ncf->getReportLimit())
+      if (i < (unsigned int)style.getReportLimit())
       {
 	out << style.derive(1, " - ") << left->rangeSummary(ranges[i]) << "\n";
 	out << style.derive(1, " + ") << right->rangeSummary(ranges[i]) << "\n";
@@ -708,7 +754,7 @@ generateReport(std::ostream& out, const ReportStyle& style)
 
   for (unsigned int i = 0; i < atts.size(); ++i)
   {
-    if (_ncf->getShowEqual() || atts[i]->getResult() != Comparison::Equal)
+    if (style.getShowEqual() || atts[i]->getResult() != Comparison::Equal)
     {
       atts[i]->generateReport(out, style);
     }
@@ -721,14 +767,14 @@ std::ostream&
 CompareVariables::
 statisticsHeader(std::ostream& out)
 {
-  out << format("%2s %-16s %14s %8s %14s %8s %12s %12s\n")
-    % "" % "Variable" % "Left Mean" % "Good Pts" 
-    % "Right Mean" % "Good Pts"
+  out << format("%2s %-16s %30s %8s %30s %8s %12s %12s\n")
+    % "" % "Variable" % "Left Mean{min,max}" % "Good Pts" 
+    % "Right Mean{min,max}" % "Good Pts"
     % "Abs Error"
     % "Rel Err (%)";
-  out << format("%2s %-16s %14s %8s %14s %8s %12s %12s\n")
-    % "" % "--------" % "---------" % "--------"
-    % "----------" % "--------"
+  out << format("%2s %-16s %30s %8s %30s %8s %12s %12s\n")
+    % "" % "--------" % "---------------" % "--------"
+    % "----------------" % "--------"
     % "------------"
     % "------------";
   return out;
@@ -741,12 +787,14 @@ reportStatistics(std::ostream& out)
 {
   std::string name(left ? left->name : right->name);
 
-  out << format("%2s %-16s %14s %8s %14s %8s %s")
+  out << format("%2s %-16s %30s %8s %30s %8s %s")
     % (left ? (right ? "" : "-") : "+")
     % name
-    % (left ? str(format("%14.6f") % left->getMean()) : "")
+    % (left ? str(format("%12.6f{%.2f,%.2f}") %
+		  left->getMean() % left->getMin() % left->getMax()) : "")
     % (left ? str(format("%7d") % left->ngoodpoints) : "")
-    % (right ? str(format("%14.6f") % right->getMean()) : "")
+    % (right ? str(format("%12.6f{%.2f,%.2f}") %
+		   right->getMean() % right->getMin() % right->getMax()) : "")
     % (right ? str(format("%7d") % right->ngoodpoints) : "")
     % (left && right ? str(format("%12.8f %12.2f")
 			   % absolute_error % relative_error) : "");

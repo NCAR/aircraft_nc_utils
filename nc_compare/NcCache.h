@@ -3,6 +3,7 @@
 #ifndef _NcCache_h_
 #define _NcCache_h_
 
+#include "ReportStyle.h"
 
 #include <string>
 #include <vector>
@@ -23,85 +24,6 @@ nc_time_from_time_t(time_t ttime)
   nc_time epoch = nc_time(boost::gregorian::date(1970, 1, 1));
   return epoch + boost::posix_time::time_duration(0, 0, ttime);
 }
-
-
-/**
- * ReportStyle provides parameters and formatting for rendering netcdf
- * elements and comparisons in a report, such as indent length and line
- * prefix symbols.
- **/
-class ReportStyle
-{
-public:
-  ReportStyle(int indent=4);
-
-  /**
-   * Render the symbols string merged with the current indent to the output
-   * stream.
-   **/
-  std::ostream&
-  prefix(std::ostream& out) const;
-
-  /**
-   * Return a new ReportStyle with the indent increased by step and
-   * optionally with new symbols to be merged into the line prefix.
-   **/
-  ReportStyle
-  derive(int step, const std::string& symbols="") const
-  {
-    ReportStyle copy(*this);
-    copy.stepLevel(step);
-    if (symbols.length())
-    {
-      copy._symbols = symbols;
-    }
-    return copy;
-  }
-
-  ReportStyle
-  merge(const std::string& symbols) const
-  {
-    ReportStyle copy(*this);
-    copy._symbols = symbols;
-    return copy;
-  }
-
-  void
-  stepLevel(int step)
-  {
-    _level += step;
-  }
-
-  void
-  setIndent(int indent)
-  {
-    _indent = indent;
-  }
-
-  int
-  getIndent()
-  {
-    return _indent;
-  }
-
-private:
-  std::string _symbols;
-  int _indent;
-  int _level;
-};
-
-
-/**
- * Render the ReportStyle prefix to the output stream.
- **/
-inline std::ostream&
-operator<<(std::ostream& out, const ReportStyle& style)
-{
-  style.prefix(out);
-  return out;
-}
-
-
 
 class NcCache;
 
@@ -364,6 +286,12 @@ struct nc_variable : public nc_object
   virtual double
   getMean() = 0;
 
+  virtual double
+  getMin() = 0;
+
+  virtual double
+  getMax() = 0;
+
   virtual void
   loadValues() = 0;
 
@@ -434,6 +362,18 @@ public:
     return mean;
   }
 
+  double
+  getMax()
+  {
+    return max;
+  }
+
+  double
+  getMin()
+  {
+    return min;
+  }
+
   void
   loadValues();
 
@@ -464,6 +404,8 @@ public:
   boost::shared_array<T> data;
   T missing_value;
   T mean;
+  T min;
+  T max;
 };
 
 
@@ -596,12 +538,6 @@ public:
     return _basetime;
   }
 
-  const ReportStyle&
-  getStyle()
-  {
-    return _style;
-  }
-
   typedef std::vector< boost::shared_ptr<nc_dimension> > dimension_vector_t;
   dimension_vector_t dimensions;
 
@@ -629,8 +565,6 @@ private:
   nc_variable* _vtime;
   nc_time _basetime;
   std::vector<nc_time> _times;
-
-  ReportStyle _style;
 };
 
 

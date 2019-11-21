@@ -31,10 +31,15 @@ nc_compare(int argc, char *argv[])
     ("showindex",
      "For vector values, report the indexes of the differences.")
     ("ignore", po::value<std::vector<std::string> >()->composing(),
-     "Ignore attributes and variables with the given name.  Pass --ignore "
-     "for each name to be ignored.")
+     "Ignore attributes and variables with the given name.  "
+     "Add * as suffix or prefix to match a substring.  "
+     "Pass --ignore for each name to be ignored.")
     ("variable", po::value<std::vector<std::string> >()->composing(),
-     "Select variables for comparison by substring matching.  "
+     "Select variables for comparison.  Add * as prefix or suffix "
+     "or both match variables with the given substring.  "
+     "All variables are selected by default.  "
+     "If a variable matches one of the ignores, then it is ignored "
+     "even if it matches one of the --variable strings.  "
      "Pass --variable for each substring to match.")
     ("override", po::value<std::vector<std::string> >()->composing(),
      "Override a global attribute in the left file specified in the form "
@@ -55,7 +60,7 @@ nc_compare(int argc, char *argv[])
      "differ and still be considered equal.  This is the floating point "
      "comparison used if --delta or --ulps is not specified explicitly.")
     ("limit",
-     po::value<int>()->default_value(CompareNetcdf::DEFAULT_REPORT_LIMIT),
+     po::value<int>()->default_value(ReportStyle::DEFAULT_REPORT_LIMIT),
      "Maximum number of differences to show in the report.  Once the limit "
      "is reached, no more differences are shown.")
     ("use-right-blanks",
@@ -101,9 +106,10 @@ nc_compare(int argc, char *argv[])
   }
 
   CompareNetcdf ncdiff(&left, &right);
-  ncdiff.showEqual(vm.count("showequal") > 0);
-  ncdiff.showIndex(vm.count("showindex") > 0);
-  ncdiff.useRightBlanks(vm.count("use-right-blanks") > 0);
+  ReportStyle& style = ncdiff.style();
+  style.showEqual(vm.count("showequal") > 0);
+  style.showIndex(vm.count("showindex") > 0);
+  style.useRightBlanks(vm.count("use-right-blanks") > 0);
 
   std::vector<std::string> ignores;
   if (vm.count("ignore"))
@@ -122,7 +128,7 @@ nc_compare(int argc, char *argv[])
   if (vm.count("limit"))
   {
     int limit = vm["limit"].as<int>();
-    ncdiff.setReportLimit(limit);
+    style.setReportLimit(limit);
   }
   compare_floating_point cfp;
   if (vm.count("ulps"))

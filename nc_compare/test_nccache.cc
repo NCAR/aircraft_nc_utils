@@ -323,9 +323,43 @@ TEST(CompareNetcdf, Ignores)
   EXPECT_TRUE(ncdiff.isIgnored("date_created"));
   std::vector<std::string> ignores;
   ignores.push_back("something_else");
+  ignores.push_back("Dir_*");
   ncdiff.ignore(ignores);
   EXPECT_FALSE(ncdiff.isIgnored("date_created"));
   EXPECT_TRUE(ncdiff.isIgnored("something_else"));
+  EXPECT_TRUE(ncdiff.isIgnored("Dir_10m_s1"));
+}
+
+
+TEST(CompareNetcdf, Selects)
+{
+  CompareNetcdf ncdiff(0, 0);
+
+  EXPECT_TRUE(ncdiff.isSelected("Dir_10m_s1"));
+  std::vector<std::string> ignores;
+  ignores.push_back("Dir_*");
+  ncdiff.ignore(ignores);
+  EXPECT_FALSE(ncdiff.isSelected("Dir_10m_s1"));
+  EXPECT_TRUE(ncdiff.isSelected("T"));
+  std::vector<std::string> selects;
+  selects.push_back("RH");
+  ncdiff.selectVariables(selects);
+  EXPECT_FALSE(ncdiff.isSelected("T"));
+}
+
+
+TEST(CompareNetcdf, match_substring)
+{
+  EXPECT_TRUE(match_substring("date*", "date_created"));
+  EXPECT_TRUE(match_substring("*date*", "date_created"));
+  EXPECT_FALSE(match_substring("date", "date_created"));
+  EXPECT_FALSE(match_substring("date", "created_date"));
+  EXPECT_TRUE(match_substring("Dir_*", "Dir_1m_s1"));
+  EXPECT_FALSE(match_substring("Dir_", "Dir_1m_s1"));
+  EXPECT_FALSE(match_substring("", "date_created"));
+  EXPECT_TRUE(match_substring("", ""));
+  EXPECT_TRUE(match_substring("*", "Dir_1m_s1"));
+  EXPECT_TRUE(match_substring("***", "created_date"));
 }
 
 
