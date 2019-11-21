@@ -283,10 +283,10 @@ public:
   generateReport(std::ostream& out, const ReportStyle& style);
 
   std::ostream&
-  statisticsHeader(std::ostream& out);
+  statisticsHeader(std::ostream& out, const ReportStyle& style);
 
   std::ostream&
-  reportStatistics(std::ostream& out);
+  reportStatistics(std::ostream& out, const ReportStyle& style);
 
   bool
   meansNearEqual();

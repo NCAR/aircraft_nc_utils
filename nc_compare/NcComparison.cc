@@ -285,10 +285,10 @@ report(std::ostream& out)
     {
       if (!header)
       {
-	evars[i]->statisticsHeader(out);
+	evars[i]->statisticsHeader(out, style);
 	header = true;
       }
-      evars[i]->reportStatistics(out);
+      evars[i]->reportStatistics(out, style);
     }
   }
   return out;
@@ -763,41 +763,77 @@ generateReport(std::ostream& out, const ReportStyle& style)
 }
 
 
+
+namespace
+{
+
+  /**
+   * If @p var is not null, then format the stats into a string, otherwise
+   * format the text.  The width can change if minmax is enabled.
+   **/
+  std::string
+  format_stats(const ReportStyle& style,
+	       nc_variable* var,
+	       const std::string& meantitle="",
+	       const std::string& minmaxtitle="",
+	       const std::string& pointstitle="")
+  {
+    std::string minmax;
+    if (style.getShowMinMax())
+    {
+      minmax = minmaxtitle;
+      if (var)
+      {
+	minmax = str(format("{%.2g, %.2g}") % var->getMin() % var->getMax());
+      }
+      minmax = str(format(" %15s") % minmax);
+    }
+    std::string mean(meantitle);
+    if (var)
+    {
+      mean = str(format("%12.6f") % var->getMean());
+    }
+    mean = str(format(" %15s") % mean);
+    std::string ngood(pointstitle);
+    if (var)
+    {
+      ngood = str(format("%7d") % var->ngoodpoints);
+    }
+    ngood = str(format(" %8s") % ngood);
+    return mean + minmax + ngood;
+  }
+}
+
+
 std::ostream&
 CompareVariables::
-statisticsHeader(std::ostream& out)
+statisticsHeader(std::ostream& out, const ReportStyle& style)
 {
-  out << format("%2s %-16s %30s %8s %30s %8s %12s %12s\n")
-    % "" % "Variable" % "Left Mean{min,max}" % "Good Pts" 
-    % "Right Mean{min,max}" % "Good Pts"
-    % "Abs Error"
-    % "Rel Err (%)";
-  out << format("%2s %-16s %30s %8s %30s %8s %12s %12s\n")
-    % "" % "--------" % "---------------" % "--------"
-    % "----------------" % "--------"
-    % "------------"
-    % "------------";
+  out << format("%2s %-16s ") % "" % "Variable"
+      << format_stats(style, 0, "Left Mean", "{min, max}", "Good Pts")
+      << format_stats(style, 0, "Right Mean", "{min, max}", "Good Pts")
+      << format("%12s %12s\n") % "Abs Error" % "Rel Err (%)";
+  out << format("%2s %-16s ") % "" % "--------"
+      << format_stats(style, 0, "---------", "----------", "--------")
+      << format_stats(style, 0, "----------", "----------", "--------")
+      << format("%12s %12s\n") % "---------" % "-----------";
   return out;
 }
 
 
 std::ostream&
 CompareVariables::
-reportStatistics(std::ostream& out)
+reportStatistics(std::ostream& out, const ReportStyle& style)
 {
   std::string name(left ? left->name : right->name);
 
-  out << format("%2s %-16s %30s %8s %30s %8s %s")
+  out << format("%2s %-16s ")
     % (left ? (right ? "" : "-") : "+")
-    % name
-    % (left ? str(format("%12.6f{%.2f,%.2f}") %
-		  left->getMean() % left->getMin() % left->getMax()) : "")
-    % (left ? str(format("%7d") % left->ngoodpoints) : "")
-    % (right ? str(format("%12.6f{%.2f,%.2f}") %
-		   right->getMean() % right->getMin() % right->getMax()) : "")
-    % (right ? str(format("%7d") % right->ngoodpoints) : "")
-    % (left && right ? str(format("%12.8f %12.2f")
-			   % absolute_error % relative_error) : "");
+    % name;
+  out << format_stats(style, left);
+  out << format_stats(style, right);
+  out << (left && right ? str(format("%12.8f %12.2f")
+			      % absolute_error % relative_error) : "");
   out << "\n";
   return out;
 }

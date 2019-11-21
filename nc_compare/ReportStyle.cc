@@ -11,7 +11,8 @@ ReportStyle(int indent):
   _level(0),
   _show_equal(false),
   _show_index(false),
-  _report_limit(DEFAULT_REPORT_LIMIT)
+  _report_limit(DEFAULT_REPORT_LIMIT),
+  _minmax(false)
 {}
 
 

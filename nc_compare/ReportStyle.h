@@ -64,6 +64,18 @@ public:
     return _report_limit;
   }
 
+  void
+  showMinMax(bool enable)
+  {
+    _minmax = enable;
+  }
+
+  bool
+  getShowMinMax() const
+  {
+    return _minmax;
+  }
+
   /**
    * Render the symbols string merged with the current indent to the output
    * stream.
@@ -123,6 +135,7 @@ private:
   bool _show_index;
   bool _use_right_blanks;
   int _report_limit;
+  bool _minmax;
 };
 
 

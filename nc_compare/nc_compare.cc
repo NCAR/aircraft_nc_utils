@@ -68,6 +68,8 @@ nc_compare(int argc, char *argv[])
      "out variable values on the left. In other words, values on the right "
      "which have been blanked out are also used to blank out the left, but "
      "only if the dimension sizes are the same.")
+    ("minmax",
+     "Report min and max in the statistics report.")
     ;
 
   po::positional_options_description p;
@@ -110,6 +112,7 @@ nc_compare(int argc, char *argv[])
   style.showEqual(vm.count("showequal") > 0);
   style.showIndex(vm.count("showindex") > 0);
   style.useRightBlanks(vm.count("use-right-blanks") > 0);
+  style.showMinMax(vm.count("minmax") > 0);
 
   std::vector<std::string> ignores;
   if (vm.count("ignore"))
