@@ -784,7 +784,7 @@ namespace
       minmax = minmaxtitle;
       if (var)
       {
-	minmax = str(format("{%.2g, %.2g}") % var->getMin() % var->getMax());
+	minmax = str(format("{%.2f, %.2f}") % var->getMin() % var->getMax());
       }
       minmax = str(format(" %15s") % minmax);
     }
