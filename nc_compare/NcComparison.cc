@@ -700,6 +700,8 @@ computeDifferences()
   int ndiff = count_if(atts.begin(), atts.end(),
 		       bind(mem_fn(&CompareAttributes::isDifferent), _1));
   equal = equal && (ndiff == 0);
+  // if there are any ranges where data differs, the variables are not equal.
+  if (ranges.size()) equal = false;
   return equal ? Comparison::Equal : Comparison::Different;
 }
 
