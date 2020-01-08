@@ -536,6 +536,7 @@ CompareVariables(CompareNetcdf* ncf, nc_variable* left, nc_variable* right):
   CompareObjects<nc_variable>(ncf, left, right),
   absolute_error(0),
   relative_error(0),
+  total_differences(0),
   dimsequal(false)
 {}
 
@@ -677,6 +678,11 @@ computeDifferences()
     ranges = cv.get_ranges();
   }
 
+  // Compute total points that differ across all ranges
+  total_differences = 0;
+  for (unsigned int i = 0; i < ranges.size(); ++i){
+      total_differences += ranges[i].size();
+  }
   // Compute statistical differences.
   absolute_error = left->getMean() - right->getMean();
   if (absolute_error == 0)
@@ -734,23 +740,19 @@ generateReport(std::ostream& out, const ReportStyle& style)
     }
     // The dimension differences are included in the header.  Now report
     // any ranges where variables differ, up to the limit.
-    unsigned int totalpts = 0;
     for (unsigned int i = 0; i < ranges.size(); ++i)
     {
-      totalpts += ranges[i].size();
       if (i < (unsigned int)style.getReportLimit())
       {
 	out << style.derive(1, " - ") << left->rangeSummary(ranges[i]) << "\n";
 	out << style.derive(1, " + ") << right->rangeSummary(ranges[i]) << "\n";
       }
     }
-    // Report on the total number of different points.  This might also be
-    // useful to report in the stats table, but for now it is only shown
-    // with showindex.
-    if (totalpts)
+    // Report on the total number of different points.
+    if (total_differences)
     {
       out << style.derive(1, "==>") << ranges.size() << " ranges differ, "
-	  << totalpts << " points differ out of " << left->npoints << ".\n";
+	  << total_differences << " points differ out of " << left->npoints << ".\n";
     }
   }
 
@@ -814,11 +816,13 @@ statisticsHeader(std::ostream& out, const ReportStyle& style)
   out << format("%2s %-16s ") % "" % "Variable"
       << format_stats(style, 0, "Left Mean", "{min, max}", "Good Pts")
       << format_stats(style, 0, "Right Mean", "{min, max}", "Good Pts")
-      << format("%12s %12s\n") % "Abs Error" % "Rel Err (%)";
+      << format("%12s %12s") % "Abs Error" % "Rel Err (%)"
+      << format("%12s\n") % "# Different";
   out << format("%2s %-16s ") % "" % "--------"
       << format_stats(style, 0, "---------", "----------", "--------")
       << format_stats(style, 0, "----------", "----------", "--------")
-      << format("%12s %12s\n") % "---------" % "-----------";
+      << format("%12s %12s") % "---------" % "-----------"
+      << format("%12s\n")% "-----------";
   return out;
 }
 
@@ -834,8 +838,8 @@ reportStatistics(std::ostream& out, const ReportStyle& style)
     % name;
   out << format_stats(style, left);
   out << format_stats(style, right);
-  out << (left && right ? str(format("%12.8f %12.2f")
-			      % absolute_error % relative_error) : "");
+  out << (left && right ? str(format("%12.8f %12.2f %11d")
+			      % absolute_error % relative_error % total_differences) : "");
   out << "\n";
   return out;
 }

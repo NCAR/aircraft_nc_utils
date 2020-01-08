@@ -297,6 +297,8 @@ public:
 
   double absolute_error;
   double relative_error;
+  // total number of points that differ
+  int total_differences;
   std::vector< boost::shared_ptr<CompareAttributes> > atts;
   bool dimsequal;
   variable_ranges ranges;
