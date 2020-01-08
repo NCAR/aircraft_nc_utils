@@ -275,13 +275,15 @@ report(std::ostream& out)
   // Now report the variable statistics comparisons in order of relative
   // error.  Do not report a variable if the differences in the mean are
   // beneath the threshold, regardless of the comparison result.
+  // If showIndex is on, show statistics for variables with index differences.
   std::vector< boost::shared_ptr<CompareVariables> > evars(vars);
   std::sort(evars.begin(), evars.end(), compare_relative_error);
 
   header = false;
   for (unsigned int i = 0; i < evars.size(); ++i)
   {
-    if (show_equal || !evars[i]->meansNearEqual())
+    if (show_equal || !evars[i]->meansNearEqual()||
+        (style.getShowIndex() && evars[i]->ranges.size()))
     {
       if (!header)
       {
