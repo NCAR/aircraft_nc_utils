@@ -1,7 +1,7 @@
 # -*- python -*-
 
-#tools = ['default', 'prefixoptions', 'netcdf', 'qt4']
-#env = Environment(tools=tools)
+tools = ['default', 'prefixoptions']
+env = Environment(tools=tools)
 #env.Append(CXXFLAGS='-g -Werror')
 
 #qt4Modules = Split('QtGui QtCore QtNetwork')
@@ -11,6 +11,7 @@
 #sources = ['nc2iwg1.cc']
 
 #nc2iwg1 = env.Program(target = 'nc2iwg1', source = sources)
+
 #env.Default(nc2iwg1)
 
-env.Install("$INSTALL_PREFIX/bin", 'nc2iwg1')
+env.Install("$INSTALL_PREFIX/bin", 'nc2iwg1.py')

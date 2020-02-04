@@ -1,3 +1,5 @@
+#!/opt/local/anaconda3/bin/python3.7
+
 #######################################################################
 # Produce IWG1 packets from a netCDF file. If variable is missing from
 # netCDF file, maintain blank entries to keep IWG1 structure.
