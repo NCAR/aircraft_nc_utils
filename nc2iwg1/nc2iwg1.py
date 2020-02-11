@@ -18,6 +18,7 @@ import socket
 import argparse
 import time
 import io
+import os
 
 # get arguments from command line
 parser = argparse.ArgumentParser()
@@ -26,8 +27,10 @@ parser.add_argument("-o", "--output_file", help="Optional IWG1 format converted 
 parser.add_argument("-d", "--delay", help="Optional conversion interval delay in microseconds")
 parser.add_argument("-u", dest="UDP", action="store_true")
 parser.set_defaults(feature=False)
+#parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=False, help="UDP broadcasting, set to True")
 parser.add_argument("-v", "--extravars", help="file containing comma separated list of vars")
 parser.add_argument("-er", "--emulate_realtime", type=bool, const=True, nargs="?", default=False, help="Emulate realtime mode, set to True") 
+parser.add_argument("-so", "--standard_out", type=bool, const=True, nargs="?", default=False, help="Optional argument for standard out. If you don't provide, file writes to output file, and that's it.")
 args = parser.parse_args()
 
 if args.output_file is not None and args.UDP == True:
@@ -182,15 +185,17 @@ def main():
                     lines.pop(0)
                     time.sleep(float(interval))
     else:
-        iwg.to_csv("output.txt", header=False, index=False)
-        with io.open("output.txt", "r") as udp_packet:
-            lines = udp_packet.readlines()[-1]
-            while len(lines) != 0:
-                MESSAGE = str(lines)
-                message = MESSAGE.translate("[]'")
-                message = message.rstrip()
-                print(message)
-                time.sleep(float(interval))
+        input_path = os.path.splitext(input_file)
+        iwg.to_csv(input_path[0]+".iwg1", header=False, index=False)
+        if args.standard_out is not None:
+            with io.open("output.txt", "r") as udp_packet:
+                lines = udp_packet.readlines()[-1]
+                while len(lines) != 0:
+                    MESSAGE = str(lines)
+                    message = MESSAGE.translate("[]'")
+                    message = message.rstrip()
+                    print(message)
+                    time.sleep(float(interval))
 #######################################################################
 # main
 #######################################################################
