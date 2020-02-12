@@ -188,7 +188,7 @@ def main():
         input_path = os.path.splitext(input_file)
         iwg.to_csv(input_path[0]+".iwg1", header=False, index=False)
         if args.standard_out is not None:
-            with io.open("output.txt", "r") as udp_packet:
+            with io.open(input_path[0]+".iwg1", "r") as udp_packet:
                 lines = udp_packet.readlines()[-1]
                 while len(lines) != 0:
                     MESSAGE = str(lines)
