@@ -19,6 +19,7 @@ import argparse
 import time
 import io
 import os
+import numpy as np
 
 # get arguments from command line
 parser = argparse.ArgumentParser()
@@ -84,6 +85,8 @@ def buildIWG():
             try:
                 if i in list(nc.variables.keys()):
                     output = nc.variables[i].iloc[-1:]
+                    output = output.astype(float)
+                    output = np.round(output, decimals=2)
                 elif i not in list(nc.variables.keys()):
                     output = pd.DataFrame(columns=[i]).iloc[-1:]
                 else:
@@ -91,7 +94,6 @@ def buildIWG():
 
             except:
                 print(("Error in extracting variable "+i+" in "+input_file))
-
             df[i] = pd.DataFrame(output)
     else:
         dtime = dtime[:]
@@ -100,6 +102,8 @@ def buildIWG():
             try:
                 if i in list(nc.variables.keys()):
                     output = nc.variables[i][:]
+                    output = output.astype(float)
+                    output = np.round(output, decimals=2)
                 elif i not in list(nc.variables.keys()):
                     output = pd.DataFrame(columns=[i])[:]
                 else:
@@ -107,7 +111,6 @@ def buildIWG():
 
             except:
                 print(("Error in extracting variable "+i+" in "+input_file))
-
             df[i] = pd.DataFrame(output)  
 
     global iwg
@@ -145,7 +148,6 @@ def buildIWG():
 
     else:
         pass
-
     iwg = iwg.fillna('')
     iwg = iwg.astype(str)
     return iwg
