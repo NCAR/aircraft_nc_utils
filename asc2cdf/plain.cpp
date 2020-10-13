@@ -62,7 +62,7 @@ void CreatePlainNetCDF(FILE *fp)
 #ifdef VARDB
   if (InitializeVarDB("VarDB") == ERR)
     {
-    fprintf(stderr, "No VarDB in local directory, trying $PROJ_DIR/Configuration/raf/VarDB.\n");
+    fprintf(stderr, "No VarDB in local directory, trying $PROJ_DIR/Configuration/VarDB.\n");
 
     if (getenv("PROJ_DIR") > (char *) 0)
       strcpy(buffer, getenv("PROJ_DIR"));
@@ -72,7 +72,7 @@ void CreatePlainNetCDF(FILE *fp)
       fprintf(stderr, "env variable PROJ_DIR undefined, trying /usr/local/proj.\n");
       }
 
-    strcat(buffer, "/Configuration/raf/VarDB");
+    strcat(buffer, "/Configuration/VarDB");
 
     if (InitializeVarDB(buffer) == ERR)
       {
