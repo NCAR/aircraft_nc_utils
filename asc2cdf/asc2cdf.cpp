@@ -525,11 +525,13 @@ size_t ProcessTime(char *p)
         hour = atoi(p);
         }
       else
+        {
         sscanf(p, "%d:%d:%lf", &hour, &minute, &currSecond);
         second = int(currSecond);
+        }
       }
 
-    if (dataRate > 1) 
+    if (dataRate > 1)
       {
       /* parse out the subseond component */
       currSecond -= second; subsec = int(currSecond*dataRate);
