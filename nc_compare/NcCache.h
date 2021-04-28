@@ -40,7 +40,7 @@ struct nc_object
     name(),
     id(-1)
   {}
-    
+
   nc_object(NcCache* ncc_in, const std::string& name_in, int id_in) :
     ncc(ncc_in),
     name(name_in),
@@ -61,6 +61,7 @@ struct nc_object
   int id;
 };
 
+
 struct nc_dimension : public nc_object
 {
   nc_dimension();
@@ -73,13 +74,12 @@ struct nc_dimension : public nc_object
 
   size_t len;
 };
-    
 
 
 struct nc_attribute : public nc_object
 {
   nc_attribute();
-  
+
   nc_attribute(NcCache* ncc, const std::string& name, int varid);
 
   virtual std::string
@@ -156,7 +156,7 @@ public:
       npoints *= dimensions[d]->len;
     }
   }
-    
+
   inline bool
   next()
   {
@@ -181,7 +181,7 @@ public:
       factor *= dims[d-1]->len;
     }
     return *this;
-  }    
+  }
 
   coordinates&
   set(unsigned int x)
@@ -259,7 +259,7 @@ struct variable_range
   /**
    * Return the number of points in this range.
    **/
-  unsigned int 
+  unsigned int
   size();
 
   coordinates start;
@@ -459,7 +459,7 @@ operator==(const nc_dimension& left, const nc_dimension& right)
 
 template <class T>
 inline T*
-find_nc_object(std::vector<boost::shared_ptr<T> >& objects, 
+find_nc_object(std::vector<boost::shared_ptr<T> >& objects,
 	       const std::string& name)
 {
   typename std::vector<boost::shared_ptr<T> >::iterator it;
@@ -522,7 +522,7 @@ public:
 
   nc_dimension*
   getDimension(const std::string& name);
-  
+
   nc_attribute*
   getGlobalAttribute(const std::string& name);
 
@@ -603,7 +603,6 @@ DEFINE_TYPENAME(short,short,NC_SHORT)
 DEFINE_TYPENAME(unsigned short,ushort,NC_USHORT)
 DEFINE_TYPENAME(char,char,NC_CHAR)
 DEFINE_TYPENAME(unsigned char,uchar,NC_BYTE)
-
 
 
 #endif // _NcCache_h_

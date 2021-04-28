@@ -390,8 +390,8 @@ recurse:
 				bp += 3;
 			} else {
 				ep = find_string(bp, &i,
-					       	 (const char * const *)tzname,
-					       	  NULL, 2);
+						 (const char * const *)tzname,
+						  NULL, 2);
 				if (ep != NULL) {
 					tm->tm_isdst = i;
 #ifdef TM_GMTOFF

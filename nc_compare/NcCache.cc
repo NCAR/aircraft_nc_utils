@@ -30,7 +30,7 @@ NcCache(const std::string& path) :
   {
     throw runtime_error(string("Cannot open: ") + path);
   }
-    
+
   loadDimensions();
   loadGlobalAttributes();
   loadVariables();
@@ -40,7 +40,7 @@ NcCache(const std::string& path) :
 
 
 nc_time
-basetime_from_units(const std::string& units, 
+basetime_from_units(const std::string& units,
 		    const std::string& strptime_format)
 {
   int year, month, day, hour, minute, second, tz_offset;
@@ -202,7 +202,7 @@ makeAttribute(int ncid, int varid, int attnum)
   char name[NC_MAX_NAME];
   nc_type datatype;
   shared_ptr<nc_attribute> vp;
-  
+
   nc_inq_attname(ncid, varid, attnum, name);
   nc_inq_atttype(ncid, varid, name, &datatype);
 
@@ -570,7 +570,7 @@ loadValues()
   nc_type datatype;
 
   int ncid = ncc->ncid;
-  nc_inq_var(ncid, id, name, &datatype, 0, 0, 0); 
+  nc_inq_var(ncid, id, name, &datatype, 0, 0, 0);
 
   npoints = coordinates(dimensions).npoints;
   data.reset(new T[npoints]);
@@ -784,7 +784,7 @@ template class nc_att<short>;
 template class nc_att<std::string>;
 
 
-unsigned int 
+unsigned int
 variable_range::
 size()
 {

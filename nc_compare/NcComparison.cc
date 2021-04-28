@@ -79,7 +79,7 @@ computeDifferences()
 {
   NcCache* left = _ncf->getLeft();
   NcCache* right = _ncf->getRight();
-  
+
   std::vector<nc_time>& timesleft = left->times();
   std::vector<nc_time>& timesright = right->times();
 
@@ -226,7 +226,7 @@ report(std::ostream& out)
   if (show_equal || countDifferences())
   {
     out << "--- " << _left->getPath() << " (left)\n";
-    out << "+++ " << _right->getPath() << " (right)\n"; 
+    out << "+++ " << _right->getPath() << " (right)\n";
   }
   if (show_equal || times.isDifferent())
   {
@@ -671,7 +671,7 @@ computeDifferences()
   {
     dimsequal = (*left->dimensions[d] == *right->dimensions[d]);
   }
-  
+
   // Run element by element comparisons using the comparison visitor.
   if (dimsequal)
   {

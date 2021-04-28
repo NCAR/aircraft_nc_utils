@@ -59,7 +59,7 @@ compare_lists(CompareNetcdf* ncf, LIST& left, LIST& right, CLIST& comps,
   typename LIST::iterator lit = left.begin();
   typename LIST::iterator rit = right.begin();
   typename LIST::value_type nullp;
-  
+
   for (lit = left.begin(); lit != left.end(); ++lit)
   {
     std::string name = (*lit)->name;

@@ -47,7 +47,7 @@ typedef union
   float asFloat;
 }
 twos_complement_float_t;
-  
+
 
 inline bool
 almost_equal_floats(float A, float B, int maxUlps=2)
@@ -87,7 +87,7 @@ typedef union
   double asDouble;
 }
 twos_complement_double_t;
-  
+
 inline bool
 almost_equal_doubles(double A, double B, int maxUlps=2)
 {
@@ -293,7 +293,7 @@ near_equal(const double& left, const double& right)
 {
   return (this->*_double_equal)(left, right);
 }
-    
+
 /**
  * Test two floats for equality using the current comparison scheme and
  * parameters.
@@ -305,6 +305,6 @@ near_equal(const float& left, const float& right)
 {
   return (this->*_float_equal)(left, right);
 }
-    
+
 #endif // _compare_numbers_h_
 

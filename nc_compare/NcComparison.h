@@ -44,7 +44,7 @@ class CompareNetcdf;
 class Comparison
 {
 public:
-  
+
   typedef enum Result
   {
     Unknown, Equal, Added, Deleted, Different
@@ -274,7 +274,7 @@ public:
   virtual Comparison::Result
   computeDifferences();
 
-  /** 
+  /**
    * If the variables differ by type, dimensions, name, or attributes, then
    * report the different definitions.  The statistical differences are
    * reported in reportStatistics().
@@ -423,7 +423,6 @@ private:
 
 bool
 match_substring(const std::string& pattern, const std::string& text);
-
 
 
 #endif // _NcComparison_h_

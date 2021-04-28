@@ -48,5 +48,4 @@ gsl_stats_minmax(T* min, T* max, \
 }
 
 
-
 #endif // _gsl_hh_

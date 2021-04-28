@@ -13,10 +13,10 @@ using boost::shared_ptr;
 TEST(NcCache, ReadFirstTime)
 {
   NcCache ncc("IDEAS-4rf02-expected.nc");
-  
+
   // seconds since 2013-09-26 00:00:00 +0000
   // 67273
-  nc_time xtime = nc_time(boost::gregorian::date(2013, 9, 26), 
+  nc_time xtime = nc_time(boost::gregorian::date(2013, 9, 26),
 			  boost::posix_time::time_duration(0, 0, 67273));
   // nc_time xtime = nc_time_from_time_t(1380242473);
   EXPECT_EQ(xtime, ncc.times()[0]);
@@ -287,7 +287,7 @@ TEST(Comparison, Attributes)
   CompareNetcdf ncf(0, 0);
   ncf.setFloatComparator(compare_floating_point().useDelta());
   NcCache* ncc = 0;
-  
+
   float sizes[] = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5 };
   std::vector<float> vsizes(sizes, sizes+6);
 
@@ -403,7 +403,7 @@ TEST(compare_floating_point, ulps)
   cfp.setULPS(1);
   EXPECT_EQ(cfp.near_equal(y, y+2), false);
   EXPECT_EQ(cfp.near_equal(-y, -y-2), false);
-  
+
   // Test setting steps to zero to require exact equality.
   cfp.setULPS(0);
   EXPECT_EQ(cfp.near_equal(y, y), true);
