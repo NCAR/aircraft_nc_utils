@@ -1,0 +1,150 @@
+#! /usr/bin/env python3
+
+#######################################################################
+# script to extract the spatial bounds of a flight or a set of flights
+# from an NCAR/EOL/RAF project
+#
+# NCAR/EOL/RAF Taylor Thomas 2021
+#######################################################################
+
+import os
+import sys
+import argparse
+from glob import glob
+from netCDF4 import Dataset
+
+
+def main():
+    fltarea = FltArea()
+    args = fltarea.parse_args()
+    fltarea.calc(args)
+
+
+#######################################################################
+# FltArea Class
+#######################################################################
+
+class FltArea():
+
+    def parse_args(self):
+        # set up argument parsing
+        parser = argparse.ArgumentParser(
+            description='Provide file(s) from which bounding area' +
+                        ' is calculated:')
+
+        # define input file(s) to process
+        parser.add_argument('area_file_pattern', type=str, nargs='*',
+                            help='file pattern to process e.g. ' +
+                            '/scr/raf/Prod_Data/<PROJECT>rf0[1-4].nc')
+
+        if len(sys.argv) == 1:
+            parser.print_help(sys.stderr)
+            sys.exit(1)
+
+        args = parser.parse_args()
+        return(args)
+
+#######################################################################
+# Define calc function
+#######################################################################
+
+    def calc(self, args):
+
+        # be flexible to process wildcard PROJECTrf*.nc or PROJECTrf0[1-3].nc
+        area_file_pattern = []
+
+        try:
+            for arg in args.area_file_pattern:
+                area_file_pattern += glob(arg)
+        except Exception as e:
+            print("Glob threw exception" + e + " Ignore and continue")
+            pass
+
+        for i in area_file_pattern:
+            head, tail = os.path.split(i)
+            if os.path.exists(head):
+                print('Input file ' + i + ' exists.')
+
+        print('Proceeding to processing.')
+
+        # create empty lists to store latitude and longtitude values
+        self.lat = list()
+        self.lon = list()
+
+        if len(area_file_pattern) > 0:
+
+            print('\n****Starting Processing*****\n')
+
+            # iterate over file(s) to get area information
+            # be flexible in case some files don't have desired attribute
+            for filename in (area_file_pattern):
+                if filename.endswith('.nc'):
+                    print('Extracting flight area for: '+filename)
+                    ncfile = Dataset(filename)
+
+                    try:
+                        geospatial_lat_min = \
+                            ncfile.getncattr('geospatial_lat_min')
+                        self.lat.append(geospatial_lat_min)
+
+                    except Exception as e:
+                        print(e)
+                        print('File ' + filename + ' does not contain ' +
+                              'geospatial_lat_min. Skipping.')
+
+                    try:
+                        geospatial_lat_max = \
+                            ncfile.getncattr('geospatial_lat_max')
+                        self.lat.append(geospatial_lat_max)
+
+                    except Exception as e:
+                        print(e)
+                        print('File ' + filename + ' does not contain ' +
+                              'geospatial_lat_max. Skipping.')
+
+                    try:
+                        geospatial_lon_min = \
+                            ncfile.getncattr('geospatial_lon_min')
+                        self.lon.append(geospatial_lon_min)
+
+                    except Exception:
+                        print(e)
+                        print('File ' + filename + ' does not contain ' +
+                              'geospatial_lon_min. Skipping.')
+
+                    try:
+                        geospatial_lon_max = \
+                            ncfile.getncattr('geospatial_lon_max')
+                        self.lon.append(geospatial_lon_max)
+
+                    except Exception:
+                        print(e)
+                        print('File ' + filename + ' does not contain ' +
+                              'geospatial_lon_max. Skipping.')
+
+                else:
+                    print('File without .nc extension found. Not processing: '
+                          + filename + '\n\n')
+
+            # Calculate lat/lon min/max
+            self.lat_max = max(self.lat)
+            self.lat_min = min(self.lat)
+            self.lon_min = min(self.lon)
+            self.lon_max = max(self.lon)
+
+            print("\nFLIGHT AREA:")
+            print('Maximum Latitude: '+str(self.lat_max))
+            print('Minimum Latitude: '+str(self.lat_min))
+            print('Minimum Longitude: '+str(self.lon_min))
+            print('Maximum Longitude: '+str(self.lon_max))
+            return(self.lat_max, self.lat_min, self.lon_max, self.lon_min)
+
+        else:
+            print('Processing failed. Choose other files and try again.')
+
+
+#######################################################################
+# Call main function
+#######################################################################
+if __name__ == "__main__":
+    main()
