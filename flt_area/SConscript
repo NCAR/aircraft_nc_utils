@@ -1,0 +1,3 @@
+# -*- python -*-
+
+env.Install('$INSTALL_PREFIX/bin', 'flt_area')
