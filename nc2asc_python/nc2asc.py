@@ -88,7 +88,7 @@ class gui(QMainWindow):
 
         # radio buttons for time
         timeformatlabel = QtWidgets.QLabel(self)
-        timeformatlabel.setText('Time Format')
+        timeformatlabel.setText('Time Format:')
         timeformatlabel.move(200, 160)
         timeformatlabel.setFont(myFont)
         self.time1=QtWidgets.QRadioButton(self)
@@ -168,7 +168,7 @@ class gui(QMainWindow):
         averaginglabel.setText('Averaging (s):')
         averaginglabel.move(320, 340)
         self.averagingbox = QtWidgets.QLineEdit(self)
-        self.averagingbox.move(440, 340)
+        self.averagingbox.move(440, 345)
         self.averagingbox.resize(60, 20)
 
         # process button calls writeData function
@@ -191,7 +191,7 @@ class gui(QMainWindow):
         # label for variable list window
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Selected vars:')
-        fillvaluelabel.move(20, 380)
+        fillvaluelabel.move(20, 370)
         fillvaluelabel.setFont(myFont)
         self.stdout=QtWidgets.QTextEdit(self)
         self.stdout.move(20, 400)
@@ -199,6 +199,7 @@ class gui(QMainWindow):
         varlabel=QtWidgets.QLabel(self)
         varlabel.setText('Select Vars')
         varlabel.move(550, 30)
+        varlabel.setFont(myFont)
         self.var=QtWidgets.QTableWidget(self)
         self.var.setColumnCount(3)
         self.var.setRowCount(15)
@@ -209,7 +210,7 @@ class gui(QMainWindow):
 
         # fields for start and end time
         timeselectionlabel = QtWidgets.QLabel(self)
-        timeselectionlabel.setText('Time Options')
+        timeselectionlabel.setText('Time Options:')
         timeselectionlabel.move(320, 280)
         timeselectionlabel.setFont(myFont)
         startlab = QtWidgets.QLabel(self)
@@ -220,9 +221,9 @@ class gui(QMainWindow):
         endlab.move(320,320)
         self.start=QtWidgets.QLineEdit(self)
         self.end=QtWidgets.QLineEdit(self)
-        self.start.move(360, 300)
+        self.start.move(360, 305)
         self.start.resize(140, 20)
-        self.end.move(360, 320)
+        self.end.move(360, 325)
         self.end.resize(140, 20)
 
         # exit app
