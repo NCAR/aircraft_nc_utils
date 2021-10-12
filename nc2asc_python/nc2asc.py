@@ -16,63 +16,70 @@ from datetime import datetime
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout
-
-class gui(QtWidgets.QWidget):
+from PyQt5.QtWidgets import QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
+class gui(QMainWindow):
     def __init__(self):
 
         super(gui, self).__init__() 
-        self.initUI()
 
+
+        self.initUI()
 #######################################################################
 # define layout of gui
 #######################################################################
-
     def initUI(self):               
 
 	# input file 
-        self.inputbtn = QtWidgets.QPushButton('Input File', self)
-        self.inputbtn.resize(self.inputbtn.sizeHint())
-        self.inputbtn.move(20, 20)
-        self.inputbtn.clicked.connect(self.loadData)
-        self.inputbtn.clicked.connect(self.loadVars)
+#        self.inputbtn = QtWidgets.QPushButton('Input File', self)
+#        self.inputbtn.resize(self.inputbtn.sizeHint())
+#        self.inputbtn.move(20, 20)
+#        self.inputbtn.clicked.connect(self.loadData)
+#        self.inputbtn.clicked.connect(self.loadVars)
+      
+        myFont=QtGui.QFont()
+        myFont.setBold(True)
+ 
         self.inputfilebox=QtWidgets.QLineEdit(self)
-        self.inputfilebox.move(160, 20)
+        self.inputfilebox.move(160, 30)
         self.inputfilebox.resize(350, 20)
-
+        inputlabel=QtWidgets.QLabel(self)
+        inputlabel.setText('Input File:')
+        inputlabel.move(80, 30) 
         # output dir and file
         self.outputbtn=QtWidgets.QPushButton('Output Directory', self)
         self.outputbtn.resize(self.outputbtn.sizeHint())
-        self.outputbtn.move(20, 60)
+        self.outputbtn.move(40, 60)
         self.outputbtn.clicked.connect(self.dirSelect)
         self.outputdirbox=QtWidgets.QLineEdit(self)
         self.outputdirbox.move(160, 60)
         self.outputdirbox.resize(350, 20)
         outputlabel=QtWidgets.QLabel(self)
-        outputlabel.setText('Output Filename:')
-        outputlabel.move(20, 100)        
+        outputlabel.setText('Output File:')
+        outputlabel.move(50, 100)        
         self.outputfilebox=QtWidgets.QLineEdit(self)
         self.outputfilebox.move(160, 100)
         self.outputfilebox.resize(175, 20)
 
         # processing options section
         processinglabel = QtWidgets.QLabel(self)
-        processinglabel.setText('Processing Options')
+        processinglabel.setText('Options')
         processinglabel.move(20, 140)
+        processinglabel.setFont(myFont)
 
         # radio buttons for date
         dateformatlabel = QtWidgets.QLabel(self)
         dateformatlabel.setText('Date Format:')
         dateformatlabel.move(20, 160)
+        dateformatlabel.setFont(myFont)
         self.date1=QtWidgets.QRadioButton(self)
         self.date1.setText('yyyy-mm-dd')
         self.date1.move(20, 180)
         self.date2=QtWidgets.QRadioButton(self)
         self.date2.setText('yyyy mm dd')
-        self.date2.move(200, 180)
+        self.date2.move(20, 200)
         self.date3=QtWidgets.QRadioButton(self)
         self.date3.setText('NoDate')
-        self.date3.move(380, 180)
+        self.date3.move(20, 220)
         dategroup = QtWidgets.QButtonGroup(self)
         dategroup.addButton(self.date1)
         dategroup.addButton(self.date2)
@@ -82,16 +89,17 @@ class gui(QtWidgets.QWidget):
         # radio buttons for time
         timeformatlabel = QtWidgets.QLabel(self)
         timeformatlabel.setText('Time Format')
-        timeformatlabel.move(20, 200)
+        timeformatlabel.move(200, 160)
+        timeformatlabel.setFont(myFont)
         self.time1=QtWidgets.QRadioButton(self)
         self.time1.setText('hh:mm:ss')
-        self.time1.move(20, 220)
+        self.time1.move(200, 180)
         self.time2=QtWidgets.QRadioButton(self)
         self.time2.setText('hh mm ss')
-        self.time2.move(200, 220)
+        self.time2.move(200, 200)
         self.time3=QtWidgets.QRadioButton(self)
         self.time3.setText('SecOfDay')
-        self.time3.move(380, 220)
+        self.time3.move(200, 220)
         timegroup = QtWidgets.QButtonGroup(self)
         timegroup.addButton(self.time1)
         timegroup.addButton(self.time2)
@@ -101,13 +109,14 @@ class gui(QtWidgets.QWidget):
         # radio buttons for the delimiter
         delimiterlabel = QtWidgets.QLabel(self)
         delimiterlabel.setText('Delimiter:')
-        delimiterlabel.move(20, 240)
+        delimiterlabel.move(380, 160)
+        delimiterlabel.setFont(myFont)
         self.comma = QtWidgets.QRadioButton(self)
         self.comma.setText('Comma')
-        self.comma.move(20, 260)
+        self.comma.move(380, 180)
         self.space = QtWidgets.QRadioButton(self)
         self.space.setText('Space')
-        self.space.move(200, 260)
+        self.space.move(380, 200)
         delimitergroup = QtWidgets.QButtonGroup(self)
         delimitergroup.addButton(self.comma)
         delimitergroup.addButton(self.space)
@@ -117,15 +126,16 @@ class gui(QtWidgets.QWidget):
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Fill Value:')
         fillvaluelabel.move(20, 280)
+        fillvaluelabel.setFont(myFont)
         self.fillvalue1=QtWidgets.QRadioButton(self)
         self.fillvalue1.setText('-32767.0')
         self.fillvalue1.move(20, 300)
         self.fillvalue2=QtWidgets.QRadioButton(self)
         self.fillvalue2.setText('Blank')
-        self.fillvalue2.move(200, 300)
+        self.fillvalue2.move(20, 320)
         self.fillvalue3=QtWidgets.QRadioButton(self)
         self.fillvalue3.setText('Replicate')
-        self.fillvalue3.move(380, 300)
+        self.fillvalue3.move(20, 340)
         fillvaluegroup = QtWidgets.QButtonGroup(self)
         fillvaluegroup.addButton(self.fillvalue1)
         fillvaluegroup.addButton(self.fillvalue2)
@@ -135,16 +145,17 @@ class gui(QtWidgets.QWidget):
         # radio buttons for header
         headerformatlabel = QtWidgets.QLabel(self)
         headerformatlabel.setText('Header:')
-        headerformatlabel.move(20, 320)
+        headerformatlabel.move(200, 280)
+        headerformatlabel.setFont(myFont)
         self.header1 = QtWidgets.QRadioButton(self)
         self.header1.setText('Plain')
-        self.header1.move(20, 340)
+        self.header1.move(200, 300)
         self.header2 = QtWidgets.QRadioButton(self)
         self.header2.setText('ICARTT')
-        self.header2.move(200, 340)
+        self.header2.move(200, 320)
         self.header3 = QtWidgets.QRadioButton(self)
         self.header3.setText('AMESDef')
-        self.header3.move(380, 340)
+        self.header3.move(200, 340)
         headergroup = QtWidgets.QButtonGroup(self)
         headergroup.addButton(self.header1)
         headergroup.addButton(self.header2)
@@ -154,10 +165,10 @@ class gui(QtWidgets.QWidget):
 
         # averaging label and box
         averaginglabel=QtWidgets.QLabel(self)
-        averaginglabel.setText('Optional Averaging (seconds):')
-        averaginglabel.move(20, 380)
+        averaginglabel.setText('Averaging (s):')
+        averaginglabel.move(320, 340)
         self.averagingbox = QtWidgets.QLineEdit(self)
-        self.averagingbox.move(240, 380)
+        self.averagingbox.move(440, 340)
         self.averagingbox.resize(60, 20)
 
         # process button calls writeData function
@@ -169,61 +180,82 @@ class gui(QtWidgets.QWidget):
 
         # button to select all variables
         self.varbtn=QtWidgets.QPushButton('Select All', self)
-        self.varbtn.move(700, 10)
+        self.varbtn.move(640, 30)
         self.varbtn.clicked.connect(self.selectAll)
 
         # button to de-select all variables
         self.varbtn2=QtWidgets.QPushButton('Unselect All', self)
-        self.varbtn2.move(790, 10)
+        self.varbtn2.move(780, 30)
         self.varbtn2.clicked.connect(self.deselectAll)
 
         # label for variable list window
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Selected vars:')
-        fillvaluelabel.move(550, 420)
+        fillvaluelabel.move(20, 380)
+        fillvaluelabel.setFont(myFont)
         self.stdout=QtWidgets.QTextEdit(self)
-        self.stdout.move(550, 440)
-        self.stdout.resize(340, 220)
+        self.stdout.move(20, 400)
+        self.stdout.resize(500, 50)
         varlabel=QtWidgets.QLabel(self)
-        varlabel.setText('Click Var Name to Add')
-        varlabel.move(550, 20)
+        varlabel.setText('Select Vars')
+        varlabel.move(550, 30)
         self.var=QtWidgets.QTableWidget(self)
         self.var.setColumnCount(3)
         self.var.setRowCount(15)
-        self.var.move(550, 40)
-        self.var.resize(340, 380)
+        self.var.move(550, 60)
+        self.var.resize(350, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars)
 
         # fields for start and end time
+        timeselectionlabel = QtWidgets.QLabel(self)
+        timeselectionlabel.setText('Time Options')
+        timeselectionlabel.move(320, 280)
+        timeselectionlabel.setFont(myFont)
         startlab = QtWidgets.QLabel(self)
         startlab.setText('Start:')
         endlab = QtWidgets.QLabel(self)
         endlab.setText('End:')
-        startlab.move(330,380)
-        endlab.move(330,400)
+        startlab.move(320,300)
+        endlab.move(320,320)
         self.start=QtWidgets.QLineEdit(self)
         self.end=QtWidgets.QLineEdit(self)
-        self.start.move(380, 380)
+        self.start.move(360, 300)
         self.start.resize(140, 20)
-        self.end.move(380, 400)
+        self.end.move(360, 320)
         self.end.resize(140, 20)
 
         # exit app
-        closebtn=QtWidgets.QPushButton('Exit', self)
-        closebtn.move(810, 670)
-        closebtn.clicked.connect(self.close)
+#        closebtn=QtWidgets.QPushButton('Exit', self)
+#        closebtn.move(810, 670)
+#        closebtn.clicked.connect(self.close)
 
         # header preview
-        self.headerpreviewbtn=QtWidgets.QPushButton('Generate Preview', self)
-        self.headerpreviewbtn.move(20, 410)
+        self.headerpreviewbtn=QtWidgets.QPushButton('Show Preview', self)
+        self.headerpreviewbtn.move(20, 460)
         self.headerpreviewbtn.clicked.connect(self.outputFile)
         self.headerpreviewbtn.clicked.connect(self.writeData)
         self.headerpreview=QtWidgets.QTextEdit(self)
-        self.headerpreview.move(20, 440)
-        self.headerpreview.resize(500, 220)
+        self.headerpreview.move(20, 500)
+        self.headerpreview.resize(880, 150)
 
         # general setup options
+        # menu options
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu('File')
+        helpMenu = mainMenu.addMenu('Help')
+        importFile = QAction('Import NetCDF File', self)
+        saveBatchFile = QAction('Save Batch File', self)
+        readBatchFile = QAction('Read Batch File', self)
+        exit = QAction('Exit', self)
+        importFile.triggered.connect(self.loadData)
+        importFile.triggered.connect(self.loadVars)
+        exit.triggered.connect(self.close)
+        fileMenu.addAction(importFile)               
+        fileMenu.addAction(saveBatchFile)
+        fileMenu.addAction(readBatchFile)
+        fileMenu.addAction(exit)
+
         self.setGeometry(100, 100, 920, 700)
         self.setWindowTitle('NCAR/EOL RAF Aircraft netCDF to ASCII File Converter')    
         self.setAutoFillBackground(True)
@@ -519,6 +551,22 @@ class gui(QtWidgets.QWidget):
             x = processing_complete.exec_()
         else:
             pass
+
+    #def loadBatchFile(self):
+        # read: input filename
+        # read: averaging
+        # read: start time
+        # read: end time
+        # read: date format
+        # read: time format
+        # read: delimiter
+        # read: missing value
+        # read: header
+        # populate each corresponding field before processing
+
+    #def saveBatchFile(self):
+        #self.inputfile
+
 #######################################################################
 # define main function
 #######################################################################
