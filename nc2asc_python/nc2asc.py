@@ -172,18 +172,19 @@ class gui(QMainWindow):
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
         self.processbtn.resize(self.processbtn.sizeHint())
-        self.processbtn.clicked.connect(self.outputFile)
         self.processbtn.move(700, 670)
         self.processbtn.clicked.connect(self.writeData)
 
         # button to select all variables
         self.varbtn=QtWidgets.QPushButton('Select All', self)
         self.varbtn.move(640, 30)
+        self.varbtn.clicked.connect(self.loadVars)
         self.varbtn.clicked.connect(self.selectAll)
 
         # button to de-select all variables
-        self.varbtn2=QtWidgets.QPushButton('Unselect All', self)
+        self.varbtn2=QtWidgets.QPushButton('Clear All', self)
         self.varbtn2.move(780, 30)
+        self.varbtn2.clicked.connect(self.loadVars)
         self.varbtn2.clicked.connect(self.deselectAll)
 
         # variable table and buttons with labels
@@ -205,8 +206,6 @@ class gui(QMainWindow):
         self.var.resize(350, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars)
-        self.var.clicked.connect(self.outputFile)
-        self.var.clicked.connect(self.writeData)
 
         # fields for start and end time
         timeselectionlabel = QtWidgets.QLabel(self)
@@ -226,16 +225,16 @@ class gui(QMainWindow):
         self.end.move(360, 325)
         self.end.resize(140, 20)
 
-        # header preview button
-        self.headerpreviewbtn=QtWidgets.QPushButton('Show Preview', self)
-        self.headerpreviewbtn.move(20, 460)
-        self.headerpreviewbtn.clicked.connect(self.outputFile)
-        self.headerpreviewbtn.clicked.connect(self.writeData)
+        # header preview label
+        outputpreviewlabel=QtWidgets.QLabel(self)
+        outputpreviewlabel.setText('Output Preview')
+        outputpreviewlabel.move(20, 460)
+        outputpreviewlabel.setFont(myFont)
 
         # header preview field with horizontal scroll bar
-        self.headerpreview=QtWidgets.QTextEdit(self)
-        self.headerpreview.move(20, 500)
-        self.headerpreview.resize(880, 150)
+        self.outputpreview=QtWidgets.QTextEdit(self)
+        self.outputpreview.move(20, 500)
+        self.outputpreview.resize(880, 150)
 
         # menu options
         mainMenu = self.menuBar()
@@ -254,6 +253,9 @@ class gui(QMainWindow):
         fileMenu.addAction(exit)
 
         # general setup options
+        # changing the background color to gray
+        self.setWindowIcon(QIcon('raf.png'))
+        self.setStyleSheet("background-color: light gray;")
         self.setGeometry(100, 100, 920, 700)
         self.setWindowTitle('NCAR/EOL RAF Aircraft netCDF to ASCII File Converter')    
         self.setAutoFillBackground(True)
@@ -272,7 +274,6 @@ class gui(QMainWindow):
             # pop up box to select the input file for processing
             self.input_file, _ = QFileDialog.getOpenFileName(self,"Select a File to Convert", "/scr/raf_data","filter = nc(*.nc)")
             self.inputfilebox.setText(str(self.input_file))
-            print(str(self.input_file)+' selected for conversion')
 
             # use the path to the input file to pre-populate the output dir and filename
             head, tail = os.path.split(self.input_file)
@@ -301,21 +302,28 @@ class gui(QMainWindow):
             self.header = {}
 
             for i in nc.variables.keys():
+                # handle only time dimension variables
                 dims = str(nc.variables[i].dimensions)
                 if dims == "('Time',)":
                     output=nc[i][:]
+
+                    # append self.asc with vars in file 
                     self.asc[i]=pd.DataFrame(output)
+
+                    # append self.units with netcdf attribute units
                     units = nc.variables[i].getncattr('units')
                     self.units[i]=pd.Series(units)
+
+                    # append self.long_name with netcdf attribute long_name
                     long_name = nc.variables[i].getncattr('long_name')
                     self.long_name[i]=pd.Series(long_name)
+
+                    # append self.variables with netcdf variable names
                     variables = nc.variables[i].name
                     self.variables[i]=pd.Series(variables)
                 else:
                     pass
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
-
-            # ****get time and date separately*****
 
             self.dtime=nc.variables['Time']
             self.dtime=netCDF4.num2date(self.dtime[:],self.dtime.units)
@@ -333,41 +341,37 @@ class gui(QMainWindow):
            print('Error in extracting variable in '+str(self.input_file))
         return self.input_file, self.asc, self.header
 
-    def dirSelect(self):
-        self.dirname=QFileDialog.getExistingDirectory()
-        self.dirname=self.dirname + '/' 
-        self.outputdirbox.setText(self.dirname)
-        return self.dirname
-
-    def outputFile(self):
-        self.output_file = self.outputfilebox.text()
-        return self.output_file
-
+    # define function to select all variables in a NetCDF file
     def selectAll(self):
+        # iterated over the variables in the list 
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(71,145,209))
             self.asc = self.asc
+            self.asc_new = {}
             self.stdout.setText('All')
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
             no_data.setText("There is no data to select all!")
             x = no_data.exec_() 
-            
+
+    # define function to deselect all variables, start from none            
     def deselectAll(self):
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
-            self.asc = self.asc
             self.stdout.setText('None')
+            self.asc_new = {}
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
             no_data.setText("There is no data to unselect!")
             x = no_data.exec_()
 
+    # define function to select individual vars from list and populate fields
     def selectVars(self):
+        self_asc_new = {}
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
@@ -381,11 +385,14 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace(')', '')
             self.var_selected = self.var_selected.replace("'", '')
             self.var_selected = self.var_selected.replace(',', '')
+            self.var_selected = self.var_selected.replace('[', '')
+            self.var_selected = self.var_selected.replace(']', '')
             self.stdout.setText(self.var_selected+'\n')
             return self.asc_new
         except:
             print("error in getting values from table")
-        
+
+    # define function to populate variables in the table        
     def loadVars(self):
         try:
             self.header_np = self.header.to_numpy()
@@ -400,31 +407,41 @@ class gui(QMainWindow):
         except:
             print("error setting up the table")
 
+    # define function to switch radio buttons to align with ICARTT selection
     def ICARTT_toggle(self):
         self.date3.setChecked(True)
         self.comma.setChecked(True)
         self.fillvalue1.setChecked(True)
 
-    def writeData(self):
+    # define function to notify user that processing was successful.
+    def processingSuccess(self):
+        processing_complete = QMessageBox()
+        processing_complete.setWindowTitle("Success!")
+        ret = QMessageBox.question(self, 'Success!', "Please close the app and relaunch to process again.", QMessageBox.Ok)
+        #x = processing_complete.exec_()
+        if ret == QMessageBox.Ok:
+            self.close() 
 
+    # define function to write data to an output preview field and to output file
+    def writeData(self):
+        try:
+            os.system('rm '+self.output_file)
+        except:
+            pass
         try:
             self.asc = self.asc_new
         except:
             self.asc = self.asc
 
-        self.output_file = self.dirname+"/"+self.output_file
+        self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
         start = self.start.text()
-        print("start time"+start)
         end = self.end.text()
-        print("end time"+end)
         try:
             if 'Time' not in self.asc.columns: 
                 msg = QMessageBox()
                 msg.setWindowTitle("Error")
                 msg.setText("You must select the Time var, at least.")
                 x = msg.exec_()
-
-            # Perform independent time and date formatting based on selection
 
             else:
                 if self.date1.isChecked()==True and self.time1.isChecked()==True:
@@ -495,20 +512,21 @@ class gui(QMainWindow):
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
-                            self.headerpreview.setText(head)
+                            self.outputpreview.setText(head)
+                            self.processingSuccess()
                         elif self.fillvalue2.isChecked()==True:
                             self.asc.to_csv(self.output_file, header=True, index=False, na_rep='')
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')                        
-                            self.headerpreview.setText(head)
+                            self.outputpreview.setText(head)
                         elif self.fillvalue3.isChecked()==True:
                             self.asc = self.asc.fillna(method='ffill')
                             self.asc.to_csv(self.output_file, header=True, index=False)
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
-                            self.headerpreview.setText(head)
+                            self.outputpreview.setText(head)
                         else:
                             print('Error converting file: '+self.input_file)
 
@@ -518,20 +536,20 @@ class gui(QMainWindow):
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
-                            self.headerpreview.setText(head)
+                            self.outputpreview.setText(head)
                         elif self.fillvalue2.isChecked()==True:
                             self.asc.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
-                            self.headerpreview.setText(head)
+                            self.outputpreview.setText(head)
                         elif self.fillvalue3.isChecked()==True:
                             self.asc = self.asc.fillna(method='ffill')
                             self.asc.to_csv(self.output_file, header=True, index=False, sep=' ')
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
-                            self.headerpreview.setText(head)
+                            self.outputpreview.setText(head)
                         else:
                             print('Error converting file: '+self.input_file)
                     else:
@@ -556,7 +574,7 @@ class gui(QMainWindow):
                     with open(self.output_file) as preview:
                         head = str(preview.readlines()[0:5])
                         head = head.replace('\\n', '\n')
-                    self.headerpreview.setText(head)
+                    self.outputpreview.setText(head)
                 else:
                     pass 
 
@@ -568,27 +586,14 @@ class gui(QMainWindow):
         else:
             pass
 
-    #def loadBatchFile(self):
-        # read: input filename
-        # read: averaging
-        # read: start time
-        # read: end time
-        # read: date format
-        # read: time format
-        # read: delimiter
-        # read: missing value
-        # read: header
-        # populate each corresponding field before processing
-
-    #def saveBatchFile(self):
-        #self.inputfile
-
 #######################################################################
 # define main function
 #######################################################################
 def main():
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyle('Windows')
     ex = gui()
+    ex.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
