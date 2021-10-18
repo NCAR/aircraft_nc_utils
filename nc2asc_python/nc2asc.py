@@ -1,4 +1,4 @@
-#!/opt/local/anaconda3/bin/python3.7
+#! /usr/bin/env python3
 
 #######################################################################
 # Python based netCDF to ASCII converter with GUI
@@ -16,12 +16,12 @@ from datetime import datetime
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
+from PyQt5.QtWidgets import QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
+
 class gui(QMainWindow):
     def __init__(self):
 
         super(gui, self).__init__() 
-
 
         self.initUI()
 #######################################################################
@@ -29,35 +29,33 @@ class gui(QMainWindow):
 #######################################################################
     def initUI(self):               
 
-	# input file 
-#        self.inputbtn = QtWidgets.QPushButton('Input File', self)
-#        self.inputbtn.resize(self.inputbtn.sizeHint())
-#        self.inputbtn.move(20, 20)
-#        self.inputbtn.clicked.connect(self.loadData)
-#        self.inputbtn.clicked.connect(self.loadVars)
-      
+        # bold font to help with organization of processing options
         myFont=QtGui.QFont()
         myFont.setBold(True)
- 
+
+        # define input file box and label 
         self.inputfilebox=QtWidgets.QLineEdit(self)
-        self.inputfilebox.move(160, 30)
+        self.inputfilebox.move(140, 40)
         self.inputfilebox.resize(350, 20)
         inputlabel=QtWidgets.QLabel(self)
-        inputlabel.setText('Input File:')
-        inputlabel.move(80, 30) 
-        # output dir and file
-        self.outputbtn=QtWidgets.QPushButton('Output Directory', self)
-        self.outputbtn.resize(self.outputbtn.sizeHint())
-        self.outputbtn.move(40, 60)
-        self.outputbtn.clicked.connect(self.dirSelect)
+        inputlabel.setText('Input File')
+        inputlabel.move(75, 40) 
+
+        # define output dir and file
+        # output dir 
+        outputdirlabel=QtWidgets.QLabel(self)
+        outputdirlabel.setText('Output Directory')
+        outputdirlabel.move(30, 70)
         self.outputdirbox=QtWidgets.QLineEdit(self)
-        self.outputdirbox.move(160, 60)
+        self.outputdirbox.move(140, 70)
         self.outputdirbox.resize(350, 20)
+        
+        # output file
         outputlabel=QtWidgets.QLabel(self)
-        outputlabel.setText('Output File:')
-        outputlabel.move(50, 100)        
+        outputlabel.setText('Output Filename:')
+        outputlabel.move(30, 100)        
         self.outputfilebox=QtWidgets.QLineEdit(self)
-        self.outputfilebox.move(160, 100)
+        self.outputfilebox.move(140, 100)
         self.outputfilebox.resize(175, 20)
 
         # processing options section
@@ -188,7 +186,7 @@ class gui(QMainWindow):
         self.varbtn2.move(780, 30)
         self.varbtn2.clicked.connect(self.deselectAll)
 
-        # label for variable list window
+        # variable table and buttons with labels
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Selected vars:')
         fillvaluelabel.move(20, 370)
@@ -207,6 +205,8 @@ class gui(QMainWindow):
         self.var.resize(350, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars)
+        self.var.clicked.connect(self.outputFile)
+        self.var.clicked.connect(self.writeData)
 
         # fields for start and end time
         timeselectionlabel = QtWidgets.QLabel(self)
@@ -226,21 +226,17 @@ class gui(QMainWindow):
         self.end.move(360, 325)
         self.end.resize(140, 20)
 
-        # exit app
-#        closebtn=QtWidgets.QPushButton('Exit', self)
-#        closebtn.move(810, 670)
-#        closebtn.clicked.connect(self.close)
-
-        # header preview
+        # header preview button
         self.headerpreviewbtn=QtWidgets.QPushButton('Show Preview', self)
         self.headerpreviewbtn.move(20, 460)
         self.headerpreviewbtn.clicked.connect(self.outputFile)
         self.headerpreviewbtn.clicked.connect(self.writeData)
+
+        # header preview field with horizontal scroll bar
         self.headerpreview=QtWidgets.QTextEdit(self)
         self.headerpreview.move(20, 500)
         self.headerpreview.resize(880, 150)
 
-        # general setup options
         # menu options
         mainMenu = self.menuBar()
         fileMenu = mainMenu.addMenu('File')
@@ -257,6 +253,7 @@ class gui(QMainWindow):
         fileMenu.addAction(readBatchFile)
         fileMenu.addAction(exit)
 
+        # general setup options
         self.setGeometry(100, 100, 920, 700)
         self.setWindowTitle('NCAR/EOL RAF Aircraft netCDF to ASCII File Converter')    
         self.setAutoFillBackground(True)
@@ -271,9 +268,22 @@ class gui(QMainWindow):
 
     def loadData(self):
         try:
+
+            # pop up box to select the input file for processing
             self.input_file, _ = QFileDialog.getOpenFileName(self,"Select a File to Convert", "/scr/raf_data","filter = nc(*.nc)")
             self.inputfilebox.setText(str(self.input_file))
             print(str(self.input_file)+' selected for conversion')
+
+            # use the path to the input file to pre-populate the output dir and filename
+            head, tail = os.path.split(self.input_file)
+
+            # populate the output directory text from the input directory
+            self.outputdirbox.setText(str(head+'/'))
+
+            # populate the output file text from the input filename with .txt extension
+            tail = os.path.splitext(tail)[0]+'.txt'
+            self.outputfilebox.setText(str(tail))
+
         except:
             no_process = QMessageBox()
             no_process.setWindowTitle("Error")
@@ -281,6 +291,7 @@ class gui(QMainWindow):
             x = no_process.exec_()
     
         try:
+            # read in the input file 
             nc = netCDF4.Dataset(self.input_file, mode='r')
             self.variables_extract = pd.Series([])
             self.asc = {}
@@ -288,6 +299,7 @@ class gui(QMainWindow):
             self.long_name = {}
             self.variables= {}
             self.header = {}
+
             for i in nc.variables.keys():
                 dims = str(nc.variables[i].dimensions)
                 if dims == "('Time',)":
@@ -302,6 +314,9 @@ class gui(QMainWindow):
                 else:
                     pass
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
+
+            # ****get time and date separately*****
+
             self.dtime=nc.variables['Time']
             self.dtime=netCDF4.num2date(self.dtime[:],self.dtime.units)
             self.dtime=pd.Series(self.dtime).astype(str)
@@ -398,66 +413,70 @@ class gui(QMainWindow):
             self.asc = self.asc
 
         self.output_file = self.dirname+"/"+self.output_file
-        self.start = self.start.text()
-        self.end = self.end.text()
-
+        start = self.start.text()
+        print("start time"+start)
+        end = self.end.text()
+        print("end time"+end)
         try:
             if 'Time' not in self.asc.columns: 
                 msg = QMessageBox()
                 msg.setWindowTitle("Error")
                 msg.setText("You must select the Time var, at least.")
                 x = msg.exec_()
+
+            # Perform independent time and date formatting based on selection
+
             else:
                 if self.date1.isChecked()==True and self.time1.isChecked()==True:
                     self.asc.pop('Time')
                     self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                 elif self.date1.isChecked()==True and self.time2.isChecked()==True:
                     self.asc.pop('Time')
                     self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc['DateTime']=self.asc['DateTime'].str.replace(':', ' ')
                 elif self.date1.isChecked()==True and self.time3.isChecked()==True:
                     self.date3.setChecked(True)
                     self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc.pop('Time')
                 elif self.date2.isChecked()==True and self.time1.isChecked()==True:
                     self.asc.pop('Time')
                     self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
                 elif self.date2.isChecked()==True and self.time2.isChecked()==True:
                     self.asc.pop('Time')
                     self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc['DateTime']=self.asc['DateTime'].str.replace(':', ' ')
                     self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
                 elif self.date2.isChecked()==True and self.time3.isChecked()==True:
                     self.asc.pop('Time')
                     self.asc.insert(loc=0, column='Date', value=self.dtime)
-                    self.asc['DateTime']=self.asc[self.asc['DateTime']>self.start]
-                    self.asc['DateTime']=self.asc[self.asc['DateTime']<self.end]  
+                    self.asc['DateTime']=self.asc[self.asc['DateTime']>start]
+                    self.asc['DateTime']=self.asc[self.asc['DateTime']<end]  
                     self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
                 elif self.date3.isChecked()==True and self.time1.isChecked()==True:
                     self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc.pop('Time')
                 elif self.date3.isChecked()==True and self.time2.isChecked()==True:
                     self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc.pop('Time')
                 elif self.date3.isChecked()==True and self.time3.isChecked()==True:
                     self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>self.start]
-                    self.asc = self.asc[self.asc['DateTime']<self.end]
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                    self.asc = self.asc[self.asc['DateTime']<end]
                     self.asc.pop('Time')
                 else:
                     pass
@@ -541,10 +560,6 @@ class gui(QMainWindow):
                 else:
                     pass 
 
-#            processing_complete = QMessageBox()
-#            processing_complete.setWindowTitle("Processing Successful")
-#            processing_complete.setText("The ASCII file has been successfully written.")
-#            x = processing_complete.exec_()
         except:
             processing_complete = QMessageBox()
             processing_complete.setWindowTitle("Error")
