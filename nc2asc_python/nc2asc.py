@@ -361,6 +361,7 @@ class gui(QMainWindow):
     # define function to deselect all variables, start from none            
     def deselectAll(self):
         self.formatData()
+        self.asc_new = {}
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
@@ -418,10 +419,12 @@ class gui(QMainWindow):
     def processingSuccess(self):
         processing_complete = QMessageBox()
         processing_complete.setWindowTitle("Success!")
-        ret = QMessageBox.question(self, 'Success!', "Please close the app and relaunch to process again.", QMessageBox.Ok)
-        #x = processing_complete.exec_()
-        if ret == QMessageBox.Ok:
-            self.close() 
+        ret = QMessageBox.question(self, 'Success!', "Data was written to the output file.", QMessageBox.Ok)
+
+    def previewData(self:
+
+
+
 
     # define function to write data to an output preview field and to output file
     def writeData(self):
@@ -517,6 +520,7 @@ class gui(QMainWindow):
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')                        
                             self.outputpreview.setText(head)
+                            self.processingSuccess()
                         elif self.fillvalue3.isChecked()==True:
                             self.asc = self.asc.fillna(method='ffill')
                             self.asc.to_csv(self.output_file, header=True, index=False)
@@ -524,6 +528,7 @@ class gui(QMainWindow):
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
                             self.outputpreview.setText(head)
+                            self.processingSuccess()
                         else:
                             print('Error converting file: '+self.input_file)
 
@@ -534,12 +539,14 @@ class gui(QMainWindow):
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
                             self.outputpreview.setText(head)
+                            self.processingSuccess()
                         elif self.fillvalue2.isChecked()==True:
                             self.asc.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
                             with open(self.output_file) as preview:
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
                             self.outputpreview.setText(head)
+                            self.processingSuccess()
                         elif self.fillvalue3.isChecked()==True:
                             self.asc = self.asc.fillna(method='ffill')
                             self.asc.to_csv(self.output_file, header=True, index=False, sep=' ')
@@ -547,6 +554,7 @@ class gui(QMainWindow):
                                 head = str(preview.readlines()[0:10])
                                 head = head.replace('\\n', '\n')
                             self.outputpreview.setText(head)
+                            self.processingSuccess()
                         else:
                             print('Error converting file: '+self.input_file)
                     else:
@@ -572,6 +580,7 @@ class gui(QMainWindow):
                         head = str(preview.readlines()[0:5])
                         head = head.replace('\\n', '\n')
                     self.outputpreview.setText(head)
+                    self.processingSuccess()
                 else:
                     pass 
 
