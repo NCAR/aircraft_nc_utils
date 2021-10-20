@@ -245,6 +245,7 @@ class gui(QMainWindow):
         readBatchFile = QAction('Read Batch File', self)
         exit = QAction('Exit', self)
         importFile.triggered.connect(self.loadData)
+        importFile.triggered.connect(self.formatData)
         importFile.triggered.connect(self.loadVars)
         exit.triggered.connect(self.close)
         fileMenu.addAction(importFile)               
@@ -267,7 +268,6 @@ class gui(QMainWindow):
 #######################################################################
 # function definitions for buttons, fields, and table
 #######################################################################
-
     def loadData(self):
         try:
 
@@ -290,7 +290,8 @@ class gui(QMainWindow):
             no_process.setWindowTitle("Error")
             no_process.setText("Cannot Process!")
             x = no_process.exec_()
-    
+
+    def formatData(self):    
         try:
             # read in the input file 
             nc = netCDF4.Dataset(self.input_file, mode='r')
@@ -343,12 +344,13 @@ class gui(QMainWindow):
 
     # define function to select all variables in a NetCDF file
     def selectAll(self):
+        self.formatData()
         # iterated over the variables in the list 
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(71,145,209))
+            del self.asc_new
             self.asc = self.asc
-            self.asc_new = {}
             self.stdout.setText('All')
         except:
             no_data = QMessageBox()
@@ -358,25 +360,24 @@ class gui(QMainWindow):
 
     # define function to deselect all variables, start from none            
     def deselectAll(self):
+        self.formatData()
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
             self.stdout.setText('None')
-            self.asc_new = {}
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
-            no_data.setText("There is no data to unselect!")
+            no_data.setText("Error Clearing Vars!")
             x = no_data.exec_()
 
     # define function to select individual vars from list and populate fields
     def selectVars(self):
-        self_asc_new = {}
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
-            output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
-            self.variables_extract = self.variables_extract.append(output)
+            self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
+            self.variables_extract = self.variables_extract.append(self.output)
             self.variables_extract = self.variables_extract.drop_duplicates()
             self.asc_new = self.asc[self.variables_extract]
             self.var_selected = str(self.asc_new.columns.values.tolist())
@@ -389,9 +390,9 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace(']', '')
             self.stdout.setText(self.var_selected+'\n')
             return self.asc_new
+
         except:
             print("error in getting values from table")
-
     # define function to populate variables in the table        
     def loadVars(self):
         try:
@@ -424,10 +425,6 @@ class gui(QMainWindow):
 
     # define function to write data to an output preview field and to output file
     def writeData(self):
-        try:
-            os.system('rm '+self.output_file)
-        except:
-            pass
         try:
             self.asc = self.asc_new
         except:
