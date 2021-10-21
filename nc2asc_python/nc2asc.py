@@ -187,7 +187,7 @@ class gui(QMainWindow):
         self.varbtn2.clicked.connect(self.loadVars)
         self.varbtn2.clicked.connect(self.deselectAll)
 
-        # variable table and buttons with labels
+        # selected variables field
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Selected vars:')
         fillvaluelabel.move(20, 370)
@@ -195,6 +195,9 @@ class gui(QMainWindow):
         self.stdout=QtWidgets.QTextEdit(self)
         self.stdout.move(20, 400)
         self.stdout.resize(500, 50)
+        self.stdout.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+
+        # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
         varlabel.setText('Select Vars')
         varlabel.move(550, 30)
@@ -226,15 +229,16 @@ class gui(QMainWindow):
         self.end.resize(140, 20)
 
         # header preview label
-        self.outputpreviewbutton=QtWidgets.QPushButton('Preview', self)
-        self.outputpreviewbutton.move(20, 460)
-        self.outputpreviewbutton.clicked.connect(self.previewData)
+        self.outputpreviewlabel=QtWidgets.QLabel(self)
+        self.outputpreviewlabel.move(20, 460)
+        self.outputpreviewlabel.setText('Preview')
+        self.outputpreviewlabel.setFont(myFont)
 
         # header preview field with horizontal scroll bar
         self.outputpreview=QtWidgets.QTextEdit(self)
         self.outputpreview.move(20, 500)
         self.outputpreview.resize(880, 150)
-
+        self.outputpreview.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
         # menu options
         mainMenu = self.menuBar()
         fileMenu = mainMenu.addMenu('File')
@@ -352,6 +356,7 @@ class gui(QMainWindow):
             del self.asc_new
             self.asc = self.asc
             self.stdout.setText('All')
+            self.previewData()
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
@@ -366,6 +371,7 @@ class gui(QMainWindow):
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
             self.stdout.setText('None')
+            self.outputpreview.setText('')
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
@@ -390,6 +396,7 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace('[', '')
             self.var_selected = self.var_selected.replace(']', '')
             self.stdout.setText(self.var_selected+'\n')
+            self.previewData()
             return self.asc_new
 
         except:
@@ -426,7 +433,7 @@ class gui(QMainWindow):
             self.preview = self.asc_new
         except:
             self.preview = self.asc
-
+        print(self.preview)
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
         start = self.start.text()
         end = self.end.text()
@@ -579,18 +586,38 @@ class gui(QMainWindow):
         else:
             pass
 
+    # define function for handling date and time formatting for previewData and writeData functions
+    def timeHandler(self):
+        try:
+            self.asc.pop('Time')
+        except:
+            pass
+        try:
+            self.asc.insert(loc=0, column='DateTime', value=self.dtime)
+        except:
+            pass
+        try:
+            self.asc = self.asc[self.asc['DateTime']>start]
+        except:
+            pass
+        try:
+            self.asc = self.asc[self.asc['DateTime']<end]
+        except:
+            pass
+
+
     # define function to write data to an output preview field and to output file
     def writeData(self):
         try:
             self.asc = self.asc_new
         except:
             self.asc = self.asc
-
+        print(self.asc)
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
         start = self.start.text()
         end = self.end.text()
         try:
-            if 'Time' not in self.asc.columns: 
+            if 'DateTime' not in self.asc.columns: 
                 msg = QMessageBox()
                 msg.setWindowTitle("Error")
                 msg.setText("You must select the Time var, at least.")
@@ -598,33 +625,19 @@ class gui(QMainWindow):
 
             else:
                 if self.date1.isChecked()==True and self.time1.isChecked()==True:
-                    self.asc.pop('Time')
-                    self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
+                    self.timeHandler()
                 elif self.date1.isChecked()==True and self.time2.isChecked()==True:
-                    self.asc.pop('Time')
-                    self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
+                    self.timeHandler()
                     self.asc['DateTime']=self.asc['DateTime'].str.replace(':', ' ')
                 elif self.date1.isChecked()==True and self.time3.isChecked()==True:
+                    self.timeHandler()
                     self.date3.setChecked(True)
                     self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
-                    self.asc.pop('Time')
                 elif self.date2.isChecked()==True and self.time1.isChecked()==True:
-                    self.asc.pop('Time')
-                    self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
+                    self.timeHandler()
                     self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
                 elif self.date2.isChecked()==True and self.time2.isChecked()==True:
-                    self.asc.pop('Time')
-                    self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
+                    self.timeHandler()
                     self.asc['DateTime']=self.asc['DateTime'].str.replace(':', ' ')
                     self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
                 elif self.date2.isChecked()==True and self.time3.isChecked()==True:
@@ -714,9 +727,7 @@ class gui(QMainWindow):
             processing_complete.setWindowTitle("Error")
             processing_complete.setText("There was an error writing your ASCII file. Please try again.")
             x = processing_complete.exec_()
-        else:
-            pass
-
+        
 #######################################################################
 # define main function
 #######################################################################
