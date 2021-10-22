@@ -253,6 +253,7 @@ class gui(QMainWindow):
         exit.triggered.connect(self.close)
         fileMenu.addAction(importFile)               
         fileMenu.addAction(saveBatchFile)
+        saveBatchFile.triggered.connect(self.saveBatchFile)
         fileMenu.addAction(readBatchFile)
         fileMenu.addAction(exit)
 
@@ -269,7 +270,69 @@ class gui(QMainWindow):
         self.show()
 
 #######################################################################
-# function definitions for buttons, fields, and table
+# function definitions for batch file saving and reading
+#######################################################################
+    def saveBatchFile(self):
+        if len(self.inputfilebox.text()) == 0:
+            no_savebatch = QMessageBox()
+            no_savebatch.setWindowTitle("Error")
+            no_savebatch.setText("Cannot Save Batchfile, Need Input File!")
+            x = no_savebatch.exec_()
+        else:
+            try:
+                self.batchfile = str(self.head)+'/batchfile'
+                os.system('touch '+ self.batchfile)
+                self.batchfile = open(self.batchfile,"w") 
+                self.batchfile.write('if= '+self.input_file+'\n')
+                self.batchfile.write('of= '+self.head+'/'+self.tail+'\n\n')
+                if self.header1.isChecked() == True:
+                    self.batchfile.write('hd= Plain\n') 
+                elif self.header2.isChecked() == True:
+                    self.batchfile.write('hd= ICARTT\n')
+                elif self.header3.isChecked() == True:
+                    self.batchfile.write('hd= AMESDef\n')
+                averagingbox_text = str(self.averagingbox.text()) 
+                self.batchfile.write('avg= '+averagingbox_text+'\n')
+                if self.date1.isChecked() == True:
+                    self.batchfile.write('dt= yyyy-mm-dd\n')
+                elif self.date2.isChecked() == True:
+                    self.batchfile.write('dt= yyyy mm dd\n')
+                elif self.date3.isChecked() == True:
+                    self.batchfile.write('dt= NoDate\n')
+
+                if self.time1.isChecked() == True:
+                    self.batchfile.write('tm= hh:mm:ss\n')
+                elif self.time2.isChecked() == True:
+                    self.batchfile.write('tm = hh mm ss\n')
+                elif slef.time3.isChecked() == True:
+                    self.batchfile.write('tm = SecOfDay\n')
+
+                if self.comma.isChecked() == True:
+                    self.batchfile.write('sp= comma\n')
+                elif self.space.isChecked() == True:
+                    self.batchfile.write('sp= space\n')
+
+                if self.fillvalue1.isChecked() == True:
+                    self.batchfile.write('fv= -32767\n')
+                elif self.fillvalue2.isChecked() == True:
+                    self.batchfile.write('fv= blank\n')
+                elif self.fillvalue3.isChecked() == True:
+                    self.batchfile.write('fv= replicate\n')
+
+                self.batchfile.write('ti= '+self.start.text()+' '+self.end.text()+'\n')
+                self.batchfile.write('Vars= '+self.var_selected+'\n')
+                self.batchfile.close
+                savebatch = QMessageBox()
+                savebatch.setWindowTitle("Success!")
+                savebatch.setText("Batch File Successfully Created! Check Output Directory")
+                x = savebatch.exec_()
+            except:
+                print("Error writing batchfile.")
+    def readBatchFile(self):
+        pass
+
+#######################################################################
+# function definitions for GUI data handling and processing
 #######################################################################
     def loadData(self):
         try:
@@ -279,14 +342,14 @@ class gui(QMainWindow):
             self.inputfilebox.setText(str(self.input_file))
 
             # use the path to the input file to pre-populate the output dir and filename
-            head, tail = os.path.split(self.input_file)
+            self.head, self.tail = os.path.split(self.input_file)
 
             # populate the output directory text from the input directory
-            self.outputdirbox.setText(str(head+'/'))
+            self.outputdirbox.setText(str(self.head+'/'))
 
             # populate the output file text from the input filename with .txt extension
-            tail = os.path.splitext(tail)[0]+'.txt'
-            self.outputfilebox.setText(str(tail))
+            self.tail = os.path.splitext(self.tail)[0]+'.txt'
+            self.outputfilebox.setText(str(self.tail))
 
         except:
             no_process = QMessageBox()
@@ -345,6 +408,21 @@ class gui(QMainWindow):
            print('Error in extracting variable in '+str(self.input_file))
         return self.input_file, self.asc, self.header
 
+    # define function to populate variables in the table        
+    def loadVars(self):
+        try:
+            self.header_np = self.header.to_numpy()
+            self.row_count = (len(self.header_np))
+            self.column_count = 3
+            self.var.setColumnCount(self.column_count)
+            self.var.setRowCount(self.row_count)
+            for row in range(self.row_count):
+                for column in range(self.column_count):
+                    self.item = str(self.header_np[row, column])
+                    self.var.setItem(row, column, QTableWidgetItem(self.item))
+        except:
+            print("error setting up the table")
+
     # define function to select all variables in a NetCDF file
     def selectAll(self):
         self.formatData()
@@ -401,20 +479,6 @@ class gui(QMainWindow):
 
         except:
             print("error in getting values from table")
-    # define function to populate variables in the table        
-    def loadVars(self):
-        try:
-            self.header_np = self.header.to_numpy()
-            self.row_count = (len(self.header_np))
-            self.column_count = 3
-            self.var.setColumnCount(self.column_count)
-            self.var.setRowCount(self.row_count)
-            for row in range(self.row_count):
-                for column in range(self.column_count):
-                    self.item = str(self.header_np[row, column])
-                    self.var.setItem(row, column, QTableWidgetItem(self.item))
-        except:
-            print("error setting up the table")
 
     # define function to switch radio buttons to align with ICARTT selection
     def ICARTT_toggle(self):
@@ -427,6 +491,25 @@ class gui(QMainWindow):
         processing_complete = QMessageBox()
         processing_complete.setWindowTitle("Success!")
         ret = QMessageBox.question(self, 'Success!', "Data was written to the output file.", QMessageBox.Ok)
+
+    # define function for handling date and time formatting for previewData and writeData functions
+    def timeHandler(self):
+        try:
+            self.asc.pop('Time')
+        except:
+            pass
+        try:
+            self.asc.insert(loc=0, column='DateTime', value=self.dtime)
+        except:
+            pass
+        try:
+            self.asc = self.asc[self.asc['DateTime']>start]
+        except:
+            pass
+        try:
+            self.asc = self.asc[self.asc['DateTime']<end]
+        except:
+            pass
 
     def previewData(self):
         try:
@@ -499,11 +582,14 @@ class gui(QMainWindow):
                 else:
                     pass
                 self.averaging_window = self.averagingbox.text()
-
+                print('*************'+self.averaging_window)
                 if len(self.averaging_window)!=0:
                     self.averaging_window=int(self.averaging_window)
+                    print('***************'+self.averaging_window)
                     self.preview = self.preview.rolling(self.averaging_window).mean()
+                    print(self.preview)
                     self.preview = self.preview.iloc[::self.averaging_window, :]
+                    print(self.preview)
                 else:
                     pass
                 if self.header1.isChecked()==True:
@@ -585,26 +671,6 @@ class gui(QMainWindow):
             x = processing_complete.exec_()
         else:
             pass
-
-    # define function for handling date and time formatting for previewData and writeData functions
-    def timeHandler(self):
-        try:
-            self.asc.pop('Time')
-        except:
-            pass
-        try:
-            self.asc.insert(loc=0, column='DateTime', value=self.dtime)
-        except:
-            pass
-        try:
-            self.asc = self.asc[self.asc['DateTime']>start]
-        except:
-            pass
-        try:
-            self.asc = self.asc[self.asc['DateTime']<end]
-        except:
-            pass
-
 
     # define function to write data to an output preview field and to output file
     def writeData(self):
