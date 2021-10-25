@@ -172,7 +172,7 @@ class gui(QMainWindow):
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
         self.processbtn.resize(self.processbtn.sizeHint())
-        self.processbtn.move(700, 670)
+        self.processbtn.move(20, 670)
         self.processbtn.clicked.connect(self.writeData)
 
         # button to select all variables
@@ -188,14 +188,14 @@ class gui(QMainWindow):
         self.varbtn2.clicked.connect(self.deselectAll)
 
         # selected variables field
-        fillvaluelabel = QtWidgets.QLabel(self)
-        fillvaluelabel.setText('Selected vars:')
-        fillvaluelabel.move(20, 370)
-        fillvaluelabel.setFont(myFont)
-        self.stdout=QtWidgets.QTextEdit(self)
-        self.stdout.move(20, 400)
-        self.stdout.resize(500, 50)
-        self.stdout.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+#        fillvaluelabel = QtWidgets.QLabel(self)
+#        fillvaluelabel.setText('Selected vars:')
+#        fillvaluelabel.move(20, 370)
+#        fillvaluelabel.setFont(myFont)
+#        self.stdout=QtWidgets.QTextEdit(self)
+#        self.stdout.move(20, 400)
+#        self.stdout.resize(500, 50)
+#        self.stdout.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
 
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
@@ -283,44 +283,48 @@ class gui(QMainWindow):
                 self.batchfile = str(self.head)+'/batchfile'
                 os.system('touch '+ self.batchfile)
                 self.batchfile = open(self.batchfile,"w") 
-                self.batchfile.write('if= '+self.input_file+'\n')
-                self.batchfile.write('of= '+self.head+'/'+self.tail+'\n\n')
+                self.batchfile.write('if='+self.input_file+'\n')
+                self.batchfile.write('of='+self.head+'/'+self.tail+'\n\n')
                 if self.header1.isChecked() == True:
-                    self.batchfile.write('hd= Plain\n') 
+                    self.batchfile.write('hd=Plain\n') 
                 elif self.header2.isChecked() == True:
-                    self.batchfile.write('hd= ICARTT\n')
+                    self.batchfile.write('hd=ICARTT\n')
                 elif self.header3.isChecked() == True:
-                    self.batchfile.write('hd= AMESDef\n')
+                    self.batchfile.write('hd=AMESDef\n')
                 averagingbox_text = str(self.averagingbox.text()) 
-                self.batchfile.write('avg= '+averagingbox_text+'\n')
+                self.batchfile.write('avg='+averagingbox_text+'\n')
                 if self.date1.isChecked() == True:
-                    self.batchfile.write('dt= yyyy-mm-dd\n')
+                    self.batchfile.write('dt=yyyy-mm-dd\n')
                 elif self.date2.isChecked() == True:
-                    self.batchfile.write('dt= yyyy mm dd\n')
+                    self.batchfile.write('dt=yyyy mm dd\n')
                 elif self.date3.isChecked() == True:
-                    self.batchfile.write('dt= NoDate\n')
+                    self.batchfile.write('dt=NoDate\n')
 
                 if self.time1.isChecked() == True:
-                    self.batchfile.write('tm= hh:mm:ss\n')
+                    self.batchfile.write('tm=hh:mm:ss\n')
                 elif self.time2.isChecked() == True:
-                    self.batchfile.write('tm = hh mm ss\n')
+                    self.batchfile.write('tm=hh mm ss\n')
                 elif slef.time3.isChecked() == True:
-                    self.batchfile.write('tm = SecOfDay\n')
+                    self.batchfile.write('tm=SecOfDay\n')
 
                 if self.comma.isChecked() == True:
-                    self.batchfile.write('sp= comma\n')
+                    self.batchfile.write('sp=comma\n')
                 elif self.space.isChecked() == True:
-                    self.batchfile.write('sp= space\n')
+                    self.batchfile.write('sp=space\n')
 
                 if self.fillvalue1.isChecked() == True:
-                    self.batchfile.write('fv= -32767\n')
+                    self.batchfile.write('fv=-32767\n')
                 elif self.fillvalue2.isChecked() == True:
-                    self.batchfile.write('fv= blank\n')
+                    self.batchfile.write('fv=blank\n')
                 elif self.fillvalue3.isChecked() == True:
-                    self.batchfile.write('fv= replicate\n')
+                    self.batchfile.write('fv=replicate\n')
 
-                self.batchfile.write('ti= '+self.start.text()+' '+self.end.text()+'\n')
-                self.batchfile.write('Vars= '+self.var_selected+'\n')
+                self.batchfile.write('ti='+self.start.text()+' '+self.end.text()+'\n\n')
+                for i in self.var_selected.split('  '):
+                    try:
+                        self.batchfile.write('Vars='+i+'\n')
+                    except:
+                        pass
                 self.batchfile.close
                 savebatch = QMessageBox()
                 savebatch.setWindowTitle("Success!")
@@ -462,10 +466,14 @@ class gui(QMainWindow):
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
             self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
+            print(self.output)
             self.variables_extract = self.variables_extract.append(self.output)
+            print(self.variables_extract)
             self.variables_extract = self.variables_extract.drop_duplicates()
+            print(self.variables_extract)
             self.asc_new = self.asc[self.variables_extract]
             self.var_selected = str(self.asc_new.columns.values.tolist())
+            print(self.var_selected)
             self.var_selected = self.var_selected.replace('0', '')
             self.var_selected = self.var_selected.replace('(', '')
             self.var_selected = self.var_selected.replace(')', '')
@@ -473,9 +481,9 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace(',', '')
             self.var_selected = self.var_selected.replace('[', '')
             self.var_selected = self.var_selected.replace(']', '')
-            self.stdout.setText(self.var_selected+'\n')
+            #self.stdout.setText(self.var_selected+'\n')
             self.previewData()
-            return self.asc_new
+            return self.asc_new, self.variables_extract, self.var_selected
 
         except:
             print("error in getting values from table")
