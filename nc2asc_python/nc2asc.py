@@ -24,8 +24,10 @@ class gui(QMainWindow):
         super(gui, self).__init__() 
 
         self.initUI()
+
 #######################################################################
 # define layout of gui
+# Set up the fields, table, buttons, and menu
 #######################################################################
     def initUI(self):               
 
@@ -187,16 +189,6 @@ class gui(QMainWindow):
         self.varbtn2.clicked.connect(self.loadVars)
         self.varbtn2.clicked.connect(self.deselectAll)
 
-        # selected variables field
-#        fillvaluelabel = QtWidgets.QLabel(self)
-#        fillvaluelabel.setText('Selected vars:')
-#        fillvaluelabel.move(20, 370)
-#        fillvaluelabel.setFont(myFont)
-#        self.stdout=QtWidgets.QTextEdit(self)
-#        self.stdout.move(20, 400)
-#        self.stdout.resize(500, 50)
-#        self.stdout.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
-
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
         varlabel.setText('Select Vars')
@@ -239,6 +231,7 @@ class gui(QMainWindow):
         self.outputpreview.move(20, 500)
         self.outputpreview.resize(880, 150)
         self.outputpreview.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+
         # menu options
         mainMenu = self.menuBar()
         fileMenu = mainMenu.addMenu('File')
@@ -247,15 +240,21 @@ class gui(QMainWindow):
         saveBatchFile = QAction('Save Batch File', self)
         readBatchFile = QAction('Read Batch File', self)
         exit = QAction('Exit', self)
+        fileMenu.addAction(importFile)
+        fileMenu.addAction(saveBatchFile)
+        fileMenu.addAction(readBatchFile)
+        fileMenu.addAction(exit)
+     
+        # connect the menu option File > Import NetCDF File to the data functions
         importFile.triggered.connect(self.loadData)
         importFile.triggered.connect(self.formatData)
         importFile.triggered.connect(self.loadVars)
+
+        # connect the exit menu option to the close function
         exit.triggered.connect(self.close)
-        fileMenu.addAction(importFile)               
-        fileMenu.addAction(saveBatchFile)
+
+        # connect the Save Batch File menu option to the fucntion
         saveBatchFile.triggered.connect(self.saveBatchFile)
-        fileMenu.addAction(readBatchFile)
-        fileMenu.addAction(exit)
 
         # general setup options
         # changing the background color to gray
@@ -272,27 +271,43 @@ class gui(QMainWindow):
 #######################################################################
 # function definitions for batch file saving and reading
 #######################################################################
+    # if user selects to save a batch file, call function
     def saveBatchFile(self):
+
+        # check to ensure the user has already loaded a NetCDF
         if len(self.inputfilebox.text()) == 0:
+
             no_savebatch = QMessageBox()
+
+            # if no NetCDF loaded, display error message
             no_savebatch.setWindowTitle("Error")
             no_savebatch.setText("Cannot Save Batchfile, Need Input File!")
             x = no_savebatch.exec_()
+
         else:
+
             try:
+                # if NetCDF file has been loaded start creating batch file
                 self.batchfile = str(self.head)+'/batchfile'
                 os.system('touch '+ self.batchfile)
                 self.batchfile = open(self.batchfile,"w") 
                 self.batchfile.write('if='+self.input_file+'\n')
                 self.batchfile.write('of='+self.head+'/'+self.tail+'\n\n')
+
+                # determine the settings from the gui to inlude in the batch file
+                # check which header to include in the batch file
                 if self.header1.isChecked() == True:
                     self.batchfile.write('hd=Plain\n') 
                 elif self.header2.isChecked() == True:
                     self.batchfile.write('hd=ICARTT\n')
                 elif self.header3.isChecked() == True:
                     self.batchfile.write('hd=AMESDef\n')
+    
+                # determine averaing to write to the batch file
                 averagingbox_text = str(self.averagingbox.text()) 
                 self.batchfile.write('avg='+averagingbox_text+'\n')
+
+                # determine date format to write to the batch file
                 if self.date1.isChecked() == True:
                     self.batchfile.write('dt=yyyy-mm-dd\n')
                 elif self.date2.isChecked() == True:
@@ -300,6 +315,7 @@ class gui(QMainWindow):
                 elif self.date3.isChecked() == True:
                     self.batchfile.write('dt=NoDate\n')
 
+                # determine time format to write to the batch file
                 if self.time1.isChecked() == True:
                     self.batchfile.write('tm=hh:mm:ss\n')
                 elif self.time2.isChecked() == True:
@@ -307,11 +323,13 @@ class gui(QMainWindow):
                 elif slef.time3.isChecked() == True:
                     self.batchfile.write('tm=SecOfDay\n')
 
+                # determine delimieter to write to the batch file
                 if self.comma.isChecked() == True:
                     self.batchfile.write('sp=comma\n')
                 elif self.space.isChecked() == True:
                     self.batchfile.write('sp=space\n')
 
+                # determine the fillvalue to write to the batch file
                 if self.fillvalue1.isChecked() == True:
                     self.batchfile.write('fv=-32767\n')
                 elif self.fillvalue2.isChecked() == True:
@@ -319,25 +337,32 @@ class gui(QMainWindow):
                 elif self.fillvalue3.isChecked() == True:
                     self.batchfile.write('fv=replicate\n')
 
+                # determine the time interval to write to the batch file
+                # by default the self.start/end.text() method will return the full file
                 self.batchfile.write('ti='+self.start.text()+' '+self.end.text()+'\n\n')
+
+                # in order to display vars on separate lines to align with 
+                # nimbus batch file conventions, split by two spaces
                 for i in self.var_selected.split('  '):
                     try:
                         self.batchfile.write('Vars='+i+'\n')
                     except:
                         pass
                 self.batchfile.close
+
+                # notify user that batch file has been written
                 savebatch = QMessageBox()
                 savebatch.setWindowTitle("Success!")
                 savebatch.setText("Batch File Successfully Created! Check Output Directory")
                 x = savebatch.exec_()
             except:
+                # if there is an error, notify user on command line
                 print("Error writing batchfile.")
-    def readBatchFile(self):
-        pass
 
 #######################################################################
 # function definitions for GUI data handling and processing
 #######################################################################
+
     def loadData(self):
         try:
 
@@ -356,6 +381,8 @@ class gui(QMainWindow):
             self.outputfilebox.setText(str(self.tail))
 
         except:
+
+            # if there is an error loading the NetCDF file, notify the user in a popup
             no_process = QMessageBox()
             no_process.setWindowTitle("Error")
             no_process.setText("Cannot Process!")
@@ -365,7 +392,11 @@ class gui(QMainWindow):
         try:
             # read in the input file 
             nc = netCDF4.Dataset(self.input_file, mode='r')
+
+            # create an empty pandas series to hold variables
             self.variables_extract = pd.Series([])
+
+            # create empty dicts
             self.asc = {}
             self.units = {}
             self.long_name = {}
@@ -394,20 +425,31 @@ class gui(QMainWindow):
                     self.variables[i]=pd.Series(variables)
                 else:
                     pass
+
+            # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
 
+            # create an object to store the NetCDF variable time          
             self.dtime=nc.variables['Time']
+
+            # use num2date to setup dtime object
             self.dtime=netCDF4.num2date(self.dtime[:],self.dtime.units)
             self.dtime=pd.Series(self.dtime).astype(str)
+
+            # concatenate the units, long_name, variables, and header
             self.units=pd.concat(self.units, axis=0, ignore_index=True)
             self.long_name=pd.concat(self.long_name, axis=0, ignore_index=True)
             self.variables = pd.concat(self.variables, axis=0, ignore_index=True)
             self.header = pd.concat([self.variables, self.units, self.long_name], axis=1, ignore_index=True)
 
+            # subset the start and end time from the dtime objet by position
             self.start_time = self.dtime.iloc[1]
             self.end_time = self.dtime.iloc[-1]
+    
+            # populate the start_time and end_time fields in the gui
             self.start.setText(self.start_time)
             self.end.setText(self.end_time)
+
         except:
            print('Error in extracting variable in '+str(self.input_file))
         return self.input_file, self.asc, self.header
@@ -431,7 +473,8 @@ class gui(QMainWindow):
     def selectAll(self):
         self.formatData()
         self.asc_new = {}
-        # iterated over the variables in the list 
+
+        # iterate over the variables in the list 
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(71,145,209))
@@ -439,6 +482,7 @@ class gui(QMainWindow):
             self.asc = self.asc
             self.stdout.setText('All')
             self.previewData()
+
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
