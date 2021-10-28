@@ -163,14 +163,6 @@ class gui(QMainWindow):
         self.header1.setChecked(True)
         self.header2.clicked.connect(self.ICARTT_toggle)
 
-        # averaging label and box
-        averaginglabel=QtWidgets.QLabel(self)
-        averaginglabel.setText('Averaging (s):')
-        averaginglabel.move(320, 340)
-        self.averagingbox = QtWidgets.QLineEdit(self)
-        self.averagingbox.move(440, 345)
-        self.averagingbox.resize(60, 20)
-
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
         self.processbtn.resize(self.processbtn.sizeHint())
@@ -192,37 +184,53 @@ class gui(QMainWindow):
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
         varlabel.setText('Select Vars')
-        varlabel.move(550, 30)
+        varlabel.move(500, 30)
         varlabel.setFont(myFont)
         self.var=QtWidgets.QTableWidget(self)
         self.var.setColumnCount(3)
+        self.var.setColumnWidth(2, 150)
         self.var.setRowCount(15)
-        self.var.move(550, 60)
-        self.var.resize(350, 430)
+        self.var.move(500, 60)
+        self.var.resize(400, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars)
+        #pallete = self.var.palette()
+        #hightlight_brush = pallete.brush(QtGui.QPalette.Highlight)
+        #hightlight_brush.setColor(QtGui.QColor('red'))
+        #pallete.setBrush(QtGui.QPalette.Highlight, hightlight_brush)
+        #self.var.setPalette(pallete)
 
         # fields for start and end time
         timeselectionlabel = QtWidgets.QLabel(self)
         timeselectionlabel.setText('Time Options:')
-        timeselectionlabel.move(320, 280)
+        timeselectionlabel.move(20, 380)
         timeselectionlabel.setFont(myFont)
         startlab = QtWidgets.QLabel(self)
         startlab.setText('Start:')
         endlab = QtWidgets.QLabel(self)
         endlab.setText('End:')
-        startlab.move(320,300)
-        endlab.move(320,320)
+        startlab.move(20,400)
+        endlab.move(20,420)
         self.start=QtWidgets.QLineEdit(self)
         self.end=QtWidgets.QLineEdit(self)
-        self.start.move(360, 305)
+        self.start.move(60, 405)
         self.start.resize(140, 20)
-        self.end.move(360, 325)
+        self.end.move(60, 425)
         self.end.resize(140, 20)
+
+        # averaging label and box
+        averaginglabel=QtWidgets.QLabel(self)
+        averaginglabel.setText('Averaging (s):')
+        averaginglabel.move(20, 440)
+        self.averagingbox = QtWidgets.QLineEdit(self)
+        self.averagingbox.move(140, 445)
+        self.averagingbox.resize(60, 20)
+
+
 
         # header preview label
         self.outputpreviewlabel=QtWidgets.QLabel(self)
-        self.outputpreviewlabel.move(20, 460)
+        self.outputpreviewlabel.move(20, 470)
         self.outputpreviewlabel.setText('Preview')
         self.outputpreviewlabel.setFont(myFont)
 
@@ -480,7 +488,6 @@ class gui(QMainWindow):
                 self.var.item(i, 0).setBackground(QtGui.QColor(71,145,209))
             del self.asc_new
             self.asc = self.asc
-            self.stdout.setText('All')
             self.previewData()
 
         except:
@@ -496,7 +503,6 @@ class gui(QMainWindow):
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
-            self.stdout.setText('None')
             self.outputpreview.setText('')
         except:
             no_data = QMessageBox()
@@ -510,14 +516,12 @@ class gui(QMainWindow):
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
             self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
-            print(self.output)
             self.variables_extract = self.variables_extract.append(self.output)
-            print(self.variables_extract)
             self.variables_extract = self.variables_extract.drop_duplicates()
-            print(self.variables_extract)
             self.asc_new = self.asc[self.variables_extract]
             self.var_selected = str(self.asc_new.columns.values.tolist())
-            print(self.var_selected)
+
+            # need to remove the unwanted characters for the batch file
             self.var_selected = self.var_selected.replace('0', '')
             self.var_selected = self.var_selected.replace('(', '')
             self.var_selected = self.var_selected.replace(')', '')
@@ -525,8 +529,9 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace(',', '')
             self.var_selected = self.var_selected.replace('[', '')
             self.var_selected = self.var_selected.replace(']', '')
-            #self.stdout.setText(self.var_selected+'\n')
+
             self.previewData()
+
             return self.asc_new, self.variables_extract, self.var_selected
 
         except:
@@ -544,25 +549,39 @@ class gui(QMainWindow):
         processing_complete.setWindowTitle("Success!")
         ret = QMessageBox.question(self, 'Success!', "Data was written to the output file.", QMessageBox.Ok)
 
+#############################################################################
+# define date and time functions for use in previewData and writeData
+#############################################################################
     # define function for handling date and time formatting for previewData and writeData functions
-    def timeHandler(self):
+    def timeHandler(self, datasource):
         try:
-            self.asc.pop('Time')
+            datasource.pop('Time')
         except:
             pass
         try:
-            self.asc.insert(loc=0, column='DateTime', value=self.dtime)
+            datasource.insert(loc=0, column='DateTime', value=self.dtime)
         except:
             pass
         try:
-            self.asc = self.asc[self.asc['DateTime']>start]
+            datasource = datasource+[datasource['DateTime']>start]
         except:
             pass
         try:
-            self.asc = self.asc[self.asc['DateTime']<end]
+            datasource = datasource[datasource['DateTime']<end]
+        except:
+            pass
+    # define function to handle no date and secofday
+    def noDatetimeHandler(self):
+        try:
+            self.date3.setChecked(True)
+        except:
+            pass
+        try:
+            self.time3.setChecked(True)
         except:
             pass
 
+    # define function to preview data output within the app
     def previewData(self):
         try:
             self.preview = self.asc_new
@@ -578,72 +597,43 @@ class gui(QMainWindow):
                 msg.setWindowTitle("Error")
                 msg.setText("You must select the Time var, at least.")
                 x = msg.exec_()
-
             else:
+                self.averaging_window = self.averagingbox.text()
+                if len(self.averaging_window)!=0:
+                    self.averaging_window=int(self.averaging_window)
+                    try:
+                        self.preview.set_index('Time')
+                    except:
+                        sel.preview.set_index('DateTime')
+                    self.preview = self.preview.rolling(self.averaging_window).mean()
+                    self.preview = self.preview.iloc[::self.averaging_window, :]
+                else:
+                    pass
                 if self.date1.isChecked()==True and self.time1.isChecked()==True:
-                    self.preview.pop('Time')
-                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
+                    self.timeHandler(self.preview)
                 elif self.date1.isChecked()==True and self.time2.isChecked()==True:
-                    self.preview.pop('Time')
-                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
+                    self.timeHandler(self.preview)
                     self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
                 elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                    self.date3.setChecked(True)
-                    self.preview.insert(loc=0, column='DateTime', value=self.preview['Time'])
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
-                    self.preview.pop('Time')
+                    self.noDatetimeHandler() 
                 elif self.date2.isChecked()==True and self.time1.isChecked()==True:
-                    self.preview.pop('Time')
-                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
+                    self.timeHandler(self.preview)
                     self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
                 elif self.date2.isChecked()==True and self.time2.isChecked()==True:
-                    self.preview.pop('Time')
-                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
+                    self.timeHandler(self.preview)
                     self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
                     self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
                 elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                    self.preview.pop('Time')
-                    self.preview.insert(loc=0, column='Date', value=self.dtime)
-                    self.preview['DateTime']=self.preview[self.preview['DateTime']>start]
-                    self.preview['DateTime']=self.preview[self.preview['DateTime']<end]  
-                    self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+                    self.noDatetimeHandler()
                 elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                    self.preview.insert(loc=0, column='DateTime', value=self.preview['Time'])
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
-                    self.preview.pop('Time')
+                    self.noDatetimeHandler()
                 elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                    self.preview.insert(loc=0, column='DateTime', value=self.preview['Time'])
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
-                    self.preview.pop('Time')
+                    self.noDatetimeHandler()
                 elif self.date3.isChecked()==True and self.time3.isChecked()==True:
-                    self.preview.insert(loc=0, column='DateTime', value=self.preview['Time'])
-                    self.preview = self.preview[self.preview['DateTime']>start]
-                    self.preview = self.preview[self.preview['DateTime']<end]
-                    self.preview.pop('Time')
+                    self.noDatetimeHandler()
                 else:
                     pass
-                self.averaging_window = self.averagingbox.text()
-                print('*************'+self.averaging_window)
-                if len(self.averaging_window)!=0:
-                    self.averaging_window=int(self.averaging_window)
-                    print('***************'+self.averaging_window)
-                    self.preview = self.preview.rolling(self.averaging_window).mean()
-                    print(self.preview)
-                    self.preview = self.preview.iloc[::self.averaging_window, :]
-                    print(self.preview)
-                else:
-                    pass
+
                 if self.header1.isChecked()==True:
                     if self.comma.isChecked()==True:
                         if self.fillvalue1.isChecked()==True:
@@ -730,115 +720,104 @@ class gui(QMainWindow):
             self.asc = self.asc_new
         except:
             self.asc = self.asc
-        print(self.asc)
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
         start = self.start.text()
         end = self.end.text()
         try:
-            if 'DateTime' not in self.asc.columns: 
-                msg = QMessageBox()
-                msg.setWindowTitle("Error")
-                msg.setText("You must select the Time var, at least.")
-                x = msg.exec_()
-
+            self.averaging_window = self.averagingbox.text()
+            if len(self.averaging_window)!=0:
+                self.averaging_window=int(self.averaging_window)
+                try:
+                    self.asc.set_index('DateTime')
+                except:
+                    self.asc.set_index('Time')
+                self.asc = self.asc.rolling(self.averaging_window).mean()
+                self.asc = self.asc.iloc[::self.averaging_window, :]
             else:
-                if self.date1.isChecked()==True and self.time1.isChecked()==True:
-                    self.timeHandler()
-                elif self.date1.isChecked()==True and self.time2.isChecked()==True:
-                    self.timeHandler()
-                    self.asc['DateTime']=self.asc['DateTime'].str.replace(':', ' ')
-                elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                    self.timeHandler()
-                    self.date3.setChecked(True)
-                    self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                elif self.date2.isChecked()==True and self.time1.isChecked()==True:
-                    self.timeHandler()
-                    self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
-                elif self.date2.isChecked()==True and self.time2.isChecked()==True:
-                    self.timeHandler()
-                    self.asc['DateTime']=self.asc['DateTime'].str.replace(':', ' ')
-                    self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
-                elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                    self.asc.pop('Time')
-                    self.asc.insert(loc=0, column='Date', value=self.dtime)
-                    self.asc['DateTime']=self.asc[self.asc['DateTime']>start]
-                    self.asc['DateTime']=self.asc[self.asc['DateTime']<end]  
-                    self.asc['DateTime']=self.asc['DateTime'].str.replace('-', ' ')
-                elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                    self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
-                    self.asc.pop('Time')
-                elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                    self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
-                    self.asc.pop('Time')
-                elif self.date3.isChecked()==True and self.time3.isChecked()==True:
-                    self.asc.insert(loc=0, column='DateTime', value=self.asc['Time'])
-                    self.asc = self.asc[self.asc['DateTime']>start]
-                    self.asc = self.asc[self.asc['DateTime']<end]
-                    self.asc.pop('Time')
-                else:
-                    pass
-                self.averaging_window = self.averagingbox.text()
+                pass
 
-                if len(self.averaging_window)!=0:
-                    self.averaging_window=int(self.averaging_window)
-                    self.asc = self.asc.rolling(self.averaging_window).mean()
-                    self.asc = self.asc.iloc[::self.averaging_window, :]
-                else:
-                    pass
-                if self.header1.isChecked()==True:
-                    if self.comma.isChecked()==True:
-                        if self.fillvalue1.isChecked()==True:
-                            self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
-                            self.processingSuccess()
-                        elif self.fillvalue2.isChecked()==True:
-                            self.asc.to_csv(self.output_file, header=True, index=False, na_rep='')
-                            self.processingSuccess()
-                        elif self.fillvalue3.isChecked()==True:
-                            self.asc = self.asc.fillna(method='ffill')
-                            self.asc.to_csv(self.output_file, header=True, index=False)
-                            self.processingSuccess()
-                        else:
-                            print('Error converting file: '+self.input_file)
+            if self.date1.isChecked()==True and self.time1.isChecked()==True:
+                self.timeHandler(self.asc)
+            elif self.date1.isChecked()==True and self.time2.isChecked()==True:
+                self.timeHandler(self.asc)
+                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
+            elif self.date1.isChecked()==True and self.time3.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date2.isChecked()==True and self.time1.isChecked()==True:
+                self.timeHandler(self.asc)
+                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+            elif self.date2.isChecked()==True and self.time2.isChecked()==True:
+                self.timeHandler(self.asc)
+                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
+                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+            elif self.date2.isChecked()==True and self.time3.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date3.isChecked()==True and self.time1.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date3.isChecked()==True and self.time2.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date3.isChecked()==True and self.time3.isChecked()==True:
+                self.noDatetimeHandler()
+            else:
+                pass
 
-                    elif self.space.isChecked()==True:
-                        if self.fillvalue1.isChecked()==True:
-                            self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
-                            self.processingSuccess()
-                        elif self.fillvalue2.isChecked()==True:
-                            self.asc.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
-                            self.processingSuccess()
-                        elif self.fillvalue3.isChecked()==True:
-                            self.asc = self.asc.fillna(method='ffill')
-                            self.asc.to_csv(self.output_file, header=True, index=False, sep=' ')
-                            self.processingSuccess()
-                        else:
-                            print('Error converting file: '+self.input_file)
+            if self.header1.isChecked()==True:
+                if self.comma.isChecked()==True:
+                    if self.fillvalue1.isChecked()==True:
+                        self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
+                        self.processingSuccess()
+                        self.deselectAll()
+                    elif self.fillvalue2.isChecked()==True:
+                        self.asc.to_csv(self.output_file, header=True, index=False, na_rep='')
+                        self.processingSuccess()
+                        self.deselectAll()
+                    elif self.fillvalue3.isChecked()==True:
+                        self.asc = self.asc.fillna(method='ffill')
+                        self.asc.to_csv(self.output_file, header=True, index=False)
+                        self.processingSuccess()
+                        self.deselectAll()
                     else:
                         print('Error converting file: '+self.input_file)
 
-                elif self.header2.isChecked()==True:
-                    self.asc = self.asc.rename(columns={'DateTime': 'Start_UTC'})
-                    self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
-                    try:
-                        self.columns = pd.DataFrame(self.asc.columns.values.tolist())
-                        self.header = self.header.loc[self.header[0].isin(self.columns[0])]
-                        os.system('cp ./docs/header1.txt ./docs/header1.tmp')
-                        os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
-                        os.system('cp ./docs/header2.txt ./docs/header2.tmp')
-                        self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
-                        os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
-                        os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                        os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
-                    except: 
-                        print('Error creating and appending ICARTT header to output file.')
-                    self.processingSuccess()
+                elif self.space.isChecked()==True:
+                    if self.fillvalue1.isChecked()==True:
+                        self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
+                        self.processingSuccess()
+                        self.deselectAll()
+                    elif self.fillvalue2.isChecked()==True:
+                        self.asc.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
+                        self.processingSuccess()
+                        self.deselectAll()
+                    elif self.fillvalue3.isChecked()==True:
+                        self.asc = self.asc.fillna(method='ffill')
+                        self.asc.to_csv(self.output_file, header=True, index=False, sep=' ')
+                        self.processingSuccess()
+                        self.deselectAll()
+                    else:
+                        print('Error converting file: '+self.input_file)
                 else:
-                    pass 
+                    print('Error converting file: '+self.input_file)
+
+            elif self.header2.isChecked()==True:
+                self.asc = self.asc.rename(columns={'DateTime': 'Start_UTC'})
+                self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
+                try:
+                    self.columns = pd.DataFrame(self.asc.columns.values.tolist())
+                    self.header = self.header.loc[self.header[0].isin(self.columns[0])]
+                    os.system('cp ./docs/header1.txt ./docs/header1.tmp')
+                    os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
+                    os.system('cp ./docs/header2.txt ./docs/header2.tmp')
+                    self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
+                    os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
+                    os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
+                    os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+                    os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
+                except: 
+                    print('Error creating and appending ICARTT header to output file.')
+                self.processingSuccess()
+                self.deselectAll()
+            else:
+                pass 
 
         except:
             processing_complete = QMessageBox()
