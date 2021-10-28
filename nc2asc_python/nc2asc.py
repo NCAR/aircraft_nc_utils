@@ -194,11 +194,6 @@ class gui(QMainWindow):
         self.var.resize(400, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars)
-        #pallete = self.var.palette()
-        #hightlight_brush = pallete.brush(QtGui.QPalette.Highlight)
-        #hightlight_brush.setColor(QtGui.QColor('red'))
-        #pallete.setBrush(QtGui.QPalette.Highlight, hightlight_brush)
-        #self.var.setPalette(pallete)
 
         # fields for start and end time
         timeselectionlabel = QtWidgets.QLabel(self)
@@ -225,8 +220,6 @@ class gui(QMainWindow):
         self.averagingbox = QtWidgets.QLineEdit(self)
         self.averagingbox.move(140, 445)
         self.averagingbox.resize(60, 20)
-
-
 
         # header preview label
         self.outputpreviewlabel=QtWidgets.QLabel(self)
@@ -513,8 +506,7 @@ class gui(QMainWindow):
     # define function to select individual vars from list and populate fields
     def selectVars(self):
         try:
-            for i in range(self.row_count):
-                self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
+            self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(71,145,209))
             self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
             self.variables_extract = self.variables_extract.append(self.output)
             self.variables_extract = self.variables_extract.drop_duplicates()
