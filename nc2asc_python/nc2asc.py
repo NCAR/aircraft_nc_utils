@@ -31,10 +31,9 @@ class gui(QMainWindow):
 #######################################################################
     def initUI(self):               
 
-        # bold font to help with organization of processing options
-        myFont=QtGui.QFont()
-        myFont.setBold(True)
-
+        #####################################################################
+        # input file and output dir / file fields
+        #####################################################################
         # define input file box and label 
         self.inputfilebox=QtWidgets.QLineEdit(self)
         self.inputfilebox.move(140, 40)
@@ -66,6 +65,9 @@ class gui(QMainWindow):
         processinglabel.move(20, 140)
         processinglabel.setFont(myFont)
 
+        #####################################################################
+        # date format options
+        #####################################################################
         # radio buttons for date
         dateformatlabel = QtWidgets.QLabel(self)
         dateformatlabel.setText('Date Format:')
@@ -84,8 +86,15 @@ class gui(QMainWindow):
         dategroup.addButton(self.date1)
         dategroup.addButton(self.date2)
         dategroup.addButton(self.date3)
+        # have the default be date 1 but update the preview when any are clicked
         self.date1.setChecked(True)
+        self.date1.clicked.connect(self.previewData)
+        self.date2.clicked.connect(self.previewData)
+        self.date3.clicked.connect(self.previewData)
 
+        #####################################################################
+        # time format options
+        #####################################################################
         # radio buttons for time
         timeformatlabel = QtWidgets.QLabel(self)
         timeformatlabel.setText('Time Format:')
@@ -104,8 +113,15 @@ class gui(QMainWindow):
         timegroup.addButton(self.time1)
         timegroup.addButton(self.time2)
         timegroup.addButton(self.time3)
+        # have default be time 1 but update the preview when any are clicked
         self.time1.setChecked(True)
+        self.time1.clicked.connect(self.previewData)
+        self.time2.clicked.connect(self.previewData)
+        self.time3.clicked.connect(self.previewData)
 
+        #####################################################################
+        # delimiter format options
+        #####################################################################
         # radio buttons for the delimiter
         delimiterlabel = QtWidgets.QLabel(self)
         delimiterlabel.setText('Delimiter:')
@@ -120,9 +136,15 @@ class gui(QMainWindow):
         delimitergroup = QtWidgets.QButtonGroup(self)
         delimitergroup.addButton(self.comma)
         delimitergroup.addButton(self.space)
+        # have default be comma delimited but update the preview when any are clicked
         self.comma.setChecked(True)        
+        self.comma.clicked.connect(self.previewData)
+        self.space.clicked.connect(self.previewData)
 
-        # radio buttons for the fillvalue
+        #####################################################################
+        # fill value format options
+        ####################################################################
+        # radio buttons for the fill value
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Fill Value:')
         fillvaluelabel.move(20, 280)
@@ -140,8 +162,15 @@ class gui(QMainWindow):
         fillvaluegroup.addButton(self.fillvalue1)
         fillvaluegroup.addButton(self.fillvalue2)
         fillvaluegroup.addButton(self.fillvalue3)
+        # have default be fill value 1 but update the preview when any are clicked
         self.fillvalue1.setChecked(True)
+        self.fillvalue1.clicked.connect(self.previewData)
+        self.fillvalue2.clicked.connect(self.previewData)
+        self.fillvalue3.clicked.connect(self.previewData)
 
+        #####################################################################
+        # header format options
+        #####################################################################
         # radio buttons for header
         headerformatlabel = QtWidgets.QLabel(self)
         headerformatlabel.setText('Header:')
@@ -160,8 +189,12 @@ class gui(QMainWindow):
         headergroup.addButton(self.header1)
         headergroup.addButton(self.header2)
         headergroup.addButton(self.header3)
+        # have the default be header 1 (plain) but update the preview when any are clicked
         self.header1.setChecked(True)
         self.header2.clicked.connect(self.ICARTT_toggle)
+        self.header1.clicked.connect(self.previewData)
+        self.header2.clicked.connect(self.previewData)
+        self.header3.clicked.connect(self.previewData)
 
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
@@ -169,17 +202,26 @@ class gui(QMainWindow):
         self.processbtn.move(20, 670)
         self.processbtn.clicked.connect(self.writeData)
 
+        #####################################################################
+        # variable table and selection / deselection options
+        #####################################################################
         # button to select all variables
         self.varbtn=QtWidgets.QPushButton('Select All', self)
-        self.varbtn.move(640, 30)
+        self.varbtn.move(300, 400)
         self.varbtn.clicked.connect(self.loadVars)
         self.varbtn.clicked.connect(self.selectAll)
 
         # button to de-select all variables
         self.varbtn2=QtWidgets.QPushButton('Clear All', self)
-        self.varbtn2.move(780, 30)
+        self.varbtn2.move(300, 500)
         self.varbtn2.clicked.connect(self.loadVars)
         self.varbtn2.clicked.connect(self.deselectAll)
+
+        # button to remove current variable
+        self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
+        self.deselectvar.move (300, 600)
+        self.deselectvar.clicked.connect(self.deselectVar)
+        self.deselectvar.clicked.connect(self.previewData)
 
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
@@ -194,7 +236,10 @@ class gui(QMainWindow):
         self.var.resize(400, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars)
-
+ 
+        #####################################################################
+        # start time, end time, and averaging options
+        #####################################################################
         # fields for start and end time
         timeselectionlabel = QtWidgets.QLabel(self)
         timeselectionlabel.setText('Time Options:')
@@ -212,7 +257,6 @@ class gui(QMainWindow):
         self.start.resize(140, 20)
         self.end.move(60, 425)
         self.end.resize(140, 20)
-
         # averaging label and box
         averaginglabel=QtWidgets.QLabel(self)
         averaginglabel.setText('Averaging (s):')
@@ -221,19 +265,23 @@ class gui(QMainWindow):
         self.averagingbox.move(140, 445)
         self.averagingbox.resize(60, 20)
 
-        # header preview label
+        #####################################################################
+        # output preview options
+        #####################################################################
+        # output preview label
         self.outputpreviewlabel=QtWidgets.QLabel(self)
         self.outputpreviewlabel.move(20, 470)
         self.outputpreviewlabel.setText('Preview')
         self.outputpreviewlabel.setFont(myFont)
-
-        # header preview field with horizontal scroll bar
+        # output preview field with horizontal scroll bar
         self.outputpreview=QtWidgets.QTextEdit(self)
         self.outputpreview.move(20, 500)
         self.outputpreview.resize(880, 150)
         self.outputpreview.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
 
+        #####################################################################
         # menu options
+        #####################################################################
         mainMenu = self.menuBar()
         fileMenu = mainMenu.addMenu('File')
         helpMenu = mainMenu.addMenu('Help')
@@ -245,23 +293,24 @@ class gui(QMainWindow):
         fileMenu.addAction(saveBatchFile)
         fileMenu.addAction(readBatchFile)
         fileMenu.addAction(exit)
-     
         # connect the menu option File > Import NetCDF File to the data functions
         importFile.triggered.connect(self.loadData)
         importFile.triggered.connect(self.formatData)
         importFile.triggered.connect(self.loadVars)
-
         # connect the menu option File > Read Batch file to the function
         readBatchFile.triggered.connect(self.readBatchFile)
-
         # connect the exit menu option to the close function
         exit.triggered.connect(self.close)
-
-        # connect the Save Batch File menu option to the function
+        # connect the save batch file menu option to the function
         saveBatchFile.triggered.connect(self.saveBatchFile)
 
+        #####################################################################
         # general setup options
+        #####################################################################
         # changing the background color to gray
+        # bold font to help with organization of processing options
+        myFont=QtGui.QFont()
+        myFont.setBold(True)
         self.setWindowIcon(QIcon('raf.png'))
         self.setStyleSheet("background-color: light gray;")
         self.setGeometry(100, 100, 920, 700)
@@ -352,6 +401,7 @@ class gui(QMainWindow):
 
 
     def readBatchFile(self):
+
         try:
             self.inputbatch_file, _ = QFileDialog.getOpenFileName(self,"Select a Batch file to Read", "/scr/raf_data","filter = *")
             # notify user that batch file has been read
@@ -392,7 +442,7 @@ class gui(QMainWindow):
             self.outputdirbox.setText(self.outputfile)
 
 #######################################################################
-# function definitions for GUI data handling and processing
+# function definitions for data loading, formatting, and processing
 #######################################################################
     def loadData(self):
 
@@ -445,6 +495,7 @@ class gui(QMainWindow):
                     self.variables[i]=pd.Series(variables)
                 else:
                     pass
+
             # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
             self.asc.columns = self.asc.columns.droplevel(-1)
@@ -511,6 +562,11 @@ class gui(QMainWindow):
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
             self.outputpreview.setText('')
+            self.date1.setChecked(True)
+            self.time1.setChecked(True)
+            self.comma.setChecked(True)
+            self.fillvalue1.setChecked(True)
+            self.header1.setChecked(True)
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
@@ -521,12 +577,14 @@ class gui(QMainWindow):
     def selectVars(self):
 
         try:
-            self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(71,145,209))
-            self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
+            self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text()) 
             self.variables_extract = self.variables_extract.append(self.output)
             self.variables_extract = self.variables_extract.drop_duplicates()
             self.asc_new = self.asc[self.variables_extract]
+            print(self.asc_new)
             self.var_selected = str(self.asc_new.columns.values.tolist())
+            self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(71,145,209))
+
             # need to remove the unwanted characters for the batch file
             self.var_selected = self.var_selected.replace('0', '')
             self.var_selected = self.var_selected.replace('(', '')
@@ -535,11 +593,24 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace(',', '')
             self.var_selected = self.var_selected.replace('[', '')
             self.var_selected = self.var_selected.replace(']', '')
-            print(self.var_selected)
+
             self.previewData()
+
             return self.asc_new, self.variables_extract, self.var_selected
         except:
             print("error in getting values from table")
+
+    def deselectVar(self):
+
+        self.checkoutput=self.var.item(self.var.currentRow(), 0).text()
+        if self.checkoutput in self.variables_extract.values:
+            self.variables_extract = self.variables_extract.loc[self.variables_extract.values != self.checkoutput]
+            self.asc_new = self.asc_new.drop(self.checkoutput, axis=1)
+            self.var_selected = self.var_selected.replace(self.checkoutput, '')
+            self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(255,255,255))
+        else:
+            pass
+        return self.asc_new, self.variables_extract, self.var_selected
 
     # define function to switch radio buttons to align with ICARTT selection
     def ICARTT_toggle(self):
@@ -547,6 +618,10 @@ class gui(QMainWindow):
         self.date3.setChecked(True)
         self.comma.setChecked(True)
         self.fillvalue1.setChecked(True)
+
+#############################################################################
+# notification that processing was successfule
+#############################################################################
 
     # define function to notify user that processing was successful.
     def processingSuccess(self):
@@ -591,129 +666,161 @@ class gui(QMainWindow):
         except:
             pass
 
+#############################################################################
+# function prevewData creates an example output based on user settings and
+# populates the Preview field in the gui. It is set up to autmatically update
+# based on the selection of the vars in selectVars, selectAll, or deselectAll.
+#############################################################################
+
     # define function to preview data output within the app
     def previewData(self):
-
         try:
             self.preview = self.asc_new
+            print('self.preview = self.asc_new')
         except:
             self.preview = self.asc
-        print(self.preview)
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
         start = self.start.text()
         end = self.end.text()
         try:
-            if 'Time' not in self.preview.columns: 
-                msg = QMessageBox()
-                msg.setWindowTitle("Error")
-                msg.setText("You must select the Time var, at least.")
-                x = msg.exec_()
+            self.averaging_window = self.averagingbox.text()
+            if len(self.averaging_window)!=0:
+                self.averaging_window=int(self.averaging_window)
+                try:
+                    self.preview.set_index('Time')
+                except:
+                    self.preview.set_index('DateTime')
+                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean()
+                self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
-                self.averaging_window = self.averagingbox.text()
-                if len(self.averaging_window)!=0:
-                    self.averaging_window=int(self.averaging_window)
-                    try:
-                        self.preview.set_index('Time')
-                    except:
-                        sel.preview.set_index('DateTime')
-                    self.preview = self.preview.rolling(self.averaging_window).mean()
-                    self.preview = self.preview.iloc[::self.averaging_window, :]
-                else:
-                    pass
-                if self.date1.isChecked()==True and self.time1.isChecked()==True:
-                    self.timeHandler(self.preview)
-                elif self.date1.isChecked()==True and self.time2.isChecked()==True:
-                    self.timeHandler(self.preview)
-                    self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
-                elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                    self.noDatetimeHandler() 
-                elif self.date2.isChecked()==True and self.time1.isChecked()==True:
-                    self.timeHandler(self.preview)
-                    self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
-                elif self.date2.isChecked()==True and self.time2.isChecked()==True:
-                    self.timeHandler(self.preview)
-                    self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
-                    self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
-                elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                    self.noDatetimeHandler()
-                elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                    self.noDatetimeHandler()
-                elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                    self.noDatetimeHandler()
-                elif self.date3.isChecked()==True and self.time3.isChecked()==True:
-                    self.noDatetimeHandler()
-                else:
-                    pass
-                if self.header1.isChecked()==True:
-                    if self.comma.isChecked()==True:
-                        if self.fillvalue1.isChecked()==True:
-                            self.preview.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
-                            with open(self.output_file) as preview:
-                                head = str(preview.readlines()[0:10])
-                                head = head.replace('\\n', '\n')
-                            self.outputpreview.setText(head)
-                        elif self.fillvalue2.isChecked()==True:
-                            self.preview.to_csv(self.output_file, header=True, index=False, na_rep='')
-                            with open(self.output_file) as preview:
-                                head = str(preview.readlines()[0:10])
-                                head = head.replace('\\n', '\n')                        
-                            self.outputpreview.setText(head)
-                        elif self.fillvalue3.isChecked()==True:
-                            self.preview = self.preview.fillna(method='ffill')
-                            self.preview.to_csv(self.output_file, header=True, index=False)
-                            with open(self.output_file) as preview:
-                                head = str(preview.readlines()[0:10])
-                                head = head.replace('\\n', '\n')
-                            self.outputpreview.setText(head)
-                        else:
-                            print('Error converting file: '+self.input_file)
-                    elif self.space.isChecked()==True:
-                        if self.fillvalue1.isChecked()==True:
-                            self.preview.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
-                            with open(self.output_file) as preview:
-                                head = str(preview.readlines()[0:10])
-                                head = head.replace('\\n', '\n')
-                            self.outputpreview.setText(head)
-                        elif self.fillvalue2.isChecked()==True:
-                            self.preview.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
-                            with open(self.output_file) as preview:
-                                head = str(preview.readlines()[0:10])
-                                head = head.replace('\\n', '\n')
-                            self.outputpreview.setText(head)
-                        elif self.fillvalue3.isChecked()==True:
-                            self.preview = self.preview.fillna(method='ffill')
-                            self.preview.to_csv(self.output_file, header=True, index=False, sep=' ')
-                            with open(self.output_file) as preview:
-                                head = str(preview.readlines()[0:10])
-                                head = head.replace('\\n', '\n')
-                            self.outputpreview.setText(head)
-                        else:
-                            print('Error converting file: '+self.input_file)
+                pass
+            if self.date1.isChecked()==True and self.time1.isChecked()==True:
+                self.timeHandler(self.preview)
+            elif self.date1.isChecked()==True and self.time2.isChecked()==True:
+                self.timeHandler(self.preview)
+                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
+            elif self.date1.isChecked()==True and self.time3.isChecked()==True:
+                self.noDatetimeHandler() 
+            elif self.date2.isChecked()==True and self.time1.isChecked()==True:
+                self.timeHandler(self.preview)
+                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+            elif self.date2.isChecked()==True and self.time2.isChecked()==True:
+                self.timeHandler(self.preview)
+                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
+                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+            elif self.date2.isChecked()==True and self.time3.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date3.isChecked()==True and self.time1.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date3.isChecked()==True and self.time2.isChecked()==True:
+                self.noDatetimeHandler()
+            elif self.date3.isChecked()==True and self.time3.isChecked()==True:
+                self.noDatetimeHandler()
+            else:
+                pass
+            if self.header1.isChecked()==True:
+                if self.comma.isChecked()==True:
+                    if self.fillvalue1.isChecked()==True:
+                        self.preview.head(10).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
+                        with open(self.output_file) as preview:
+                            head = str(preview.readlines()[0:10])
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('[', '')
+                            head = head.replace(']', '')
+                            head = head.replace("', '", '')
+                            head = head.replace("'", '')
+                        self.outputpreview.setText(head)
+                    elif self.fillvalue2.isChecked()==True:
+                        self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='')
+                        with open(self.output_file) as preview:
+                            head = str(preview.readlines()[0:10])
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('[', '')
+                            head = head.replace(']', '')
+                            head = head.replace("', '", '')
+                            head = head.replace("'", '')                     
+                        self.outputpreview.setText(head)
+                    elif self.fillvalue3.isChecked()==True:
+                        self.preview = self.preview.fillna(method='ffill')
+                        self.preview.head(15).to_csv(self.output_file, header=True, index=False)
+                        with open(self.output_file) as preview:
+                            head = str(preview.readlines()[0:10])
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('[', '')
+                            head = head.replace(']', '')
+                            head = head.replace("', '", '')
+                            head = head.replace("'", '')
+                        self.outputpreview.setText(head)
                     else:
                         print('Error converting file: '+self.input_file)
-
-                elif self.header2.isChecked()==True:
-                    self.preview = self.preview.rename(columns={'DateTime': 'Start_UTC'})
-                    self.preview.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
-                    try:
-                        self.columns = pd.DataFrame(self.preview.columns.values.tolist())
-                        self.header = self.header.loc[self.header[0].isin(self.columns[0])]
-                        os.system('cp ./docs/header1.txt ./docs/header1.tmp')
-                        os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
-                        os.system('cp ./docs/header2.txt ./docs/header2.tmp')
-                        self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
-                        os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
-                        os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                        os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
-                    except: 
-                        print('Error creating and appending ICARTT header to output file.')
-                    with open(self.output_file) as preview:
-                        head = str(preview.readlines()[0:5])
-                        head = head.replace('\\n', '\n')
-                    self.outputpreview.setText(head)
+                elif self.space.isChecked()==True:
+                    if self.fillvalue1.isChecked()==True:
+                        self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
+                        with open(self.output_file) as preview:
+                            head = str(preview.readlines()[0:10])
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('[', '')
+                            head = head.replace(']', '')
+                            head = head.replace("', '", '')
+                            head = head.replace("'", '')
+                        self.outputpreview.setText(head)
+                    elif self.fillvalue2.isChecked()==True:
+                        self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
+                        with open(self.output_file) as preview:
+                            head = str(preview.readlines()[0:10])
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('[', '')
+                            head = head.replace(']', '')
+                            head = head.replace("', '", '')
+                            head = head.replace("'", '')
+                        self.outputpreview.setText(head)
+                    elif self.fillvalue3.isChecked()==True:
+                        self.preview = self.preview.fillna(method='ffill')
+                        self.preview.head(15).to_csv(self.output_file, header=True, index=False, sep=' ')
+                        with open(self.output_file) as preview:
+                            head = str(preview.readlines()[0:10])
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('\\n', '\n')
+                            head = head.replace('[', '')
+                            head = head.replace(']', '')
+                            head = head.replace("', '", '')
+                            head = head.replace("'", '')
+                        self.outputpreview.setText(head)
+                    else:
+                        print('Error converting file: '+self.input_file)
                 else:
-                    pass 
+                    print('Error converting file: '+self.input_file)
+
+            elif self.header2.isChecked()==True:
+                self.preview = self.preview.rename(columns={'DateTime': 'Start_UTC'})
+                self.preview.head(10).to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
+                try:
+                    self.columns = pd.DataFrame(self.preview.columns.values.tolist())
+                    self.header = self.header.loc[self.header[0].isin(self.columns[0])]
+                    os.system('cp ./docs/header1.txt ./docs/header1.tmp')
+                    os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
+                    os.system('cp ./docs/header2.txt ./docs/header2.tmp')
+                    self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
+                    os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
+                    os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
+                    os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+                    os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
+                except: 
+                    print('Error creating and appending ICARTT header to output file.')
+                with open(self.output_file) as preview:
+                    head = str(preview.readlines()[0:5])
+                    head = head.replace('\\n', '\n')
+                    head = head.replace('[', '')
+                    head = head.replace(']', '')
+                    head = head.replace("', '", '')
+                    head = head.replace("'", '')
+                self.outputpreview.setText(head)
+            else:
+                pass 
         except:
             processing_complete = QMessageBox()
             processing_complete.setWindowTitle("Error")
@@ -740,8 +847,9 @@ class gui(QMainWindow):
                     self.asc.set_index('DateTime')
                 except:
                     self.asc.set_index('Time')
-                self.asc = self.asc.rolling(self.averaging_window).mean()
+                self.asc = self.asc.rolling(self.averaging_window, min_periods=0).mean()
                 self.asc = self.asc.iloc[::self.averaging_window, :]
+                #self.asc = self.asc.iloc[1: , :]
             else:
                 pass
             if self.date1.isChecked()==True and self.time1.isChecked()==True:
