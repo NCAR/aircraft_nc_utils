@@ -25,11 +25,15 @@ class gui(QMainWindow):
 
         self.initUI()
 
-#######################################################################
-# define layout of gui
-# set up the fields, table, buttons, and menu
-#######################################################################
+    #########################################################################
+    # define layout of gui
+    # set up the fields, table, buttons, and menu
+    #########################################################################
     def initUI(self):               
+
+        # bold font to help with organization of processing options
+        myFont=QtGui.QFont()
+        myFont.setBold(True)
 
         #####################################################################
         # input file and output dir / file fields
@@ -41,7 +45,6 @@ class gui(QMainWindow):
         inputlabel=QtWidgets.QLabel(self)
         inputlabel.setText('Input File')
         inputlabel.move(75, 40) 
-
         # define output dir and file
         # output dir 
         outputdirlabel=QtWidgets.QLabel(self)
@@ -50,7 +53,6 @@ class gui(QMainWindow):
         self.outputdirbox=QtWidgets.QLineEdit(self)
         self.outputdirbox.move(140, 70)
         self.outputdirbox.resize(350, 20)
-        
         # output file
         outputlabel=QtWidgets.QLabel(self)
         outputlabel.setText('Output Filename:')
@@ -58,7 +60,6 @@ class gui(QMainWindow):
         self.outputfilebox=QtWidgets.QLineEdit(self)
         self.outputfilebox.move(140, 100)
         self.outputfilebox.resize(175, 20)
-
         # processing options section
         processinglabel = QtWidgets.QLabel(self)
         processinglabel.setText('Options')
@@ -195,7 +196,6 @@ class gui(QMainWindow):
         self.header1.clicked.connect(self.previewData)
         self.header2.clicked.connect(self.previewData)
         self.header3.clicked.connect(self.previewData)
-
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
         self.processbtn.resize(self.processbtn.sizeHint())
@@ -207,26 +207,23 @@ class gui(QMainWindow):
         #####################################################################
         # button to select all variables
         self.varbtn=QtWidgets.QPushButton('Select All', self)
-        self.varbtn.move(300, 400)
+        self.varbtn.move(360, 320)
         self.varbtn.clicked.connect(self.loadVars)
         self.varbtn.clicked.connect(self.selectAll)
-
         # button to de-select all variables
         self.varbtn2=QtWidgets.QPushButton('Clear All', self)
-        self.varbtn2.move(300, 500)
+        self.varbtn2.move(360, 360)
         self.varbtn2.clicked.connect(self.loadVars)
         self.varbtn2.clicked.connect(self.deselectAll)
-
         # button to remove current variable
         self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
-        self.deselectvar.move (300, 600)
+        self.deselectvar.move (360, 400)
         self.deselectvar.clicked.connect(self.deselectVar)
         self.deselectvar.clicked.connect(self.previewData)
-
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
-        varlabel.setText('Select Vars')
-        varlabel.move(500, 30)
+        varlabel.setText('Select Vars:')
+        varlabel.move(640, 30)
         varlabel.setFont(myFont)
         self.var=QtWidgets.QTableWidget(self)
         self.var.setColumnCount(3)
@@ -308,9 +305,6 @@ class gui(QMainWindow):
         # general setup options
         #####################################################################
         # changing the background color to gray
-        # bold font to help with organization of processing options
-        myFont=QtGui.QFont()
-        myFont.setBold(True)
         self.setWindowIcon(QIcon('raf.png'))
         self.setStyleSheet("background-color: light gray;")
         self.setGeometry(100, 100, 920, 700)
@@ -321,9 +315,9 @@ class gui(QMainWindow):
         self.setPalette(p)
         self.show()
 
-#######################################################################
-# function definitions for batch file saving and reading
-#######################################################################
+    #########################################################################
+    # function definitions for batch file saving and reading
+    #########################################################################
     # if user selects to save a batch file, call function
     def saveBatchFile(self):
 
@@ -477,6 +471,10 @@ class gui(QMainWindow):
             self.long_name = {}
             self.variables= {}
             self.header = {}
+            self.project_manager = 'Pavel Romashkin'
+            self.platform = nc.getncattr('Platform')
+            self.project_name=nc.getncattr('project')
+            self.today = datetime.today().strftime('%Y, %m, %d')
             for i in nc.variables.keys():
                 # handle only time dimension variables
                 dims = str(nc.variables[i].dimensions)
@@ -504,6 +502,7 @@ class gui(QMainWindow):
             # use num2date to setup dtime object
             self.dtime=netCDF4.num2date(self.dtime[:],self.dtime.units)
             self.dtime=pd.Series(self.dtime).astype(str)
+            self.dtime_sep = self.dtime.str.split(' ', expand=True)
             # concatenate the units, long_name, variables, and header
             self.units=pd.concat(self.units, axis=0, ignore_index=True)
             self.long_name=pd.concat(self.long_name, axis=0, ignore_index=True)
@@ -614,7 +613,7 @@ class gui(QMainWindow):
 
     # define function to switch radio buttons to align with ICARTT selection
     def ICARTT_toggle(self):
-
+        self.time3.setChecked(True)
         self.date3.setChecked(True)
         self.comma.setChecked(True)
         self.fillvalue1.setChecked(True)
@@ -654,20 +653,8 @@ class gui(QMainWindow):
         except:
             pass
 
-    # define function to handle no date and secofday
-    def noDatetimeHandler(self):
-
-        try:
-            self.date3.setChecked(True)
-        except:
-            pass
-        try:
-            self.time3.setChecked(True)
-        except:
-            pass
-
 #############################################################################
-# function prevewData creates an example output based on user settings and
+# function previewData creates an example output based on user settings and
 # populates the Preview field in the gui. It is set up to autmatically update
 # based on the selection of the vars in selectVars, selectAll, or deselectAll.
 #############################################################################
@@ -676,7 +663,6 @@ class gui(QMainWindow):
     def previewData(self):
         try:
             self.preview = self.asc_new
-            print('self.preview = self.asc_new')
         except:
             self.preview = self.asc
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
@@ -686,10 +672,6 @@ class gui(QMainWindow):
             self.averaging_window = self.averagingbox.text()
             if len(self.averaging_window)!=0:
                 self.averaging_window=int(self.averaging_window)
-                try:
-                    self.preview.set_index('Time')
-                except:
-                    self.preview.set_index('DateTime')
                 self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean()
                 self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
@@ -700,7 +682,11 @@ class gui(QMainWindow):
                 self.timeHandler(self.preview)
                 self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
             elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                self.noDatetimeHandler() 
+                self.preview.insert(loc=0, column='Date', value=self.dtime_sep[0])
+                try:
+                    self.preview.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date2.isChecked()==True and self.time1.isChecked()==True:
                 self.timeHandler(self.preview)
                 self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
@@ -709,13 +695,38 @@ class gui(QMainWindow):
                 self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
                 self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
             elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                self.noDatetimeHandler()
+                self.preview.insert(loc=0, column='Date', value=self.dtime_sep[0])
+                self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
+                try:
+                    self.preview.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                self.noDatetimeHandler()
+                try:
+                    self.preview.pop('Time')
+                except:
+                    pass
+                self.preview.insert(loc=0, column='Time', value=self.dtime_sep[1])
+                try:
+                    self.preview.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                self.noDatetimeHandler()
+                try:
+                    self.preview.pop('Time')
+                except:
+                    pass
+                self.preview.insert(loc=0, column='Time', value=self.dtime_sep[1])
+                self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
+                try:
+                    self.preview.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date3.isChecked()==True and self.time3.isChecked()==True:
-                self.noDatetimeHandler()
+                try:
+                    self.prevew = self.preview.drop('Date', axis=1, inplace=True)
+                except:
+                    print('Date not dropped')
             else:
                 pass
             if self.header1.isChecked()==True:
@@ -796,23 +807,45 @@ class gui(QMainWindow):
                     print('Error converting file: '+self.input_file)
 
             elif self.header2.isChecked()==True:
-                self.preview = self.preview.rename(columns={'DateTime': 'Start_UTC'})
-                self.preview.head(10).to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
+                try:
+                    self.preview = self.preview.rename(columns={'DateTime': 'Start_UTC'})
+                except:
+                    self.preview = self.preview.rename(columns={'Time': 'Start_UTC'})
+                self.preview.head(50).to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
                 try:
                     self.columns = pd.DataFrame(self.preview.columns.values.tolist())
                     self.header = self.header.loc[self.header[0].isin(self.columns[0])]
+                    self.data_date = self.dtime_sep[0].iloc[1]
+
                     os.system('cp ./docs/header1.txt ./docs/header1.tmp')
                     os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
                     os.system('cp ./docs/header2.txt ./docs/header2.tmp')
+                    self.today = datetime.today().strftime('%Y, %m, %d')
+                    with open('./docs/header1.tmp', 'r+') as f:
+                        lines = f.readlines()
+                        for i, line in enumerate(lines):
+                            if line.startswith('RAF instruments on'):
+                                lines[i] = lines[i].strip()+' '+self.platform+'\n'
+                            if line.startswith('<PROJECT MANAGER>'):
+                                lines[i] = self.project_manager+'\n'
+                            if line.startswith('<PROJECT>'):
+                                lines[i] = self.project_name+'\n'
+                            if line.startswith('<YYYY, MM, DD,>'):
+                                lines[i] = self.data_date+', '+self.today+'\n'
+                        f.seek(0)
+                        for line in lines:
+                            f.write(line)
+
                     self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
                     os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
                     os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
                     os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
                     os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
+
                 except: 
                     print('Error creating and appending ICARTT header to output file.')
                 with open(self.output_file) as preview:
-                    head = str(preview.readlines()[0:5])
+                    head = str(preview.readlines()[0:100])
                     head = head.replace('\\n', '\n')
                     head = head.replace('[', '')
                     head = head.replace(']', '')
@@ -849,7 +882,6 @@ class gui(QMainWindow):
                     self.asc.set_index('Time')
                 self.asc = self.asc.rolling(self.averaging_window, min_periods=0).mean()
                 self.asc = self.asc.iloc[::self.averaging_window, :]
-                #self.asc = self.asc.iloc[1: , :]
             else:
                 pass
             if self.date1.isChecked()==True and self.time1.isChecked()==True:
@@ -858,7 +890,11 @@ class gui(QMainWindow):
                 self.timeHandler(self.asc)
                 self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
             elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                self.noDatetimeHandler()
+                self.asc.insert(loc=0, column='Date', value=self.dtime_sep[0])
+                try:
+                    self.asc.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date2.isChecked()==True and self.time1.isChecked()==True:
                 self.timeHandler(self.asc)
                 self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
@@ -867,13 +903,35 @@ class gui(QMainWindow):
                 self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
                 self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
             elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                self.noDatetimeHandler()
+                self.asc.insert(loc=0, column='Date', value=self.dtime_sep[0])
+                self.asc['Date']=self.asc['Date'].str.replace('-', ' ')
+                try:
+                    self.asc.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                self.noDatetimeHandler()
+                try:
+                    self.asc.pop('Time')
+                except:
+                    pass
+                self.asc.insert(loc=0, column='Time', value=self.dtime_sep[1])
+                try:
+                    self.asc.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                self.noDatetimeHandler()
+                try:
+                    self.asc.pop('Time')
+                except:
+                    pass
+                self.asc.insert(loc=0, column='Time', value=self.dtime_sep[1])
+                self.asc['Time']=self.asc['Time'].str.replace(':', ' ')
+                try:
+                    self.asc.drop('DateTime', axis=1, inplace=True)
+                except:
+                    print('DateTime not dropped')
             elif self.date3.isChecked()==True and self.time3.isChecked()==True:
-                self.noDatetimeHandler()
+                pass
             else:
                 pass
             if self.header1.isChecked()==True:
