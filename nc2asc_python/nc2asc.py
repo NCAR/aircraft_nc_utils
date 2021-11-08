@@ -186,6 +186,7 @@ class gui(QMainWindow):
         self.header3 = QtWidgets.QRadioButton(self)
         self.header3.setText('AMESDef')
         self.header3.move(200, 340)
+        self.header3.setEnabled(0)
         headergroup = QtWidgets.QButtonGroup(self)
         headergroup.addButton(self.header1)
         headergroup.addButton(self.header2)
@@ -258,6 +259,10 @@ class gui(QMainWindow):
         averaginglabel=QtWidgets.QLabel(self)
         averaginglabel.setText('Averaging (s):')
         averaginglabel.move(20, 440)
+        averagingnote=QtWidgets.QLabel(self)
+        averagingnote.setText("Note: Average calc'd as rolling window mean.")
+        averagingnote.move(200, 440)
+        averagingnote.resize(300, 20)
         self.averagingbox = QtWidgets.QLineEdit(self)
         self.averagingbox.move(140, 445)
         self.averagingbox.resize(60, 20)
@@ -411,29 +416,71 @@ class gui(QMainWindow):
             x = readbatch.exec_()
 
         with open(self.inputbatch_file, 'r') as fi:
-            # input file
             self.input_file = []
             self.outputfile = []
             for ln in fi:
+                # extract the path of the input file from the batch file
                 if ln.startswith('if='):
                     self.input_file.append(ln[2:])
+                # extract the path of the output file
                 elif ln.startswith('of='): 
                     self.outputfile.append(ln[2:]) 
+
+                # get the header format from the batch file
                 elif ln.startswith('hd=Plain'):
                     self.header1.setChecked(True)
                 elif ln.startswith('hd=ICARTT'):
                     self.header2.setChecked(True)
                 elif ln.startswith('hd=AMESDef'):
                     self.header3.setChecked(True)
+
+                # get the date format from the batch file
+                elif ln.startswith('dt=yyyy-mm-dd'):
+                    self.date1.setChecked(True)
+                elif ln.startswith('dt=yyyy mm dd'):
+                    self.date2.setChecked(True)
+                elif ln.startswith('dt=NoDate'):
+                    self.date3.setChecked(True)
+                # get the time format from the batch file
+                elif ln.startswith('tm=hh:mm:ss'):
+                    self.time1.setChecked(True)
+                elif ln.startswith('tm=hh mm ss'):
+                    self.time2.setChecked(True)
+                elif ln.startswith('tm=SecOfDay'):
+                    self.time3.setChceked(True)
+
+                # get the delimiter from the batch faile
+                elif ln.startswith('sp=comma'):
+                    self.comma.setChecked(True)
+                elif ln.startswith('sp=space'):
+                    self.space.setChecked(True)
+
+                # get the fill value from the batch file
+                elif ln.startswith('fv=-32767'):
+                    self.fillvalue1.setChecked(True)
+                elif ln.startswith('fv=blank'):
+                    self.fillvalue2.setChecked(True)
+                elif ln.startswith('fv=replicate'):
+                    self.fillvalue3.setChecked(True)
+
+            # format the input file and populate in gui
             self.input_file = str(self.input_file)    
             self.input_file = self.input_file.replace('[', '')
             self.input_file = self.input_file.replace("'", '')
             self.input_file = self.input_file.replace('=', '')
             self.input_file = self.input_file.replace(']', '')
+            self.input_file = self.input_file[:-2]
             self.inputfilebox.setText(self.input_file)
 
+            # format the output dir and file and populate in gui
             self.outputfile = str(self.outputfile)
-            self.outputdirbox.setText(self.outputfile)
+            self.outputfile = self.outputfile.replace('[', '')
+            self.outputfile = self.outputfile.replace("'", '')
+            self.outputfile = self.outputfile.replace('=', '')
+            self.outputfile = self.outputfile.replace(']', '')
+            self.outputfile = self.outputfile[:-2]
+            self.outputdirbox.setText(os.path.dirname(self.outputfile))
+            self.outputfilebox.setText(os.path.basename(self.outputfile))
 
 #######################################################################
 # function definitions for data loading, formatting, and processing
@@ -474,7 +521,8 @@ class gui(QMainWindow):
             self.project_manager = 'Pavel Romashkin'
             self.platform = nc.getncattr('Platform')
             self.project_name=nc.getncattr('project')
-            self.today = datetime.today().strftime('%Y, %m, %d')
+            self.today = str(datetime.today().strftime('%Y, %m, %d'))
+            self.today = self.today.replace('-', ', ')
             for i in nc.variables.keys():
                 # handle only time dimension variables
                 dims = str(nc.variables[i].dimensions)
@@ -617,7 +665,73 @@ class gui(QMainWindow):
         self.date3.setChecked(True)
         self.comma.setChecked(True)
         self.fillvalue1.setChecked(True)
+   
+    def ICARTTHeader(self, icartt_header):
+        try:
+            icartt_header = pd.DataFrame(icartt_header.rename(columns={'DateTime': 'Start_UTC'}))
+        except:
+            icartt_header = pd.DataFrame(icartt_header.rename(columns={'Time': 'Start_UTC'}))
+        self.varNumber = str(len(icartt_header.columns)-1)
+        icartt_header.head(50).to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
+        try:
+            self.columns = pd.DataFrame(icartt_header.columns.values.tolist())
+            self.header = self.header.loc[self.header[0].isin(self.columns[0])]
+            self.data_date = str(self.dtime_sep[0].iloc[1])
+            self.data_date = self.data_date.replace('-', ', ')
 
+            os.system('cp ./docs/header1.txt ./docs/header1.tmp')
+            os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
+            os.system('cp ./docs/header2.txt ./docs/header2.tmp') 
+            self.today = datetime.today().strftime('%Y, %m, %d')
+            with open('./docs/header1.tmp', 'r+') as f:
+                lines = f.readlines()
+                for i, line in enumerate(lines):
+                    if line.startswith('RAF instruments on'):
+                        lines[i] = lines[i].strip()+' '+self.platform+'\n'
+                    if line.startswith('<PROJECT MANAGER>'):
+                        lines[i] = self.project_manager+'\n'
+                    if line.startswith('<PROJECT>'):
+                        lines[i] = self.project_name+'\n'
+                    if line.startswith('<YYYY, MM, DD,>'):
+                        lines[i] = self.data_date+', '+self.today+'\n'
+                    if line.startswith('<varNumber>'):
+                        lines[i] = self.varNumber+'\n'
+                    if line.startswith('<1.0>'):
+                        lines[i] = '1.0,' * int(self.varNumber)+'\n'
+                        lines[i] = lines[i][:-2]+'\n'
+                    if line.startswith('<-99999.0>'):
+                        lines[i] = '-99999.0,' * int(self.varNumber)+'\n'
+                        lines[i] = lines[i][:-2]+'\n'
+                f.seek(0)
+                for line in lines:
+                    f.write(line)
+
+            with open('./docs/header2.tmp', 'r+') as f:
+                lines = f.readlines()
+                for i, line in enumerate(lines):
+                    if line.startswith('<PLATFORM>'):
+                        lines[i] = 'PLATFORM: '+self.platform+'\n'
+
+                f.seek(0)
+                for line in lines:
+                    f.write(line)
+
+            self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
+            os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
+            with open('./docs/header.tmp', 'r+') as f:
+                lines = f.readlines()
+                count = str(len(lines))
+                for i, line in enumerate(lines):
+                    if line.startswith('<ROWCOUNT>'):
+                        lines[i] = count+' ,1001\n'
+                f.seek(0)
+                for line in lines:
+                    f.write(line)
+            os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
+            os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+            os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
+        except:
+            print('Error creating and appending ICARTT header to output file.')
 #############################################################################
 # notification that processing was successfule
 #############################################################################
@@ -628,6 +742,18 @@ class gui(QMainWindow):
         processing_complete = QMessageBox()
         processing_complete.setWindowTitle("Success!")
         ret = QMessageBox.question(self, 'Success!', "Data was written to the output file.", QMessageBox.Ok)
+
+    # define function to format the preview portion of the output file
+    def formatPreview(self):
+        with open(self.output_file) as preview:
+            head = str(preview.readlines()[0:10])
+            head = head.replace('\\n', '\n')
+            head = head.replace('\\n', '\n')
+            head = head.replace('[', '')
+            head = head.replace(']', '')
+            head = head.replace("', '", '')
+            head = head.replace("'", '')
+        self.outputpreview.setText(head)
 
 #############################################################################
 # define date and time functions for use in previewData and writeData
@@ -672,7 +798,7 @@ class gui(QMainWindow):
             self.averaging_window = self.averagingbox.text()
             if len(self.averaging_window)!=0:
                 self.averaging_window=int(self.averaging_window)
-                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean()
+                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean().round(decimals=3)
                 self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
                 pass
@@ -732,120 +858,37 @@ class gui(QMainWindow):
             if self.header1.isChecked()==True:
                 if self.comma.isChecked()==True:
                     if self.fillvalue1.isChecked()==True:
-                        self.preview.head(10).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
-                        with open(self.output_file) as preview:
-                            head = str(preview.readlines()[0:10])
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('[', '')
-                            head = head.replace(']', '')
-                            head = head.replace("', '", '')
-                            head = head.replace("'", '')
-                        self.outputpreview.setText(head)
+                        self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
+                        self.formatPreview()
                     elif self.fillvalue2.isChecked()==True:
                         self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='')
-                        with open(self.output_file) as preview:
-                            head = str(preview.readlines()[0:10])
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('[', '')
-                            head = head.replace(']', '')
-                            head = head.replace("', '", '')
-                            head = head.replace("'", '')                     
-                        self.outputpreview.setText(head)
+                        self.formatPreview()
                     elif self.fillvalue3.isChecked()==True:
                         self.preview = self.preview.fillna(method='ffill')
                         self.preview.head(15).to_csv(self.output_file, header=True, index=False)
-                        with open(self.output_file) as preview:
-                            head = str(preview.readlines()[0:10])
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('[', '')
-                            head = head.replace(']', '')
-                            head = head.replace("', '", '')
-                            head = head.replace("'", '')
-                        self.outputpreview.setText(head)
+                        self.formatPreview()
                     else:
                         print('Error converting file: '+self.input_file)
                 elif self.space.isChecked()==True:
                     if self.fillvalue1.isChecked()==True:
                         self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
-                        with open(self.output_file) as preview:
-                            head = str(preview.readlines()[0:10])
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('[', '')
-                            head = head.replace(']', '')
-                            head = head.replace("', '", '')
-                            head = head.replace("'", '')
-                        self.outputpreview.setText(head)
+                        self.formatPreview()
                     elif self.fillvalue2.isChecked()==True:
                         self.preview.head(15).to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
-                        with open(self.output_file) as preview:
-                            head = str(preview.readlines()[0:10])
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('[', '')
-                            head = head.replace(']', '')
-                            head = head.replace("', '", '')
-                            head = head.replace("'", '')
-                        self.outputpreview.setText(head)
+                        self.formatPreview()
                     elif self.fillvalue3.isChecked()==True:
                         self.preview = self.preview.fillna(method='ffill')
                         self.preview.head(15).to_csv(self.output_file, header=True, index=False, sep=' ')
-                        with open(self.output_file) as preview:
-                            head = str(preview.readlines()[0:10])
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('\\n', '\n')
-                            head = head.replace('[', '')
-                            head = head.replace(']', '')
-                            head = head.replace("', '", '')
-                            head = head.replace("'", '')
-                        self.outputpreview.setText(head)
+                        self.formatPreview()
                     else:
                         print('Error converting file: '+self.input_file)
                 else:
                     print('Error converting file: '+self.input_file)
 
             elif self.header2.isChecked()==True:
-                try:
-                    self.preview = self.preview.rename(columns={'DateTime': 'Start_UTC'})
-                except:
-                    self.preview = self.preview.rename(columns={'Time': 'Start_UTC'})
-                self.preview.head(50).to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
-                try:
-                    self.columns = pd.DataFrame(self.preview.columns.values.tolist())
-                    self.header = self.header.loc[self.header[0].isin(self.columns[0])]
-                    self.data_date = self.dtime_sep[0].iloc[1]
-
-                    os.system('cp ./docs/header1.txt ./docs/header1.tmp')
-                    os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
-                    os.system('cp ./docs/header2.txt ./docs/header2.tmp')
-                    self.today = datetime.today().strftime('%Y, %m, %d')
-                    with open('./docs/header1.tmp', 'r+') as f:
-                        lines = f.readlines()
-                        for i, line in enumerate(lines):
-                            if line.startswith('RAF instruments on'):
-                                lines[i] = lines[i].strip()+' '+self.platform+'\n'
-                            if line.startswith('<PROJECT MANAGER>'):
-                                lines[i] = self.project_manager+'\n'
-                            if line.startswith('<PROJECT>'):
-                                lines[i] = self.project_name+'\n'
-                            if line.startswith('<YYYY, MM, DD,>'):
-                                lines[i] = self.data_date+', '+self.today+'\n'
-                        f.seek(0)
-                        for line in lines:
-                            f.write(line)
-
-                    self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
-                    os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
-                    os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
-                    os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                    os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
-
-                except: 
-                    print('Error creating and appending ICARTT header to output file.')
+                self.ICARTTHeader(self.preview)
                 with open(self.output_file) as preview:
-                    head = str(preview.readlines()[0:100])
+                    head = str(preview.readlines()[0:75])
                     head = head.replace('\\n', '\n')
                     head = head.replace('[', '')
                     head = head.replace(']', '')
@@ -880,7 +923,7 @@ class gui(QMainWindow):
                     self.asc.set_index('DateTime')
                 except:
                     self.asc.set_index('Time')
-                self.asc = self.asc.rolling(self.averaging_window, min_periods=0).mean()
+                self.asc = self.asc.rolling(self.averaging_window, min_periods=0).mean().round(decimals=3)
                 self.asc = self.asc.iloc[::self.averaging_window, :]
             else:
                 pass
@@ -970,19 +1013,9 @@ class gui(QMainWindow):
                 else:
                     print('Error converting file: '+self.input_file)
             elif self.header2.isChecked()==True:
-                self.asc = self.asc.rename(columns={'DateTime': 'Start_UTC'})
-                self.asc.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
                 try:
-                    self.columns = pd.DataFrame(self.asc.columns.values.tolist())
-                    self.header = self.header.loc[self.header[0].isin(self.columns[0])]
-                    os.system('cp ./docs/header1.txt ./docs/header1.tmp')
-                    os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
-                    os.system('cp ./docs/header2.txt ./docs/header2.tmp')
-                    self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
-                    os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
-                    os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp') 
-                    os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                    os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
+                    self.ICARTTHeader(self.asc)
+
                 except: 
                     print('Error creating and appending ICARTT header to output file.')
                 self.processingSuccess()

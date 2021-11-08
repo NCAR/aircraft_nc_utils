@@ -1,19 +1,19 @@
 0
 18
 PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, raf-pm@ucar.edu
-PLATFORM: <N130AR - NSF C-130 / N677F - NSF GV>
-LOCATION: Aircraft location data is given in <C-130 / GV> nav data file
+<PLATFORM>>
+LOCATION: Aircraft location data is given in nav data file
 ASSOCIATED_DATA: Full data in netCDF file.
-INSTRUMENT_INFO: 
-DATA_INFO: 
-UNCERTAINTY: contact PI Pavel Romashkin or Jorgen Jensen, jbj@ucar.edu, 303-497-1028
+INSTRUMENT_INFO:
+DATA_INFO: data reported in ambient condition, ambient temperature and pressure are given for conversion to STP (273.15K and 1013 mb)
+UNCERTAINTY: contact PI Pavel Romashkin, pavel@ucar.edu 303-497-1028
 ULOD_FLAG: -77777
 ULOD_VALUE: N/A
 LLOD_FLAG: -88888
 LLOD_VALUE: N/A
 DM_CONTACT_INFO: NCAR/EOL Archive, eol-archive@ucar.edu
-PROJECT_INFO: 
-STIPULATIONS_ON_USE: Preliminary data, contact PI prior to use.
+PROJECT_INFO:
+STIPULATIONS_ON_USE: Final data for publication use
 OTHER_COMMENTS: none
 REVISION: R0
-R0: Preliminary Data
+R0: Field Data
