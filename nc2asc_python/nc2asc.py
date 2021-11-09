@@ -89,9 +89,9 @@ class gui(QMainWindow):
         dategroup.addButton(self.date3)
         # have the default be date 1 but update the preview when any are clicked
         self.date1.setChecked(True)
-        self.date1.clicked.connect(self.previewData)
-        self.date2.clicked.connect(self.previewData)
-        self.date3.clicked.connect(self.previewData)
+        #self.date1.clicked.connect(self.previewData)
+        #self.date2.clicked.connect(self.previewData)
+        #self.date3.clicked.connect(self.previewData)
 
         #####################################################################
         # time format options
@@ -116,9 +116,9 @@ class gui(QMainWindow):
         timegroup.addButton(self.time3)
         # have default be time 1 but update the preview when any are clicked
         self.time1.setChecked(True)
-        self.time1.clicked.connect(self.previewData)
-        self.time2.clicked.connect(self.previewData)
-        self.time3.clicked.connect(self.previewData)
+        #self.time1.clicked.connect(self.previewData)
+        #self.time2.clicked.connect(self.previewData)
+        #self.time3.clicked.connect(self.previewData)
 
         #####################################################################
         # delimiter format options
@@ -139,8 +139,8 @@ class gui(QMainWindow):
         delimitergroup.addButton(self.space)
         # have default be comma delimited but update the preview when any are clicked
         self.comma.setChecked(True)        
-        self.comma.clicked.connect(self.previewData)
-        self.space.clicked.connect(self.previewData)
+        #self.comma.clicked.connect(self.previewData)
+        #self.space.clicked.connect(self.previewData)
 
         #####################################################################
         # fill value format options
@@ -165,9 +165,9 @@ class gui(QMainWindow):
         fillvaluegroup.addButton(self.fillvalue3)
         # have default be fill value 1 but update the preview when any are clicked
         self.fillvalue1.setChecked(True)
-        self.fillvalue1.clicked.connect(self.previewData)
-        self.fillvalue2.clicked.connect(self.previewData)
-        self.fillvalue3.clicked.connect(self.previewData)
+        #self.fillvalue1.clicked.connect(self.previewData)
+        #self.fillvalue2.clicked.connect(self.previewData)
+        #self.fillvalue3.clicked.connect(self.previewData)
 
         #####################################################################
         # header format options
@@ -194,9 +194,9 @@ class gui(QMainWindow):
         # have the default be header 1 (plain) but update the preview when any are clicked
         self.header1.setChecked(True)
         self.header2.clicked.connect(self.ICARTT_toggle)
-        self.header1.clicked.connect(self.previewData)
-        self.header2.clicked.connect(self.previewData)
-        self.header3.clicked.connect(self.previewData)
+        #self.header1.clicked.connect(self.previewData)
+        #self.header2.clicked.connect(self.previewData)
+        #self.header3.clicked.connect(self.previewData)
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
         self.processbtn.resize(self.processbtn.sizeHint())
@@ -220,7 +220,7 @@ class gui(QMainWindow):
         self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
         self.deselectvar.move (360, 400)
         self.deselectvar.clicked.connect(self.deselectVar)
-        self.deselectvar.clicked.connect(self.previewData)
+        #self.deselectvar.clicked.connect(self.previewData)
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
         varlabel.setText('Select Vars:')
@@ -505,6 +505,7 @@ class gui(QMainWindow):
             no_process.setText("Cannot Process!")
             x = no_process.exec_()
 
+    # define finction to format the data loaded
     def formatData(self):    
 
         try:
@@ -551,6 +552,11 @@ class gui(QMainWindow):
             self.dtime=netCDF4.num2date(self.dtime[:],self.dtime.units)
             self.dtime=pd.Series(self.dtime).astype(str)
             self.dtime_sep = self.dtime.str.split(' ', expand=True)
+
+            # create separate date and time series for combination in previewData and writeData
+            self.dtime_date = self.dtime_sep[0]
+            self.dtime_time = self.dtime_sep[1]
+
             # concatenate the units, long_name, variables, and header
             self.units=pd.concat(self.units, axis=0, ignore_index=True)
             self.long_name=pd.concat(self.long_name, axis=0, ignore_index=True)
@@ -564,7 +570,7 @@ class gui(QMainWindow):
             self.end.setText(self.end_time)
         except:
            print('Error in extracting variable in '+str(self.input_file))
-        return self.input_file, self.asc, self.header
+        return self.input_file, self.asc, self.header, self.dtime_date, self.dtime_time
 
     # define function to populate variables in the table
     def loadVars(self):
@@ -628,7 +634,6 @@ class gui(QMainWindow):
             self.variables_extract = self.variables_extract.append(self.output)
             self.variables_extract = self.variables_extract.drop_duplicates()
             self.asc_new = self.asc[self.variables_extract]
-            print(self.asc_new)
             self.var_selected = str(self.asc_new.columns.values.tolist())
             self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(71,145,209))
 
@@ -647,6 +652,7 @@ class gui(QMainWindow):
         except:
             print("error in getting values from table")
 
+    # define function to deselect (clear) all vars selected
     def deselectVar(self):
 
         self.checkoutput=self.var.item(self.var.currentRow(), 0).text()
@@ -665,12 +671,23 @@ class gui(QMainWindow):
         self.date3.setChecked(True)
         self.comma.setChecked(True)
         self.fillvalue1.setChecked(True)
-   
+  
+    #########################################################################
+    # define function to format ICARTT header
+    # note: if used outside of this script, multiple vars needed
+    # self.dtime, self.platform, self.project_manager, self.project_name, 
+    # self.today, self.varNumber, self.output_file
+    # also need header1.txt and header2.txt as templates
+    #########################################################################
     def ICARTTHeader(self, icartt_header):
+
+        # try renaming the time var to Start_UTC
         try:
-            icartt_header = pd.DataFrame(icartt_header.rename(columns={'DateTime': 'Start_UTC'}))
-        except:
             icartt_header = pd.DataFrame(icartt_header.rename(columns={'Time': 'Start_UTC'}))
+        except:
+            print('Start_UTC rename failed')
+
+        # get the varNumber from the # of columns in the dataframe
         self.varNumber = str(len(icartt_header.columns)-1)
         icartt_header.head(50).to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
         try:
@@ -679,10 +696,14 @@ class gui(QMainWindow):
             self.data_date = str(self.dtime_sep[0].iloc[1])
             self.data_date = self.data_date.replace('-', ', ')
 
+            # start going through the template text docs
             os.system('cp ./docs/header1.txt ./docs/header1.tmp')
             os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
             os.system('cp ./docs/header2.txt ./docs/header2.tmp') 
+            # get today's date
             self.today = datetime.today().strftime('%Y, %m, %d')
+
+            # perform the replacements on the first header file
             with open('./docs/header1.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
@@ -706,6 +727,7 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
 
+            # perform the replacements on the second header file
             with open('./docs/header2.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
@@ -716,6 +738,7 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
 
+            # combine and perform replacement on the combined header file
             self.header.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
             os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
             with open('./docs/header.tmp', 'r+') as f:
@@ -732,19 +755,21 @@ class gui(QMainWindow):
             os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
         except:
             print('Error creating and appending ICARTT header to output file.')
-#############################################################################
-# notification that processing was successfule
-#############################################################################
 
+    #########################################################################
     # define function to notify user that processing was successful.
+    #########################################################################
     def processingSuccess(self):
 
         processing_complete = QMessageBox()
         processing_complete.setWindowTitle("Success!")
         ret = QMessageBox.question(self, 'Success!', "Data was written to the output file.", QMessageBox.Ok)
 
+    #########################################################################
     # define function to format the preview portion of the output file
+    #########################################################################
     def formatPreview(self):
+
         with open(self.output_file) as preview:
             head = str(preview.readlines()[0:10])
             head = head.replace('\\n', '\n')
@@ -755,106 +780,148 @@ class gui(QMainWindow):
             head = head.replace("'", '')
         self.outputpreview.setText(head)
 
-#############################################################################
-# define date and time functions for use in previewData and writeData
-#############################################################################
-
-    # define function for handling date and time formatting for previewData and writeData functions
+    #########################################################################
+    # define function for handling date and time 
+    # formatting for previewData and writeData functions
+    #########################################################################
     def timeHandler(self, datasource):
 
         try:
             datasource.pop('Time')
         except:
-            pass
+            print('Error dropping Time')
         try:
             datasource.insert(loc=0, column='DateTime', value=self.dtime)
         except:
-            pass
+            print('Error inserting DateTime for subselection.')
         try:
-            datasource = datasource+[datasource['DateTime']>start]
+            datasource = datasource[datasource['DateTime']>start]
         except:
-            pass
+            print('Error subselecting based on start time.')
         try:
             datasource = datasource[datasource['DateTime']<end]
         except:
-            pass
+            print('Error subselecting based on end time.')
+        try:
+            datasource.insert(loc=0, column='Time', value=self.dtime_time)
+        except:
+            print('Error inserting separate time series.')      
+        try:
+            datasource.insert(loc=0, column='Date', value=self.dtime_date)
+        except:
+            print('Error inserting separate date series.')
+        try:
+            datasource.pop('DateTime')
+        except:
+            print('Error dropping DateTime')
 
 #############################################################################
 # function previewData creates an example output based on user settings and
 # populates the Preview field in the gui. It is set up to autmatically update
 # based on the selection of the vars in selectVars, selectAll, or deselectAll.
 #############################################################################
-
+   
+    #########################################################################
     # define function to preview data output within the app
+    #########################################################################
     def previewData(self):
+
+        # assign self.asc_new or self.asc to self.preview dataframe
         try:
             self.preview = self.asc_new
         except:
             self.preview = self.asc
+
+        # get the output file from the text box
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
+
+        # get the start and end times from the text boxes
         start = self.start.text()
         end = self.end.text()
+
         try:
+            # get the averaging information if it exists
             self.averaging_window = self.averagingbox.text()
             if len(self.averaging_window)!=0:
                 self.averaging_window=int(self.averaging_window)
-                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean().round(decimals=3)
+                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean()
                 self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
                 pass
+            #################################################################
+            # data and time combination checks for preview field
+            ################################################################
             if self.date1.isChecked()==True and self.time1.isChecked()==True:
                 self.timeHandler(self.preview)
             elif self.date1.isChecked()==True and self.time2.isChecked()==True:
                 self.timeHandler(self.preview)
-                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
+                self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
             elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                self.preview.insert(loc=0, column='Date', value=self.dtime_sep[0])
                 try:
-                    self.preview.drop('DateTime', axis=1, inplace=True)
+                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('DateTime not dropped')
+                    print('No insert of DateTime')
+                try:
+                    self.preview = self.preview[self.preview['DateTime']>start]
+                except:
+                    print('No time selection based on start time')
+                try:
+                    self.preview = self.preview[self.preview['DateTime']<end]
+                except:
+                    print('No time selection based on end time')
+                try:
+                    self.preview.insert(loc=0, column='Date', value=self.dtime_date)
+                except:
+                    print('No insert of Date')
+                try:
+                    self.preview.pop('DateTime')
+                except:
+                    print('No drop of DateTime')
             elif self.date2.isChecked()==True and self.time1.isChecked()==True:
                 self.timeHandler(self.preview)
-                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+                self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
             elif self.date2.isChecked()==True and self.time2.isChecked()==True:
                 self.timeHandler(self.preview)
-                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
-                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
-            elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                self.preview.insert(loc=0, column='Date', value=self.dtime_sep[0])
                 self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
-                try:
-                    self.preview.drop('DateTime', axis=1, inplace=True)
-                except:
-                    print('DateTime not dropped')
-            elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                try:
-                    self.preview.pop('Time')
-                except:
-                    pass
-                self.preview.insert(loc=0, column='Time', value=self.dtime_sep[1])
-                try:
-                    self.preview.drop('DateTime', axis=1, inplace=True)
-                except:
-                    print('DateTime not dropped')
-            elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                try:
-                    self.preview.pop('Time')
-                except:
-                    pass
-                self.preview.insert(loc=0, column='Time', value=self.dtime_sep[1])
                 self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
+            elif self.date2.isChecked()==True and self.time3.isChecked()==True:
                 try:
-                    self.preview.drop('DateTime', axis=1, inplace=True)
+                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('DateTime not dropped')
+                    print('No insert of DateTime')
+                try:
+                    self.preview = self.preview[self.preview['DateTime']>start]
+                except:
+                    print('No time selection based on start time')
+                try:
+                    self.preview = self.preview[self.preview['DateTime']<end]
+                except:
+                    print('No time selection based on end time')
+                try:
+                    self.preview.insert(loc=0, column='Date', value=self.dtime_date)
+                except:
+                    print('No insert of Date')
+                try:
+                    self.preview.pop('DateTime')
+                except:
+                    print('No drop of DateTime')
+                try:
+                    self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
+                except:
+                    print('No replacement of -')
+            elif self.date3.isChecked()==True and self.time1.isChecked()==True:
+                self.timeHandler(self.preview)
+                self.preview.pop('Date')
+            elif self.date3.isChecked()==True and self.time2.isChecked()==True:
+                self.timeHandler(self.preview)
+                self.preview.pop('Date')
+                self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
             elif self.date3.isChecked()==True and self.time3.isChecked()==True:
-                try:
-                    self.prevew = self.preview.drop('Date', axis=1, inplace=True)
-                except:
-                    print('Date not dropped')
+                pass
             else:
                 pass
+
+            # Plain header
             if self.header1.isChecked()==True:
                 if self.comma.isChecked()==True:
                     if self.fillvalue1.isChecked()==True:
@@ -885,6 +952,7 @@ class gui(QMainWindow):
                 else:
                     print('Error converting file: '+self.input_file)
 
+            # ICARTT header
             elif self.header2.isChecked()==True:
                 self.ICARTTHeader(self.preview)
                 with open(self.output_file) as preview:
@@ -904,8 +972,9 @@ class gui(QMainWindow):
             x = processing_complete.exec_()
         else:
             pass
-
-    # define function to write data to an output preview field and to output file
+    #########################################################################
+    # define function to write data to output file
+    #########################################################################
     def writeData(self):
 
         try:
@@ -916,67 +985,101 @@ class gui(QMainWindow):
         start = self.start.text()
         end = self.end.text()
         try:
+            # get averaging information if it exists
             self.averaging_window = self.averagingbox.text()
             if len(self.averaging_window)!=0:
                 self.averaging_window=int(self.averaging_window)
-                try:
-                    self.asc.set_index('DateTime')
-                except:
-                    self.asc.set_index('Time')
-                self.asc = self.asc.rolling(self.averaging_window, min_periods=0).mean().round(decimals=3)
+                #try:
+                #    self.asc.set_index('DateTime')
+                #except:
+                #    self.asc.set_index('Time')
+                self.asc = self.asc.rolling(self.averaging_window, min_periods=0).mean()
                 self.asc = self.asc.iloc[::self.averaging_window, :]
             else:
                 pass
+
+            #################################################################
+            # data and time combination checks for output file
+            #################################################################
             if self.date1.isChecked()==True and self.time1.isChecked()==True:
                 self.timeHandler(self.asc)
+                self.asc.pop('Date')
+                self.asc.insert(loc=0, column='Date', value=self.dtime_date) 
             elif self.date1.isChecked()==True and self.time2.isChecked()==True:
                 self.timeHandler(self.asc)
-                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
+                self.asc.pop('Date')
+                self.asc.insert(loc=0, column='Date', value=self.dtime_date)
+                self.asc['Time']=self.asc['Time'].str.replace(':', ' ')
             elif self.date1.isChecked()==True and self.time3.isChecked()==True:
-                self.asc.insert(loc=0, column='Date', value=self.dtime_sep[0])
                 try:
-                    self.asc.drop('DateTime', axis=1, inplace=True)
+                    self.asc.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('DateTime not dropped')
+                    print('No insert of DateTime')
+                try:
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                except:
+                    print('No time selection based on start time')
+                try:
+                    self.asc = self.asc[self.asc['DateTime']<end]
+                except:
+                    print('No time selection based on end time')
+                try:
+                    self.asc.insert(loc=0, column='Date', value=self.dtime_date)
+                except:
+                    print('No insert of Date')
+                try:
+                    self.asc.pop('DateTime')
+                except:
+                    print('No drop of DateTime')
             elif self.date2.isChecked()==True and self.time1.isChecked()==True:
                 self.timeHandler(self.asc)
-                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
+                self.asc.pop('Date')
+                self.asc.insert(loc=0, column='Date', value=self.dtime_date)
+                self.asc['Date']=self.asc['Date'].str.replace('-', ' ')
             elif self.date2.isChecked()==True and self.time2.isChecked()==True:
                 self.timeHandler(self.asc)
-                self.preview['DateTime']=self.preview['DateTime'].str.replace(':', ' ')
-                self.preview['DateTime']=self.preview['DateTime'].str.replace('-', ' ')
-            elif self.date2.isChecked()==True and self.time3.isChecked()==True:
-                self.asc.insert(loc=0, column='Date', value=self.dtime_sep[0])
+                self.asc.pop('Date')
+                self.asc.insert(loc=0, column='Date', value=self.dtime_date)
                 self.asc['Date']=self.asc['Date'].str.replace('-', ' ')
-                try:
-                    self.asc.drop('DateTime', axis=1, inplace=True)
-                except:
-                    print('DateTime not dropped')
-            elif self.date3.isChecked()==True and self.time1.isChecked()==True:
-                try:
-                    self.asc.pop('Time')
-                except:
-                    pass
-                self.asc.insert(loc=0, column='Time', value=self.dtime_sep[1])
-                try:
-                    self.asc.drop('DateTime', axis=1, inplace=True)
-                except:
-                    print('DateTime not dropped')
-            elif self.date3.isChecked()==True and self.time2.isChecked()==True:
-                try:
-                    self.asc.pop('Time')
-                except:
-                    pass
-                self.asc.insert(loc=0, column='Time', value=self.dtime_sep[1])
                 self.asc['Time']=self.asc['Time'].str.replace(':', ' ')
+            elif self.date2.isChecked()==True and self.time3.isChecked()==True:
                 try:
-                    self.asc.drop('DateTime', axis=1, inplace=True)
+                    self.asc.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('DateTime not dropped')
+                    print('No insert of DateTime')
+                try:
+                    self.asc = self.asc[self.asc['DateTime']>start]
+                except:
+                    print('No time selection based on start time')
+                try:
+                    self.asc = self.asc[self.asc['DateTime']<end]
+                except:
+                    print('No time selection based on end time')
+                try:
+                    self.asc.insert(loc=0, column='Date', value=self.dtime_date)
+                except:
+                    print('No insert of Date')
+                try:
+                    self.asc.pop('DateTime')
+                except:
+                    print('No drop of DateTime')
+                try:
+                    self.asc['Date']=self.asc['Date'].str.replace('-', ' ')
+                except:
+                    print('No replacement of -')
+            elif self.date3.isChecked()==True and self.time1.isChecked()==True:
+                self.timeHandler(self.asc)
+                self.asc.pop('Date')
+            elif self.date3.isChecked()==True and self.time2.isChecked()==True:
+                self.timeHandler(self.asc)
+                self.asc.pop('Date')
+                self.asc['Time']=self.asc['Time'].str.replace(':', ' ')
             elif self.date3.isChecked()==True and self.time3.isChecked()==True:
                 pass
             else:
                 pass
+
+            # Plain header
             if self.header1.isChecked()==True:
                 if self.comma.isChecked()==True:
                     if self.fillvalue1.isChecked()==True:
@@ -1012,6 +1115,7 @@ class gui(QMainWindow):
                         print('Error converting file: '+self.input_file)
                 else:
                     print('Error converting file: '+self.input_file)
+            # ICARTT header
             elif self.header2.isChecked()==True:
                 try:
                     self.ICARTTHeader(self.asc)
