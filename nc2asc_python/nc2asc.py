@@ -89,9 +89,9 @@ class gui(QMainWindow):
         dategroup.addButton(self.date3)
         # have the default be date 1 but update the preview when any are clicked
         self.date1.setChecked(True)
-        #self.date1.clicked.connect(self.previewData)
-        #self.date2.clicked.connect(self.previewData)
-        #self.date3.clicked.connect(self.previewData)
+        self.date1.clicked.connect(self.selectVars)
+        self.date2.clicked.connect(self.selectVars)
+        self.date3.clicked.connect(self.selectVars)
 
         #####################################################################
         # time format options
@@ -116,9 +116,9 @@ class gui(QMainWindow):
         timegroup.addButton(self.time3)
         # have default be time 1 but update the preview when any are clicked
         self.time1.setChecked(True)
-        #self.time1.clicked.connect(self.previewData)
-        #self.time2.clicked.connect(self.previewData)
-        #self.time3.clicked.connect(self.previewData)
+        self.time1.clicked.connect(self.selectVars)
+        self.time2.clicked.connect(self.selectVars)
+        self.time3.clicked.connect(self.selectVars)
 
         #####################################################################
         # delimiter format options
@@ -139,8 +139,8 @@ class gui(QMainWindow):
         delimitergroup.addButton(self.space)
         # have default be comma delimited but update the preview when any are clicked
         self.comma.setChecked(True)        
-        #self.comma.clicked.connect(self.previewData)
-        #self.space.clicked.connect(self.previewData)
+        self.comma.clicked.connect(self.selectVars)
+        self.space.clicked.connect(self.selectVars)
 
         #####################################################################
         # fill value format options
@@ -165,9 +165,9 @@ class gui(QMainWindow):
         fillvaluegroup.addButton(self.fillvalue3)
         # have default be fill value 1 but update the preview when any are clicked
         self.fillvalue1.setChecked(True)
-        #self.fillvalue1.clicked.connect(self.previewData)
-        #self.fillvalue2.clicked.connect(self.previewData)
-        #self.fillvalue3.clicked.connect(self.previewData)
+        self.fillvalue1.clicked.connect(self.selectVars)
+        self.fillvalue2.clicked.connect(self.selectVars)
+        self.fillvalue3.clicked.connect(self.selectVars)
 
         #####################################################################
         # header format options
@@ -194,9 +194,9 @@ class gui(QMainWindow):
         # have the default be header 1 (plain) but update the preview when any are clicked
         self.header1.setChecked(True)
         self.header2.clicked.connect(self.ICARTT_toggle)
-        #self.header1.clicked.connect(self.previewData)
-        #self.header2.clicked.connect(self.previewData)
-        #self.header3.clicked.connect(self.previewData)
+        self.header1.clicked.connect(self.selectVars)
+        self.header2.clicked.connect(self.selectVars)
+        self.header3.clicked.connect(self.selectVars)
         # process button calls writeData function
         self.processbtn=QtWidgets.QPushButton('Convert File', self)
         self.processbtn.resize(self.processbtn.sizeHint())
@@ -208,23 +208,22 @@ class gui(QMainWindow):
         #####################################################################
         # button to select all variables
         self.varbtn=QtWidgets.QPushButton('Select All', self)
-        self.varbtn.move(360, 320)
+        self.varbtn.move(600, 30)
         self.varbtn.clicked.connect(self.loadVars)
         self.varbtn.clicked.connect(self.selectAll)
         # button to de-select all variables
         self.varbtn2=QtWidgets.QPushButton('Clear All', self)
-        self.varbtn2.move(360, 360)
+        self.varbtn2.move(700, 30)
         self.varbtn2.clicked.connect(self.loadVars)
         self.varbtn2.clicked.connect(self.deselectAll)
         # button to remove current variable
         self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
-        self.deselectvar.move (360, 400)
+        self.deselectvar.move (800, 30)
         self.deselectvar.clicked.connect(self.deselectVar)
-        #self.deselectvar.clicked.connect(self.previewData)
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
-        varlabel.setText('Select Vars:')
-        varlabel.move(640, 30)
+        varlabel.setText('Click Vars:')
+        varlabel.move(500, 30)
         varlabel.setFont(myFont)
         self.var=QtWidgets.QTableWidget(self)
         self.var.setColumnCount(3)
@@ -260,21 +259,24 @@ class gui(QMainWindow):
         averaginglabel.setText('Averaging (s):')
         averaginglabel.move(20, 440)
         averagingnote=QtWidgets.QLabel(self)
-        averagingnote.setText("Note: Average calc'd as rolling window mean.")
         averagingnote.move(200, 440)
         averagingnote.resize(300, 20)
         self.averagingbox = QtWidgets.QLineEdit(self)
         self.averagingbox.move(140, 445)
         self.averagingbox.resize(60, 20)
+        # button to update preview based on time options
+        self.outputpreviewbutton=QtWidgets.QPushButton('Update Preview', self)
+        self.outputpreviewbutton.move(220, 440)
+        self.outputpreviewbutton.clicked.connect(self.selectVars)
 
         #####################################################################
         # output preview options
         #####################################################################
         # output preview label
-        self.outputpreviewlabel=QtWidgets.QLabel(self)
-        self.outputpreviewlabel.move(20, 470)
-        self.outputpreviewlabel.setText('Preview')
-        self.outputpreviewlabel.setFont(myFont)
+        outputpreviewlabel=QtWidgets.QLabel(self)
+        outputpreviewlabel.move(20, 470)
+        outputpreviewlabel.setText('Preview:')
+        outputpreviewlabel.setFont(myFont)
         # output preview field with horizontal scroll bar
         self.outputpreview=QtWidgets.QTextEdit(self)
         self.outputpreview.move(20, 500)
@@ -313,7 +315,7 @@ class gui(QMainWindow):
         self.setWindowIcon(QIcon('raf.png'))
         self.setStyleSheet("background-color: light gray;")
         self.setGeometry(100, 100, 920, 700)
-        self.setWindowTitle('NCAR/EOL RAF Aircraft netCDF to ASCII File Converter')    
+        self.setWindowTitle('NCAR/EOL RAF Aircraft NetCDF to ASCII File Converter')    
         self.setAutoFillBackground(True)
         p = self.palette()
         p.setColor(self.backgroundRole(), Qt.white)
@@ -663,6 +665,7 @@ class gui(QMainWindow):
             self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(255,255,255))
         else:
             pass
+        self.previewData()
         return self.asc_new, self.variables_extract, self.var_selected
 
     # define function to switch radio buttons to align with ICARTT selection
@@ -743,10 +746,11 @@ class gui(QMainWindow):
             os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
             with open('./docs/header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines))
+                count = str(len(lines))+', 1001'
+                print(count)
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
-                        lines[i] = count+' ,1001\n'
+                        lines[i] = count+'\n'
                 f.seek(0)
                 for line in lines:
                     f.write(line)
@@ -834,11 +838,9 @@ class gui(QMainWindow):
 
         # get the output file from the text box
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
-
         # get the start and end times from the text boxes
         start = self.start.text()
         end = self.end.text()
-
         try:
             # get the averaging information if it exists
             self.averaging_window = self.averagingbox.text()
