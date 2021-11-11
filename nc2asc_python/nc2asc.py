@@ -784,28 +784,20 @@ class gui(QMainWindow):
             head = head.replace("'", '')
         self.outputpreview.setText(head)
 
+
+    def extractTime(self):
+        # get the start and end times from the text boxes
+        self.start_filter = self.start.text()
+        self.end_filter = self.end.text()  
+        print(self.start_filter)
+        print(self.end_filter)
+        return self.start_filter, self.end_filter
+
     #########################################################################
     # define function for handling date and time 
     # formatting for previewData and writeData functions
     #########################################################################
     def timeHandler(self, datasource):
-
-        try:
-            datasource.pop('Time')
-        except:
-            print('Error dropping Time')
-        try:
-            datasource.insert(loc=0, column='DateTime', value=self.dtime)
-        except:
-            print('Error inserting DateTime for subselection.')
-        try:
-            datasource = datasource[datasource['DateTime']>start]
-        except:
-            print('Error subselecting based on start time.')
-        try:
-            datasource = datasource[datasource['DateTime']<end]
-        except:
-            print('Error subselecting based on end time.')
         try:
             datasource.insert(loc=0, column='Time', value=self.dtime_time)
         except:
@@ -838,7 +830,7 @@ class gui(QMainWindow):
 
         # get the output file from the text box
         self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
-        # get the start and end times from the text boxes
+        # get the start and end times from the text box in the gui
         start = self.start.text()
         end = self.end.text()
         try:
@@ -854,7 +846,24 @@ class gui(QMainWindow):
             # data and time combination checks for preview field
             ################################################################
             if self.date1.isChecked()==True and self.time1.isChecked()==True:
+                try:
+                    self.preview.pop('Time')
+                except:
+                    print('Error dropping Time')
+                try:
+                    self.preview.insert(loc=0, column='DateTime', value=self.dtime)
+                except:
+                    print('Error inserting DateTime for subselection.')
+                try:
+                    self.preview = self.preview[self.preview['DateTime']>start]
+                except:
+                    print('Error subselecting based on start time.')
+                try:
+                    self.preview = self.preview[self.preview['DateTime']<end]
+                except:
+                    print('Error subselecting based on end time.')
                 self.timeHandler(self.preview)
+
             elif self.date1.isChecked()==True and self.time2.isChecked()==True:
                 self.timeHandler(self.preview)
                 self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
@@ -864,11 +873,11 @@ class gui(QMainWindow):
                 except:
                     print('No insert of DateTime')
                 try:
-                    self.preview = self.preview[self.preview['DateTime']>start]
+                    self.preview = self.preview[self.preview['DateTime']>self.start_filter]
                 except:
                     print('No time selection based on start time')
                 try:
-                    self.preview = self.preview[self.preview['DateTime']<end]
+                    self.preview = self.preview[self.preview['DateTime']<self.end_filter]
                 except:
                     print('No time selection based on end time')
                 try:
@@ -892,11 +901,11 @@ class gui(QMainWindow):
                 except:
                     print('No insert of DateTime')
                 try:
-                    self.preview = self.preview[self.preview['DateTime']>start]
+                    self.preview = self.preview[self.preview['DateTime']>self.start_filter]
                 except:
                     print('No time selection based on start time')
                 try:
-                    self.preview = self.preview[self.preview['DateTime']<end]
+                    self.preview = self.preview[self.preview['DateTime']<self.end_filter]
                 except:
                     print('No time selection based on end time')
                 try:
