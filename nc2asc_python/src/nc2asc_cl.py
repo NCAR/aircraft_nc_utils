@@ -27,12 +27,12 @@ class nc2asc_CL():
     def parse_args(self):
         # set up argument parsing
         parser = argparse.ArgumentParser(
-            description='Provide Input File (-i) Output File (-o) and (optional) Batch File (-b)')
+            description='Provide (Optional) (-i) Input File (Optional) (-o) Output File and (-b) Batch File')
 
         # define input file(s) to process
-        parser.add_argument('input_file', type=str, help='Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
-        parser.add_argument('output_file', type=str, help='Output file')
-        parser.add_argument('batch_file', type=str, help='Optional batch file')
+        parser.add_argument('-i', '--input_file', type=str, help='(Optional) Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
+        parser.add_argument('-o', '--output_file', type=str, help='(Optional) Output file')
+        parser.add_argument('-b', '--batch_file', type=str, help='Batch file')
 
         if len(sys.argv) == 1:
             parser.print_help(sys.stderr)
@@ -56,21 +56,18 @@ class nc2asc_CL():
             print('BATCH_FILE:'+self.inputbatch_file)
         except:
             print('Error getting command line arguments.')
-        
         try:
             print('****Formatting data from input file. If CL argument provided, using by default.****')
             nc2asc.gui.formatData(self)
             print('Data formatted succecssfully.')
         except:
             print('Error formatting data.')
-
         try:
             print('****Reading Batch File****')
             nc2asc.gui.readBatchFile(self)
             print('****Batch File Successfully Read****')
         except:
             print('Error reading batch file')
-         
         try:
             print('****Writing Data to Output File****')
             nc2asc.gui.writeData(self)

@@ -1,7 +1,7 @@
 <ROWCOUNT> 1001 
 <PROJECT MANAGER> 
 NCAR Research Aviation Facility (raf-apo@ucar.edu)
-Flight data from: <PLATFORM>
+Flight data from:
 <PROJECT>
 1 1 
 <YYYY, MM, DD,>
