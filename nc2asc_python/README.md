@@ -101,18 +101,30 @@ The desired vars should be inclueded with each Var listed on a separate line.
 
 ### Example Batch File
 
-`if=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc
+```
+if=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc
+
 of=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt
 
 hd=Plain
+
 avg=
+
 dt=yyyy-mm-dd
+
 tm=hh:mm:ss
+
 sp=comma
+
 fv=-32767
+
 ti=2021-07-08 15:06:25,2021-07-08 19:58:30
 
 Vars=Time
+
 Vars=ALT
-Vars=ALT_A`
+
+Vars=ALT_A
+
+```
 
