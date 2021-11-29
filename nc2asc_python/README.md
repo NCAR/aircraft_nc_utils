@@ -27,6 +27,10 @@ The expected arguments for use with the command line mode of nc2asc are as follo
 (-o) Output File (optional: if not provided on the command line, will be read from the batch file line ‘of=’)
 (-b) Batch File
 
+### Example Command Line Execution:
+
+`./nc2asc_cl.py -i /scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc -o /scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt -b /scr/raf_data/ASPIRE-TEST/batchfile`
+
 ### Options
 
 #### Date Format Options
@@ -80,7 +84,7 @@ Fill value options include -32767, Replicate, and Blank values. The format of th
 #### Start / End Time and Averaging Options
 If a user would like to average over a period of seconds, they can provide the following line in the batch file:
 
-`avg=#\n` where # corresponds with the number of seconds of the averaging period
+`avg=#` where # corresponds with the number of seconds of the averaging period
 
 If a user would like to change the start or end time of the file, the following line should reflect the desired start and end times.
 
@@ -94,3 +98,21 @@ The desired vars should be inclueded with each Var listed on a separate line.
 `Var=<VarName>`
 
 `Var=<VarName>`
+
+### Example Batch File
+
+`if=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc
+of=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt
+
+hd=Plain
+avg=
+dt=yyyy-mm-dd
+tm=hh:mm:ss
+sp=comma
+fv=-32767
+ti=2021-07-08 15:06:25,2021-07-08 19:58:30
+
+Vars=Time
+Vars=ALT
+Vars=ALT_A`
+
