@@ -633,6 +633,9 @@ class gui(QMainWindow):
                     # append self.variables with netcdf variable names
                     variables = nc.variables[i].name
                     self.variables[i]=pd.Series(variables)
+                elif "sps1" in dims:
+                    histo_output = pd.DataFrame(nc.variables[i][:,0,:])
+                    self.asc[i] = pd.DataFrame(histo_output)
                 else:
                     pass
             # concatenate
@@ -665,7 +668,7 @@ class gui(QMainWindow):
         except:
            print('Error in extracting variable in '+str(self.input_file))
            return self.input_file, self.asc, self.fileheader, self.dtime_date, self.dtime_time
-
+        print(self.asc)
     # define function to populate variables in the table
     def loadVars_GUI(self):
 
