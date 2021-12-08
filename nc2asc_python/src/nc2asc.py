@@ -16,7 +16,7 @@ from datetime import datetime
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
+from PyQt5.QtWidgets import QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 class gui(QMainWindow):
     def __init__(self):
@@ -39,6 +39,10 @@ class gui(QMainWindow):
         # Input file and output dir / file fields
         #####################################################################
         # define input file box and label 
+        inputoptionslabel = QtWidgets.QLabel(self)
+        inputoptionslabel.setText('Input Options:')
+        inputoptionslabel.move(20, 20)
+        inputoptionslabel.setFont(myFont)
         self.inputfilebox=QtWidgets.QLineEdit(self)
         self.inputfilebox.move(140, 40)
         self.inputfilebox.resize(350, 20)
@@ -60,10 +64,48 @@ class gui(QMainWindow):
         self.outputfilebox=QtWidgets.QLineEdit(self)
         self.outputfilebox.move(140, 100)
         self.outputfilebox.resize(175, 20)
-        # processing options section
+
+        #####################################################################
+        # Start time, end time, and averaging options
+        #####################################################################
+        # fields for start and end time
+        timeselectionlabel = QtWidgets.QLabel(self)
+        timeselectionlabel.setText('Time Options:')
+        timeselectionlabel.move(20, 140)
+        startlab = QtWidgets.QLabel(self)
+        startlab.setText('Start:')
+        endlab = QtWidgets.QLabel(self)
+        endlab.setText('End:')
+        startlab.move(100,160)
+        endlab.move(100,180)
+        self.start=QtWidgets.QLineEdit(self)
+        self.end=QtWidgets.QLineEdit(self)
+        self.start.move(140, 165)
+        self.start.resize(140, 20)
+        self.end.move(140, 185)
+        self.end.resize(140, 20)
+        # averaging label and box
+        averaginglabel=QtWidgets.QLabel(self)
+        averaginglabel.setText('Averaging (s):')
+        averaginglabel.move(100, 200)
+        averagingnote=QtWidgets.QLabel(self)
+        averagingnote.move(280, 200)
+        averagingnote.resize(300, 20)
+        self.averagingbox = QtWidgets.QLineEdit(self)
+        self.averagingbox.move(220, 205)
+        self.averagingbox.resize(60, 20)
+        # button to update preview based on time options
+        self.outputpreviewbutton=QtWidgets.QPushButton('Update Preview', self)
+        self.outputpreviewbutton.move(300, 200)
+        self.outputpreviewbutton.clicked.connect(self.selectVars_GUI)
+
+        #####################################################################
+        # Processing options section
+        #####################################################################
         processinglabel = QtWidgets.QLabel(self)
-        processinglabel.setText('Options')
-        processinglabel.move(20, 140)
+        processinglabel.setText('Output Options:')
+        processinglabel.move(20, 240)
+        processinglabel.resize(100, 20)
         processinglabel.setFont(myFont)
 
         #####################################################################
@@ -72,17 +114,17 @@ class gui(QMainWindow):
         # radio buttons for date
         dateformatlabel = QtWidgets.QLabel(self)
         dateformatlabel.setText('Date Format:')
-        dateformatlabel.move(20, 160)
+        dateformatlabel.move(20, 260)
         dateformatlabel.setFont(myFont)
         self.date1=QtWidgets.QRadioButton(self)
         self.date1.setText('yyyy-mm-dd')
-        self.date1.move(20, 180)
+        self.date1.move(20, 280)
         self.date2=QtWidgets.QRadioButton(self)
         self.date2.setText('yyyy mm dd')
-        self.date2.move(20, 200)
+        self.date2.move(20, 300)
         self.date3=QtWidgets.QRadioButton(self)
         self.date3.setText('NoDate')
-        self.date3.move(20, 220)
+        self.date3.move(20, 320)
         dategroup = QtWidgets.QButtonGroup(self)
         dategroup.addButton(self.date1)
         dategroup.addButton(self.date2)
@@ -99,17 +141,17 @@ class gui(QMainWindow):
         # radio buttons for time
         timeformatlabel = QtWidgets.QLabel(self)
         timeformatlabel.setText('Time Format:')
-        timeformatlabel.move(200, 160)
+        timeformatlabel.move(200, 260)
         timeformatlabel.setFont(myFont)
         self.time1=QtWidgets.QRadioButton(self)
         self.time1.setText('hh:mm:ss')
-        self.time1.move(200, 180)
+        self.time1.move(200, 280)
         self.time2=QtWidgets.QRadioButton(self)
         self.time2.setText('hh mm ss')
-        self.time2.move(200, 200)
+        self.time2.move(200, 300)
         self.time3=QtWidgets.QRadioButton(self)
         self.time3.setText('SecOfDay')
-        self.time3.move(200, 220)
+        self.time3.move(200, 320)
         timegroup = QtWidgets.QButtonGroup(self)
         timegroup.addButton(self.time1)
         timegroup.addButton(self.time2)
@@ -126,14 +168,14 @@ class gui(QMainWindow):
         # radio buttons for the delimiter
         delimiterlabel = QtWidgets.QLabel(self)
         delimiterlabel.setText('Delimiter:')
-        delimiterlabel.move(380, 160)
+        delimiterlabel.move(380, 260)
         delimiterlabel.setFont(myFont)
         self.comma = QtWidgets.QRadioButton(self)
         self.comma.setText('Comma')
-        self.comma.move(380, 180)
+        self.comma.move(380, 280)
         self.space = QtWidgets.QRadioButton(self)
         self.space.setText('Space')
-        self.space.move(380, 200)
+        self.space.move(380, 300)
         delimitergroup = QtWidgets.QButtonGroup(self)
         delimitergroup.addButton(self.comma)
         delimitergroup.addButton(self.space)
@@ -148,17 +190,17 @@ class gui(QMainWindow):
         # radio buttons for the fill value
         fillvaluelabel = QtWidgets.QLabel(self)
         fillvaluelabel.setText('Fill Value:')
-        fillvaluelabel.move(20, 280)
+        fillvaluelabel.move(20, 360)
         fillvaluelabel.setFont(myFont)
         self.fillvalue1=QtWidgets.QRadioButton(self)
         self.fillvalue1.setText('-32767.0')
-        self.fillvalue1.move(20, 300)
+        self.fillvalue1.move(20, 380)
         self.fillvalue2=QtWidgets.QRadioButton(self)
         self.fillvalue2.setText('Blank')
-        self.fillvalue2.move(20, 320)
+        self.fillvalue2.move(20, 400)
         self.fillvalue3=QtWidgets.QRadioButton(self)
         self.fillvalue3.setText('Replicate')
-        self.fillvalue3.move(20, 340)
+        self.fillvalue3.move(20, 420)
         fillvaluegroup = QtWidgets.QButtonGroup(self)
         fillvaluegroup.addButton(self.fillvalue1)
         fillvaluegroup.addButton(self.fillvalue2)
@@ -175,17 +217,17 @@ class gui(QMainWindow):
         # radio buttons for header
         headerformatlabel = QtWidgets.QLabel(self)
         headerformatlabel.setText('Header:')
-        headerformatlabel.move(200, 280)
+        headerformatlabel.move(200, 360)
         headerformatlabel.setFont(myFont)
         self.header1 = QtWidgets.QRadioButton(self)
         self.header1.setText('Plain')
-        self.header1.move(200, 300)
+        self.header1.move(200, 380)
         self.header2 = QtWidgets.QRadioButton(self)
         self.header2.setText('ICARTT')
-        self.header2.move(200, 320)
+        self.header2.move(200, 400)
         self.header3 = QtWidgets.QRadioButton(self)
-        self.header3.setText('AMESDef')
-        self.header3.move(200, 340)
+        self.header3.setText('AMES DEF')
+        self.header3.move(200, 420)
         headergroup = QtWidgets.QButtonGroup(self)
         headergroup.addButton(self.header1)
         headergroup.addButton(self.header2)
@@ -233,43 +275,8 @@ class gui(QMainWindow):
         self.var.resize(400, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars_GUI)
- 
-        #####################################################################
-        # Start time, end time, and averaging options
-        #####################################################################
-        # fields for start and end time
-        timeselectionlabel = QtWidgets.QLabel(self)
-        timeselectionlabel.setText('Time Options:')
-        timeselectionlabel.move(20, 380)
-        timeselectionlabel.setFont(myFont)
-        startlab = QtWidgets.QLabel(self)
-        startlab.setText('Start:')
-        endlab = QtWidgets.QLabel(self)
-        endlab.setText('End:')
-        startlab.move(20,400)
-        endlab.move(20,420)
-        self.start=QtWidgets.QLineEdit(self)
-        self.end=QtWidgets.QLineEdit(self)
-        self.start.move(60, 405)
-        self.start.resize(140, 20)
-        self.end.move(60, 425)
-        self.end.resize(140, 20)
-        # averaging label and box
-        averaginglabel=QtWidgets.QLabel(self)
-        averaginglabel.setText('Averaging (s):')
-        averaginglabel.move(20, 440)
-        averagingnote=QtWidgets.QLabel(self)
-        averagingnote.move(200, 440)
-        averagingnote.resize(300, 20)
-        self.averagingbox = QtWidgets.QLineEdit(self)
-        self.averagingbox.move(140, 445)
-        self.averagingbox.resize(60, 20)
-        # button to update preview based on time options
-        self.outputpreviewbutton=QtWidgets.QPushButton('Update Preview', self)
-        self.outputpreviewbutton.move(220, 440)
-        self.outputpreviewbutton.clicked.connect(self.selectVars_GUI)
-
-        #####################################################################
+     
+        ##################################################################### 
         # Output preview options
         #####################################################################
         # output preview label
@@ -289,7 +296,7 @@ class gui(QMainWindow):
         mainMenu = self.menuBar()
         fileMenu = mainMenu.addMenu('File')
         helpMenu = mainMenu.addMenu('Help')
-        importFile = QAction('Import NetCDF File', self)
+        importFile = QAction('Open NetCDF File', self)
         saveBatchFile = QAction('Save Batch File', self)
         readBatchFile = QAction('Read Batch File', self)
         exit = QAction('Exit', self)
@@ -348,7 +355,7 @@ class gui(QMainWindow):
                 elif self.header2.isChecked() == True:
                     self.batchfile.write('hd=ICARTT\n')
                 elif self.header3.isChecked() == True:
-                    self.batchfile.write('hd=AMESDef\n')
+                    self.batchfile.write('hd=AMES\n')
                 # determine averaing to write to the batch file
                 averagingbox_text = str(self.averagingbox.text()) 
                 self.batchfile.write('avg='+averagingbox_text+'\n')
@@ -435,11 +442,11 @@ class gui(QMainWindow):
                         self.header2.setChecked(True)
                     except:
                         self.header = 'ICARTT'
-                elif ln.startswith('hd=AMESDef'):
+                elif ln.startswith('hd=AMES'):
                     try:
                         self.header3.setChecked(True)
                     except:
-                        self.header = 'AMESDef'
+                        self.header = 'AMES'
                 # get the date format from the batch file
                 elif ln.startswith('dt=yyyy-mm-dd'):
                     try:
@@ -1314,7 +1321,7 @@ class gui(QMainWindow):
             elif self.header2.isChecked()==True:
                 self.header = 'ICARTT'
             elif self.header3.isChecked()==True:
-                self.header = 'AMESDef'
+                self.header = 'AMES'
         except:
             self.header = self.header
         try:
@@ -1652,7 +1659,7 @@ class gui(QMainWindow):
                 except:
                     pass
             # AMES header
-            elif self.header == 'AMESDef':
+            elif self.header == 'AMES':
                 try:
                     self.AMESHeader(self.write)
                 except:
