@@ -1,3 +1,6 @@
+#include <iomanip>
+#include <iostream>
+
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
@@ -13,7 +16,7 @@ getData(NcFile * file, const char * name, long int * step)
   NcDim * dim;
   NcVar * var = file->get_var(name);
   *step =1;
-  
+
   if (var == 0)		// Variable does not exist.
     return 0;
 
@@ -78,35 +81,55 @@ getStartTime(NcVar * time_var)
 int
 main(int argc, char *argv[])
 {
-  int indx = 1;
-  float speed_cutoff = 25.0;	// Default.
-  char variable[32] = "GSPD";
-  float delta = 1.0;
+  int	indx = 1;
+  float	speed_cutoff = 25.0;	// Default.
+  char	variable[32] = "GSPD";
+  float	delta = 1.0;
   long int step;
+  bool	nimbus_output = false;
+  bool	debug = false;
 
 
   // Check arguments / usage.
   if (argc < 2)
   {
     cerr << "Print out take-off and landing times from a netCDF file.\nUses ground speed (use -v to change) above 25 m/s (use -t to change).\n\n";
-    cerr << "Usage: flt_time [-t value] [-v variable] netcdf_file\n";
+    cerr << "Usage: flt_time [-d] [-s] [-t value] [-v variable] netcdf_file\n";
     cerr << "Currently takes -t or -v, but not both\n";
+    cerr << "-d debug output\n";
+    cerr << "-s for nimbus setup file output ti=hh:mm:ss-hh:mm:ss\n";
     exit(1);
   }
 
-  if (strcmp(argv[indx], "-t") == 0)
+  while (argv[indx][0] == '-')
   {
-    ++indx;
-    speed_cutoff = atof(argv[indx++]);
-  } 
-  else if (strcmp(argv[indx], "-v") == 0)
-  {
-    ++indx;
-    strcpy(variable,argv[indx++]);
-    if (strncmp(variable,"WOW",3) == 0)
+    if (strcmp(argv[indx], "-d") == 0)
     {
-    speed_cutoff = .5;
-    delta = -1.0; // For Takeoff apply speed_cutoff when passes value decreasing
+      ++indx;
+      debug = true;
+    }
+    else
+    if (strcmp(argv[indx], "-s") == 0)
+    {
+      ++indx;
+      nimbus_output = true;
+    }
+    else
+    if (strcmp(argv[indx], "-t") == 0)
+    {
+      ++indx;
+      speed_cutoff = atof(argv[indx++]);
+    }
+    else
+    if (strcmp(argv[indx], "-v") == 0)
+    {
+      ++indx;
+      strcpy(variable,argv[indx++]);
+      if (strncmp(variable, "WOW", 3) == 0)
+      {
+      speed_cutoff = .5;
+      delta = -1.0; // For Takeoff apply speed_cutoff when passes value decreasing
+      }
     }
   }
 
@@ -122,7 +145,7 @@ main(int argc, char *argv[])
     cerr << "Could not open NetCDF file '" << argv[indx] << "' for reading.\n";
     return 1;
   }
-  
+
   NcAtt * project = ncFile->get_att("project");
   if (project == 0 || project->is_valid() == false)
   {
@@ -142,7 +165,8 @@ main(int argc, char *argv[])
     return 0;
   }
 
-  cout	<< argv[indx] << ":"
+  if (!nimbus_output)
+    cout	<< argv[indx] << ":"
 		<< project->as_string(0) << ":"
 		<< flight->as_string(0) << ":\n";
 
@@ -160,7 +184,8 @@ main(int argc, char *argv[])
     strncpy(variable,"TASX",5);
     speed_data = getData(ncFile, variable, &step);
 
-  cout << "Using variable " << variable << "\n";
+  if (!nimbus_output)
+    cout << "Using variable " << variable << "\n";
 
   if (time_data == 0 || speed_data == 0)
     return 1;
@@ -168,6 +193,7 @@ main(int argc, char *argv[])
   // Get flight start time. = FileStartTime + first Time[Offset] value.
   NcVar * time_var = ncFile->get_var("Time");
   time_t start_t = getStartTime(time_var) + time_data->as_int(0);
+  time_t start = 0, end = 0;	// What come up with.
 
   if (start_t <= 0)
   {
@@ -180,14 +206,18 @@ main(int argc, char *argv[])
   long j=0;
   for (i = 0; i < time_var->num_vals(); ++i)
   {
-    j+=step;
-//    cerr << i << " " << j << " " << speed_data->as_float(j) << "\n";
+    j += step;
+
+    if (debug)
+      cerr << i << " " << j << " " << speed_data->as_float(j) << "\n";
+
     if (((delta > 0.0 && speed_data->as_float(j) > speed_cutoff) || (delta < 0.0 && speed_data->as_float(j) < speed_cutoff)) && speed_data->as_float(j) != -32767.0)
     {
-      time_t x = start_t + i;
+      start = start_t + i;
 
-      cout << "Takeoff: " << ctime(&x);
-//cout << "take-off indx = " << ctime << " " << x << " " << j << endl;
+      if (debug)
+        cout << "take-off indx = " << ctime << " " << start << " " << j << endl;
+
       break;
     }
   }
@@ -195,21 +225,46 @@ main(int argc, char *argv[])
   // Increment index to move us forward in time to make sure TAS stays
   // above threshold.
   i += 60;
-  j+= 60*step;
+  j += 60*step;
 
   // Locate End of Flight
   for (; i < time_var->num_vals(); ++i)
   {
-    j+=step;
+    j += step;
+
     if (((delta > 0.0 && speed_data->as_float(j) < speed_cutoff) || (delta < 0.0 && speed_data->as_float(j) > speed_cutoff)) && speed_data->as_float(j) != -32767.0)
     {
-      time_t x = start_t + i;
+      end = start_t + i;
 
-      cout << "Landing: " << ctime(&x);
-//cout << "landing indx = " << x << " " << i << endl;
+      if (debug)
+        cout << "landing indx = " << end << " " << i << endl;
+
       break;
     }
   }
+
+
+  if (nimbus_output)
+  {
+    int shh, ehh, smm, emm;
+    struct tm * tt = gmtime(&start);
+    shh = tt->tm_hour; smm = tt->tm_min;
+    tt = gmtime(&end);
+    ehh = tt->tm_hour; emm = tt->tm_min + 1;
+    if (ehh < shh) ehh += 24;
+    if (emm > 59) { emm -= 60; ehh += 1; }
+
+    cout << "ti=" << setfill('0') << setw(2) << shh << ":";
+    cout << setfill('0') << setw(2) << smm << ":00-";
+    cout << setfill('0') << setw(2) << ehh << ":";
+    cout << setfill('0') << setw(2) << emm << ":00\n";
+  }
+  else
+  {
+      cout << "Takeoff: " << ctime(&start);
+      cout << "Landing: " << ctime(&end);
+  }
+
 
   if (speed_data->as_float(0) > 80.0)
     cout	<< endl << " First TAS value is " << speed_data->as_float(0)
