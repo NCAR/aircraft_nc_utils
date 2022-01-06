@@ -9,9 +9,8 @@ The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/s
 | flt_time | Scan a netCDF flight and report take-off and landing times.  Based on ground speed. |
 | g2n | GENPRO to netCDF translator. |
 | mkcdf | Cheezy utility to make small test netCDF file. |
-| n2asc | Old Motif based netCDF to ASCII translator. Plain CSV or Ames DEF output. |
 | nc2asc | Newer Java based netCDF to ASCII translator. Plain CSV or ICARTT output. |
-| nc2iwg1 | Program to read netCDF file and produce an ASCII file conforming to the IWG1.  http://www.eol.ucar.edu/raf/software/iwgadts/IWG1_Def.html |
+| nc2iwg1 | Python based program to read netCDF file and produce an ASCII file conforming to the IWG1.  Has UDP output options as well.  http://www.eol.ucar.edu/raf/software/iwgadts/IWG1_Def.html |
 | ncReorder | Reorder unlimited time dimension to fixed length. |
 | nc_compare | Compare two netCDF files.  Useful for differing runs of the same flight. |
 | nc_dips | Count number of dips aircraft made in a flight. |
@@ -25,6 +24,9 @@ The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/s
 | ncvarlist | ASCII output of variable list.  Var name, title, units. |
 | repair | |
 | skel | |
+| deprecated/n2asc | Old C X11/Motif based netCDF to ASCII translator. Plain CSV or Ames DEF output. |
+| deprecated/nc2iwg1 | Old C program to read netCDF file and produce an ASCII file conforming to the IWG1. |
+
 
 ### Documentation ###
 
@@ -34,9 +36,9 @@ asc2cdf - The users manual can be found online at https://www.eol.ucar.edu/raf/S
 
 ### Environment ###
 
-The aircraft NC utilities are written in C. They require **netCDF** library 3.0 or later.
+The aircraft NC utilities are a mix of C programs and python scripts.  Newer programs are in python for ease of portability.
 
-The utilities build and run on any Unix/Linux operating system, including Mac OS X.
+The C utilities build and run on any Unix/Linux operating system, including Mac OS X.  asc2cdf has no GUI, so it should compile anywhere.
 
 ### Dependencies ###
  * netcdf-cxx-devel (on linux, will pull in netcdf-cxx, netcdf-devel, and netcdf; may just need "brew install netcdf" on a mac)
