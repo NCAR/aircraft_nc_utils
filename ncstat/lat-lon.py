@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import os, subprocess
 
 output = ''
@@ -28,7 +28,7 @@ for line in output.splitlines():
     min_lon.append(float(line.split()[3]))
 
 
-print 'Maximum Latitude (North): ', max(max_lat)
-print 'Minimum Latitude (South): ', min(min_lat)
-print 'Maximum Longitude (East): ', max(max_lon)
-print 'Minimum Longitude (West): ', min(min_lon)
+print('Maximum Latitude (North): ', max(max_lat))
+print('Minimum Latitude (South): ', min(min_lat))
+print('Maximum Longitude (East): ', max(max_lon))
+print('Minimum Longitude (West): ', min(min_lon))

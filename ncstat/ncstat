@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2016, University Corporation for Atmospheric Research
 # All rights reserved.
@@ -64,16 +64,16 @@ ncFile = Dataset(ncFileName, 'r') # for netCDF4 module
 def multiply(numbers):
     total = 1
     for x in numbers:
-	total *=x
+        total *=x
     return total
 
 def stats(var):
     if args.time or args.ft:
-	if 'Time' in ncFile.variables[var].dimensions:
-	    ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
+        if 'Time' in ncFile.variables[var].dimensions:
+            ncFile.variables[var] = ncFile.variables[var][start_tot:end_tot]
             # Variable contains different values and cannot be shortened
         else:
-	    return ["", "", "", "", "", "", "", ""]
+            return ["", "", "", "", "", "", "", ""]
 
     # Remove missing values from statistics calculations
     ncFile.variables[var] = np.ma.masked_equal(ncFile.variables[var],-32767)
@@ -103,16 +103,16 @@ def print_stats(ncFile):
     for var in ncFile.variables:
         if args.vars: # Only append -v Variables if flag was used
             for arg in args.vars:
-		if arg[-1] == '+' and arg[0] == '+':
+                if arg[-1] == '+' and arg[0] == '+':
                     regex = re.compile(arg[1:-1])
                     if re.search(regex, var):
                         var_array.append(stats(var))
                 elif arg[-1] == '+':
                     regex = re.compile(arg[:-1])
                     if re.match(regex, var):
-		        var_array.append(stats(var))
+                        var_array.append(stats(var))
                 elif var == arg:
-		    var_array.append(stats(var))
+                    var_array.append(stats(var))
 
         else:
             var_array.append(stats(var))
@@ -129,15 +129,15 @@ def print_stats(ncFile):
         col_width = 14
         name_width = max(len(str(var[0])) for var in var_array)
         for var in var_array:
-            print "%s%s%s" %(var[0].ljust(name_width),
+            print("%s%s%s" %(var[0].ljust(name_width),
 		"".join(str(var[i]).rjust(int_width) for i in range(1,3)),
-		"".join(str(var[i]).rjust(col_width) for i in range(3,8)))
+		"".join(str(var[i]).rjust(col_width) for i in range(3,8))) )
 
     
     # Display stats in default comma separated view
     else:
         for var in var_array:
-            print "%s, %s, %s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5], var[6], var[7])
+            print("%s, %s, %s, %s, %s, %s, %s, %s" %(var[0], var[1], var[2], var[3], var[4], var[5], var[6], var[7]) )
 
 if args.ft:
    
