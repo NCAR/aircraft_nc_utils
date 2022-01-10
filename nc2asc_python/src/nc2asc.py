@@ -617,6 +617,7 @@ class gui(QMainWindow):
             self.project_name=nc.getncattr('project')
             self.today = str(datetime.today().strftime('%Y, %m, %d'))
             self.today = self.today.replace('-', ', ')
+
             for i in nc.variables.keys():
                 # handle only time dimension variables
                 dims = str(nc.variables[i].dimensions)
@@ -636,11 +637,26 @@ class gui(QMainWindow):
                 elif "sps1" in dims:
                     histo_output = pd.DataFrame(nc.variables[i][:,0,:])
                     self.asc[i] = pd.DataFrame(histo_output)
+                    # append self.units with netcdf attribute units
+                    units = nc.variables[i].getncattr('units')
+                    self.units[i]=pd.Series(units)
+                    # append self.long_name with netcdf attribute long_name
+                    long_name = nc.variables[i].getncattr('long_name')
+                    self.long_name[i]=pd.Series(long_name)
+                    # append self.variables with netcdf variable names
+                    variables = nc.variables[i].name
+                    self.variables[i]=pd.Series(variables)
+                    try:
+                        cellsize = nc.variables[i].getncattr('CellSizes')
+                        self.cellsize = pd.Series(data=cellsize)
+                        self.asc[i].iloc[0] = self.cellsize
+                    except:
+                        print('CellSizes not an attribute')
                 else:
                     pass
             # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
-            self.asc.columns = self.asc.columns.droplevel(-1)
+            #self.asc.columns = self.asc.columns.droplevel(-1)
             # create an object to store the NetCDF variable time          
             self.dtime=nc.variables['Time']
             # use num2date to setup dtime object
@@ -650,15 +666,17 @@ class gui(QMainWindow):
             # create separate date and time series for combination in previewData and writeData
             self.dtime_date = self.dtime_sep[0]
             self.dtime_time = self.dtime_sep[1]
-            type(self.asc)
             # concatenate the units, long_name, variables, and header
             self.units=pd.concat(self.units, axis=0, ignore_index=True)
+            print(len(self.units))
             self.long_name=pd.concat(self.long_name, axis=0, ignore_index=True)
             self.variables = pd.concat(self.variables, axis=0, ignore_index=True)
             self.fileheader = pd.concat([self.variables, self.units, self.long_name], axis=1, ignore_index=True)
             # subset the start and end time from the dtime objet by position
             self.start_time = self.dtime.iloc[1]
             self.end_time = self.dtime.iloc[-1]
+            # create an object to store the NetCDF variable time 
+            self.dtime=nc.variables['Time']
             try:
                 # populate the start_time and end_time fields in the gui
                 self.start.setText(self.start_time)
@@ -667,8 +685,8 @@ class gui(QMainWindow):
                 print('Not running in gui mode, not setting fields for start and end time.')
         except:
            print('Error in extracting variable in '+str(self.input_file))
-           return self.input_file, self.asc, self.fileheader, self.dtime_date, self.dtime_time
-        print(self.asc)
+        return self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
+
     # define function to populate variables in the table
     def loadVars_GUI(self):
 
@@ -992,6 +1010,7 @@ class gui(QMainWindow):
                 self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
                 pass
+            self.preview.columns = ['%s%s' % (a, '_%s' % b if b else '') for a, b in self.preview.columns]
             #################################################################
             # data and time combination checks for preview field
             ################################################################
@@ -1252,7 +1271,6 @@ class gui(QMainWindow):
                 self.write = self.asc_new
         except:
             self.write = self.asc
-
         # determine which output file to use based on mode
         try:
             try:
