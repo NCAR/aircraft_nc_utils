@@ -641,6 +641,7 @@ class gui(QMainWindow):
                     # append self.variables with netcdf variable names
                     variables = nc.variables[i].name
                     self.variables[i]=pd.Series(variables)
+                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.units[i]))
                 elif "sps1" in dims:
                     histo_output = pd.DataFrame(nc.variables[i][:,0,:])
                     self.asc[i] = pd.DataFrame(histo_output)
@@ -656,9 +657,9 @@ class gui(QMainWindow):
                     try:
                         cellsize = nc.variables[i].getncattr('CellSizes')
                         self.cellsize = pd.Series(data=cellsize)
-                        self.asc[i].iloc[0] = self.cellsize
+                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
                     except:
-                        print('CellSizes not an attribute')
+                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
                 else:
                     pass
             # concatenate
@@ -692,6 +693,7 @@ class gui(QMainWindow):
                 print('Not running in gui mode, not setting fields for start and end time.')
         except:
            print('Error in extracting variable in '+str(self.input_file))
+
         return self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
 
     # define function to populate variables in the table
@@ -1017,7 +1019,7 @@ class gui(QMainWindow):
                 self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
                 pass
-            self.preview.columns = ['%s%s' % (a, '_%s' % b if b else '') for a, b in self.preview.columns]
+            #self.preview.columns = ['%s%s' % (a, '_%s' % b if b else '') for a, b in self.preview.columns]
             #################################################################
             # data and time combination checks for preview field
             ################################################################
