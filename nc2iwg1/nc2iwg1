@@ -109,7 +109,6 @@ def buildIWG():
     dtime = dtime.str.replace(" ", "T")
     if args.output_file is None and args.UDP is None and args.emulate_realtime is None:
         dtime = dtime.iloc[-1:]    
-
         for i in iwg1_vars_list:
             try:
                 if i in list(nc.variables.keys()):
@@ -120,7 +119,6 @@ def buildIWG():
                     pass
             except:
                 print(("Error in extracting variable "+i+" in "+input_file))
-
             df[i] = pd.DataFrame(output)
     else:
         dtime = dtime[:]
@@ -135,9 +133,7 @@ def buildIWG():
                     pass
             except:
                 print(("Error in extracting variable "+i+" in "+input_file))
-
             df[i] = pd.DataFrame(output)  
-
     global iwg
     iwg = pd.concat([dtime, df["GGLAT"], df["GGLON"], df["GGALT"], df["NAVAIL"], df["PALTF"], \
            df["HGM232"], df["GSF"], df["TASX"], df["IAS"], df["MACH_A"], \
@@ -146,17 +142,14 @@ def buildIWG():
            df["TTX"], df["PSXC"], df["QCXC"], df["PCAB"], df["WSC"], \
            df["WDC"], df["WIC"], df["SOLZE"], df["Solar_El_AC"], df["SOLAZ"], \
            df["Sun_Az_AC"]], axis=1, ignore_index=True)
-
     try:
         iwg.insert(loc=0, column='PID', value=platform)
     except:
         iwg.insert(loc=0, column='IWG1', value='IWG1')
-
     if args.output_file is None and args.UDP is None and args.emulate_realtime is None:
         iwg[0] = iwg[0].shift(-1)
     else:
         pass
-
     if args.extravars is not None:
         with open(args.extravars) as file:
             print(file)
@@ -185,7 +178,8 @@ def buildIWG():
 # define main function
 #######################################################################
 def main():
-    buildIWG()
+  
+  buildIWG()
     if args.output_file is not None:
         iwg.to_csv(args.output_file, header=False, index=False)
     elif args.UDP == True:
@@ -202,7 +196,6 @@ def main():
                     print(message)
                     sock.sendto(message.encode(), (UDP_IP, UDP_PORT))
                     time.sleep(float(interval))
-
         elif args.emulate_realtime == True:
             with io.open("output.txt", "r") as udp_packet:
                 lines = udp_packet.readlines()
