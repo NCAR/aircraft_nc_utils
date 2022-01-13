@@ -21,18 +21,21 @@ import io
 import os
 
 # get arguments from command line
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='A program to produce IWG1 packets from a netCDF file \
+                                  If a variable is missing from a netCDF file, maintains blank \
+                                  entries to keep IWG1 structure.')
 parser.add_argument("input_file", help="netCDF file to convert")
 parser.add_argument("-o", "--output_file", help="Optional IWG1 format converted output file")
 parser.add_argument("-d", "--delay", help="Optional conversion interval delay in microseconds")
-parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=False, help="UDP")
+parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=False, \
+                    help="Boolean to put program into UDP mode. Default is false. Only provide '-u' with nothing following")
 parser.set_defaults(feature=False)
 parser.add_argument("-v", "--extravars", help="file containing comma separated list of vars")
 parser.add_argument("-er", "--emulate_realtime", type=bool, const=True, nargs="?",\
-                    default=False, help="Emulate realtime mode, set to True") 
+                    default=False, help="Emulate realtime mode, set to True. Only provide '-er' with nothing following") 
 parser.add_argument("-so", "--standard_out", type=bool, const=True, nargs="?",\
                     default=False, help="Optional argument for standard out. \
-                    If you don't provide, file writes to output file, and that's it.")
+                    If you don't provide, file writes to output file, and that's it. Only provide '-so' with nothing following")
 parser.add_argument("-hn", "--hostname_to_send_to", help="Optional argument to define host")
 parser.add_argument("-p", "--port_number", type=int, help="Optional argument to set port #, \
                     otherwise uses 7071")
