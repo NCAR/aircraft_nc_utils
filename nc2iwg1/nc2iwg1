@@ -179,7 +179,7 @@ def buildIWG():
 #######################################################################
 def main():
   
-  buildIWG()
+    buildIWG()
     if args.output_file is not None:
         iwg.to_csv(args.output_file, header=False, index=False)
     elif args.UDP == True:
