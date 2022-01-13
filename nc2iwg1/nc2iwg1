@@ -38,6 +38,9 @@ parser.add_argument("-p", "--port_number", type=int, help="Optional argument to 
                     otherwise uses 7071")
 parser.add_argument("-k", "--key_word_platform", help="Optional argument to set platform e.g.\
                      WB57, C130, WKA, GV, LEAR")
+if len(sys.argv)==1:
+    parser.print_help(sys.stderr)
+    sys.exit(1)
 args = parser.parse_args()
 
 if args.output_file is not None and args.UDP == True:
