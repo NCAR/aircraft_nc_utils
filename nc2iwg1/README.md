@@ -3,7 +3,7 @@
 
 ## Arguments
 
-There are seven possible arguments that can be included when executing the script. Only one of the seven is required. The remaining six are option depending on the user's preferences. This section describes each argument and provides examples for the use of arguments. 
+There are ten possible arguments that can be included when executing the script. Only one of them is required. The remaining are option depending on the user's preferences. This section describes each argument and provides examples for the use of arguments. 
 
 ### Argument Descriptions
 
@@ -20,7 +20,7 @@ OPTIONAL: The third (-d) is the delay interval at which the user would like the 
 
 `./nc2iwg1.py input_file -d interval`
 
-OPTIONAL: The fourth (-u) should be included if you would like the data to be broadcast via UDP. If not provided, then the script will not broadcast via UDP. The script assigns the variable 'UDP_PORT' = 7071 and assigns the variable 'UDP_IP' automatically. If you want to change either of these variables, you must edit the variables manually in the script.
+OPTIONAL: The fourth (-u) should be included if you would like the data to be broadcast via UDP. If not provided, then the script will not broadcast via UDP. The script assigns the variable 'UDP_PORT' = 7071 and assigns the variable 'UDP_IP' automatically. If you want to change either of these variables, you must provide these as separate arguments (see below).
 
 `./nc2iwg1.py input_file -u True`
 
