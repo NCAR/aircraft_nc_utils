@@ -657,7 +657,13 @@ class gui(QMainWindow):
                     try:
                         cellsize = nc.variables[i].getncattr('CellSizes')
                         self.cellsize = pd.Series(data=cellsize)
+                        cellsize_units = nc.variables[i].getncattr('CellSizeUnits')
+                        self.cellsize_units = pd.Series(data=cellsize_units)
+                        print(self.cellsize_units)
+                        self.cellsize_combined = self.cellsize.str.cat(self.cellsize_units, sep='_')
+                        print(self.cellsize_combined)
                         self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
+                        
                     except:
                         self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
                 else:
