@@ -1,21 +1,21 @@
 # Overview
 nc2asc is a python 3 based program that is intended for users of NSF/NCAR RAF NetCDF datasets who would like to convert the NetCDF data to ASCII.
 
-On EOL servers Barolo or Tikal, a user can execute ./nc2asc.py from the command line and the GUI will launch. The access the command line, a user can execute ./nc2asc_cl.py with or without arguments. Executing this command without arguments will display a help message for proper formatting of command line arguments which is also described below in the Command Line Mode section. 
+On EOL servers, a user can execute ./nc2asc.py from the command line and the GUI will launch. To access the command line, a user can execute ./nc2asc_cl.py with or without arguments. Executing this command without arguments will display a help message for proper formatting of command line arguments, which is also described below in the Command Line Mode section. 
 
 ## GUI Mode
 The program can be run in two modes: the first is a graphical user interface that allows a user to import a NetCDF file, choose an output directory and filename, as well as output format options for date, time, delimiter, fill value, and header.
 
 The user can also select the file by start and end time, and provide an averaging window.
 
-The user can select all variables from the imported NetCDF file or a subset based on variable name. A table is displayed on the right side of the frame that allows a user to click on variable names. 
+The user can select all variables from the imported NetCDF file or a subset based on variable name. A table is displayed on the right side of the window that allows a user to click on variable names. 
 
 Once a user has selected their preferred options and variables, the output preview field dynamically updates to reflect the settings. 
 
 A user can then choose to either save a batch file, containing all of the information established in the graphical user interface or they can write a converted ASCII file. 
 
 ### Saving a Batch File in GUI Mode
-Once a user has selected their input file, output directory, output file, output options, and variables, they can select ‘Save Batch File” from the File dropdown menu. This will save a batch file called ‘batchfile’ in the input directory. This batch file can be later imported into the GUI or used as an argument (with -b preceding) on the command line. 
+Once a user has selected their input file, output directory, output file, output options, and variables, they can select ‘Save Batch File” from the File dropdown menu. This will save a batch file called ‘batchfile’ in the output directory. This batch file can be later imported into the GUI or used as an argument (with -b preceding) on the command line. 
 
 ### Reading a Batch File in GUI Mode
 If a user has already created a batch file, they can read the contents into the program and the corresponding fields will populate based on the content. The format of the batch file should match the following, regardless of whether a user is operating with the graphical user interface or on the command line. 
