@@ -7,6 +7,7 @@
 #######################################################################
 
 import os
+from os.path import exists
 import sys
 import argparse
 import netCDF4
@@ -16,7 +17,7 @@ from datetime import datetime
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
+from PyQt5.QtWidgets import QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 class gui(QMainWindow):
     def __init__(self):
@@ -34,33 +35,28 @@ class gui(QMainWindow):
         # bold font to help with organization of processing options
         myFont=QtGui.QFont()
         myFont.setBold(True)
-
         #####################################################################
         # Input file and output dir / file fields
         #####################################################################
         # define input file box and label 
-        inputoptionslabel = QtWidgets.QLabel(self)
-        inputoptionslabel.setText('Input Options:')
-        inputoptionslabel.move(20, 20)
-        inputoptionslabel.setFont(myFont)
         self.inputfilebox=QtWidgets.QLineEdit(self)
         self.inputfilebox.move(140, 40)
         self.inputfilebox.resize(350, 20)
-        inputlabel=QtWidgets.QLabel(self)
-        inputlabel.setText('Input File')
-        inputlabel.move(75, 40) 
+        self.inputlabel=QtWidgets.QLabel(self)
+        self.inputlabel.setText('Input File')
+        self.inputlabel.move(75, 40) 
         # define output dir and file
         # output dir 
-        outputdirlabel=QtWidgets.QLabel(self)
-        outputdirlabel.setText('Output Directory')
-        outputdirlabel.move(30, 70)
+        self.outputdirlabel=QtWidgets.QLabel(self)
+        self.outputdirlabel.setText('Output Directory')
+        self.outputdirlabel.move(30, 70)
         self.outputdirbox=QtWidgets.QLineEdit(self)
         self.outputdirbox.move(140, 70)
         self.outputdirbox.resize(350, 20)
         # output file
-        outputlabel=QtWidgets.QLabel(self)
-        outputlabel.setText('Output Filename:')
-        outputlabel.move(30, 100)        
+        self.outputlabel=QtWidgets.QLabel(self)
+        self.outputlabel.setText('Output Filename:')
+        self.outputlabel.move(30, 100)        
         self.outputfilebox=QtWidgets.QLineEdit(self)
         self.outputfilebox.move(140, 100)
         self.outputfilebox.resize(175, 20)
@@ -134,7 +130,7 @@ class gui(QMainWindow):
         self.date1.clicked.connect(self.selectVars_GUI)
         self.date2.clicked.connect(self.selectVars_GUI)
         self.date3.clicked.connect(self.selectVars_GUI)
-
+        
         #####################################################################
         # Time format options
         #####################################################################
@@ -244,7 +240,6 @@ class gui(QMainWindow):
         self.processbtn.resize(self.processbtn.sizeHint())
         self.processbtn.move(20, 670)
         self.processbtn.clicked.connect(self.writeData)
-
         #####################################################################
         # Variable table and selection / deselection options
         #####################################################################
@@ -260,7 +255,7 @@ class gui(QMainWindow):
         self.varbtn2.clicked.connect(self.deselectAll_GUI)
         # button to remove current variable
         self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
-        self.deselectvar.move (800, 30)
+        self.deselectvar.move(800, 30)
         self.deselectvar.clicked.connect(self.deselectVar_GUI)
         # variable table and buttons with labels
         varlabel=QtWidgets.QLabel(self)
@@ -269,13 +264,14 @@ class gui(QMainWindow):
         varlabel.setFont(myFont)
         self.var=QtWidgets.QTableWidget(self)
         self.var.setColumnCount(3)
-        self.var.setColumnWidth(2, 150)
+        self.var.setColumnWidth(1, 200)
+        self.var.setColumnWidth(2, 200)
+        self.var.setColumnWidth(3, 400)
         self.var.setRowCount(15)
         self.var.move(500, 60)
         self.var.resize(400, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
         self.var.clicked.connect(self.selectVars_GUI)
-     
         ##################################################################### 
         # Output preview options
         #####################################################################
@@ -289,7 +285,6 @@ class gui(QMainWindow):
         self.outputpreview.move(20, 500)
         self.outputpreview.resize(880, 150)
         self.outputpreview.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
-
         #####################################################################
         # Menu options
         #####################################################################
@@ -321,11 +316,29 @@ class gui(QMainWindow):
         # changing the background color to gray
         self.setWindowIcon(QIcon('raf.png'))
         self.setStyleSheet("background-color: light gray;")
-        self.setGeometry(100, 100, 920, 700)
+        self.setGeometry(100, 100, 980, 720)
         self.setWindowTitle('NCAR/EOL RAF Aircraft NetCDF to ASCII File Converter')    
         p = self.palette()
         p.setColor(self.backgroundRole(), Qt.white)
         self.setPalette(p)
+       
+        # create a grid layout that can be populated with widgets
+        #grid = QGridLayout()
+        #grid.setSpacing(10)
+        #grid.addLayout(inputlayout) 
+        # populate the grid layout with the variable table
+        #grid.addWidget(self.var,0, 5, 6, 5)
+        # populate the grid layout with the output preview field
+        #grid.addWidget(self.outputpreview, 7, 0, 2, 10)
+        # populate the grid layout with buttons for var selection
+        #grid.addWidget(self.varbtn, 0, 10)
+        #grid.addWidget(self.varbtn2, 1, 10)
+        #grid.addWidget(self.deselectvar, 2, 10)
+        # populate the grid layout with the processing button
+        #grid.addWidget(self.processbtn, 11, 0)
+        #wid = QtWidgets.QWidget(self)
+        #self.setCentralWidget(wid) 
+        #self.setLayout(grid)
         self.show()
 
     #########################################################################
@@ -337,73 +350,83 @@ class gui(QMainWindow):
         if len(self.inputfilebox.text()) == 0:
             no_savebatch = QMessageBox()
             # if no NetCDF loaded, display error message
-            no_savebatch.setWindowTitle("Error")
-            no_savebatch.setText("Cannot Save Batchfile, Need Input File!")
+            no_savebatch.setWindowTitle('Error')
+            no_savebatch.setText('Cannot Save Batchfile, Need Input File!')
             x = no_savebatch.exec_()
         else:
-            try:
-                # if NetCDF file has been loaded start creating batch file
-                self.batchfile = str(self.head)+'/batchfile'
-                os.system('touch '+ self.batchfile)
-                self.batchfile = open(self.batchfile,"w") 
-                self.batchfile.write('if='+self.input_file+'\n')
-                self.batchfile.write('of='+self.head+'/'+self.tail+'\n\n')
-                # determine the settings from the gui to inlude in the batch file
-                # check which header to include in the batch file
-                if self.header1.isChecked() == True:
-                    self.batchfile.write('hd=Plain\n') 
-                elif self.header2.isChecked() == True:
-                    self.batchfile.write('hd=ICARTT\n')
-                elif self.header3.isChecked() == True:
-                    self.batchfile.write('hd=AMES\n')
-                # determine averaing to write to the batch file
-                averagingbox_text = str(self.averagingbox.text()) 
-                self.batchfile.write('avg='+averagingbox_text+'\n')
-                # determine date format to write to the batch file
-                if self.date1.isChecked() == True:
-                    self.batchfile.write('dt=yyyy-mm-dd\n')
-                elif self.date2.isChecked() == True:
-                    self.batchfile.write('dt=yyyy mm dd\n')
-                elif self.date3.isChecked() == True:
-                    self.batchfile.write('dt=NoDate\n')
-                # determine time format to write to the batch file
-                if self.time1.isChecked() == True:
-                    self.batchfile.write('tm=hh:mm:ss\n')
-                elif self.time2.isChecked() == True:
-                    self.batchfile.write('tm=hh mm ss\n')
-                elif slef.time3.isChecked() == True:
-                    self.batchfile.write('tm=SecOfDay\n')
-                # determine delimieter to write to the batch file
-                if self.comma.isChecked() == True:
-                    self.batchfile.write('sp=comma\n')
-                elif self.space.isChecked() == True:
-                    self.batchfile.write('sp=space\n')
-                # determine the fillvalue to write to the batch file
-                if self.fillvalue1.isChecked() == True:
-                    self.batchfile.write('fv=-32767\n')
-                elif self.fillvalue2.isChecked() == True:
-                    self.batchfile.write('fv=blank\n')
-                elif self.fillvalue3.isChecked() == True:
-                    self.batchfile.write('fv=replicate\n')
-                # determine the time interval to write to the batch file
-                # by default the self.start/end.text() method will return the full file
-                self.batchfile.write('ti='+self.start.text()+','+self.end.text()+'\n\n')
-                # in order to display vars on separate lines to align with 
-                # nimbus batch file conventions, split by two spaces
-                for i in self.var_selected.split(' '):
-                    try:
-                        self.batchfile.write('Vars='+i+'\n')
-                    except:
-                        pass
-                self.batchfile.close
-                # notify user that batch file has been written
-                savebatch = QMessageBox()
-                savebatch.setWindowTitle("Success!")
-                savebatch.setText("Batch File Successfully Created! Close program and check output directory")
-                x = savebatch.exec_()
-            except:
-                # if there is an error, notify user on command line
-                print("Error writing batchfile.")
+            buttonReply = 'No'
+            if exists(str(self.head)+'/batchfile') == True:
+                buttonReply = QMessageBox.question(self, 'Warning', "Batch file already exists. Overwrite?", QMessageBox.Yes | QMessageBox.No)
+            else:
+                pass
+            if buttonReply == QMessageBox.No:
+                print('No clicked.')
+            else:
+                print('Yes clicked. Continuing...')
+
+                try:
+                    # if NetCDF file has been loaded start creating batch file
+                    self.batchfile = str(self.head)+'/batchfile'
+                    os.system('touch '+ self.batchfile)
+                    self.batchfile = open(self.batchfile,"w") 
+                    self.batchfile.write('if='+self.input_file+'\n')
+                    self.batchfile.write('of='+self.head+'/'+self.tail+'\n\n')
+                    # determine the settings from the gui to inlude in the batch file
+                    # check which header to include in the batch file
+                    if self.header1.isChecked() == True:
+                        self.batchfile.write('hd=Plain\n') 
+                    elif self.header2.isChecked() == True:
+                        self.batchfile.write('hd=ICARTT\n')
+                    elif self.header3.isChecked() == True:
+                        self.batchfile.write('hd=AMES\n')
+                    # determine averaing to write to the batch file
+                    averagingbox_text = str(self.averagingbox.text()) 
+                    self.batchfile.write('avg='+averagingbox_text+'\n')
+                    # determine date format to write to the batch file
+                    if self.date1.isChecked() == True:
+                        self.batchfile.write('dt=yyyy-mm-dd\n')
+                    elif self.date2.isChecked() == True:
+                        self.batchfile.write('dt=yyyy mm dd\n')
+                    elif self.date3.isChecked() == True:
+                        self.batchfile.write('dt=NoDate\n')
+                    # determine time format to write to the batch file
+                    if self.time1.isChecked() == True:
+                        self.batchfile.write('tm=hh:mm:ss\n')
+                    elif self.time2.isChecked() == True:
+                        self.batchfile.write('tm=hh mm ss\n')
+                    elif slef.time3.isChecked() == True:
+                        self.batchfile.write('tm=SecOfDay\n')
+                    # determine delimieter to write to the batch file
+                    if self.comma.isChecked() == True:
+                        self.batchfile.write('sp=comma\n')
+                    elif self.space.isChecked() == True:
+                        self.batchfile.write('sp=space\n')
+                    # determine the fillvalue to write to the batch file
+                    if self.fillvalue1.isChecked() == True:
+                        self.batchfile.write('fv=-32767\n')
+                    elif self.fillvalue2.isChecked() == True:
+                        self.batchfile.write('fv=blank\n')
+                    elif self.fillvalue3.isChecked() == True:
+                        self.batchfile.write('fv=replicate\n')
+                    # determine the time interval to write to the batch file
+                    # by default the self.start/end.text() method will return the full file
+                    self.batchfile.write('ti='+self.start.text()+','+self.end.text()+'\n\n')
+                    # in order to display vars on separate lines to align with 
+                    # nimbus batch file conventions, split by two spaces
+                    for i in self.var_selected.split(' '):
+                        try:
+                            self.batchfile.write('Vars='+i+'\n')
+                        except:
+                            pass
+                    self.batchfile.close
+                    # notify user that batch file has been written
+                    savebatch = QMessageBox()
+                    savebatch.setWindowTitle("Success!")
+                    savebatch.setText("Batch File Successfully Created! Close program and check output directory")
+                    x = savebatch.exec_()
+                except:
+                    # if there is an error, notify user on command line
+                    print("Error writing batchfile.")
 
     def readBatchFile(self):
 
@@ -1298,411 +1321,418 @@ class gui(QMainWindow):
             # batchfile
             self.output_file = self.output_file
         # try to get the start and end time from the gui then from the batchfile
-        try:
-            # gui fields
-            start = self.start.text()
-            end = self.end.text()
-        except:
-            # batchfile
-            start = self.start_time
-            end = self.end_time
-        # determine the date option based on gui or batchfile
-        try:
-            if self.date1.isChecked()==True:
-                self.date = 'yyyy-mm-dd'
-            elif self.date2.isChecked()==True:
-                self.date = 'yyyy mm dd'
-            elif self.date3.isChecked()== True:
-                self.date = 'NoDate'
-        except:
-            self.date = self.date
-        try:
-            if self.time1.isChecked()==True:
-                self.time = 'hh:mm:ss'
-            elif self.time2.isChecked()==True:
-                self.time = 'hh mm ss'
-            elif self.time3.isChecked()==True:
-                self.time = 'SecOfDay'
-        except:
-            self.time = self.time
-        try:
-            if self.comma.isChecked()==True:
-                self.delimiter = 'comma'
-            elif self.space.isChecked()==True:
-                self.delimiter = 'space'
-        except:
-            self.delimiter = self.delimiter
-        try:
-            if self.fillvalue1.isChecked()==True:
-                self.fillvalue = '-32767'
-            elif self.fillvalue2.isChecked()==True:
-                self.fillvalue = 'Blank'
-            elif self.fillvalue3.isChecked()==True:
-                self.fillvalue = 'Replicate'
-        except:
-            self.fillvalue = self.fillvalue
-        try:
-            if self.header1.isChecked()==True:
-                self.header = 'Plain'
-            elif self.header2.isChecked()==True:
-                self.header = 'ICARTT'
-            elif self.header3.isChecked()==True:
-                self.header = 'AMES'
-        except:
-            self.header = self.header
-        try:
-            # get averaging information from window then batchfile
+
+        buttonReply = 'No'
+        if exists(self.output_file) == True:
+            buttonReply = QMessageBox.question(self, 'Warning', "Output file already exists. Overwrite?", QMessageBox.Yes | QMessageBox.No)
+        else:
+            pass
+        if buttonReply == QMessageBox.No:
+            print('No clicked.')
+        else:
+            print('Yes clicked. Continuing...')
             try:
-                self.averaging_window = self.averagingbox.text()
-            except: 
-                self.averaging_window = self.avg
-            if len(self.averaging_window)!=0:
-                self.averaging_window=int(self.averaging_window)
-                self.write = self.write.rolling(self.averaging_window, min_periods=0).mean()
-                self.write = self.write.iloc[::self.averaging_window, :]
-            else:
-                pass
-            #################################################################
-            # Date and time combination checks for output file
-            #################################################################
-            if self.date == 'yyyy-mm-dd' and self.time == 'hh:mm:ss':
+                # gui fields
+                start = self.start.text()
+                end = self.end.text()
+            except:
+                # batchfile
+                start = self.start_time
+                end = self.end_time
+            # determine the date option based on gui or batchfile
+            try:
+                if self.date1.isChecked()==True:
+                    self.date = 'yyyy-mm-dd'
+                elif self.date2.isChecked()==True:
+                    self.date = 'yyyy mm dd'
+                elif self.date3.isChecked()== True:
+                    self.date = 'NoDate'
+            except:
+                self.date = self.date
+            try:
+                if self.time1.isChecked()==True:
+                    self.time = 'hh:mm:ss'
+                elif self.time2.isChecked()==True:
+                    self.time = 'hh mm ss'
+                elif self.time3.isChecked()==True:
+                    self.time = 'SecOfDay'
+            except:
+                self.time = self.time
+            try:
+                if self.comma.isChecked()==True:
+                    self.delimiter = 'comma'
+                elif self.space.isChecked()==True:
+                    self.delimiter = 'space'
+            except:
+                self.delimiter = self.delimiter
+            try:
+                if self.fillvalue1.isChecked()==True:
+                    self.fillvalue = '-32767'
+                elif self.fillvalue2.isChecked()==True:
+                    self.fillvalue = 'Blank'
+                elif self.fillvalue3.isChecked()==True:
+                    self.fillvalue = 'Replicate'
+            except:
+                self.fillvalue = self.fillvalue
+            try:
+                if self.header1.isChecked()==True:
+                    self.header = 'Plain'
+                elif self.header2.isChecked()==True:
+                    self.header = 'ICARTT'
+                elif self.header3.isChecked()==True:
+                    self.header = 'AMES'
+            except:
+                self.header = self.header
+            try:
+                # get averaging information from window then batchfile
                 try:
-                    self.write.pop('Time')
-                except:
-                    print('Error dropping Time')
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                except:
-                    print('Error inserting separate time series.')
-                try:
+                    self.averaging_window = self.averagingbox.text()
+                except: 
+                    self.averaging_window = self.avg
+                if len(self.averaging_window)!=0:
+                    self.averaging_window=int(self.averaging_window)
+                    self.write = self.write.rolling(self.averaging_window, min_periods=0).mean()
+                    self.write = self.write.iloc[::self.averaging_window, :]
+                else:
+                    pass
+                #################################################################
+                # Date and time combination checks for output file
+                #################################################################
+                if self.date == 'yyyy-mm-dd' and self.time == 'hh:mm:ss':
+                    try:
+                        self.write.pop('Time')
+                    except:
+                        print('Error dropping Time')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
+                    except:
+                        print('Error inserting separate time series.')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('Error inserting separate date series.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('Error dropping DateTime')
+                    self.write.pop('Date')
+                    self.write.insert(loc=0, column='Date', value=self.dtime_date) 
+                elif self.date == 'yyyy-mm-dd' and self.time == 'hh mm ss':
+                    try:
+                        self.write.pop('Time')
+                    except:
+                        print('Error dropping Time')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
+                    except:
+                        print('Error inserting separate time series.')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('Error inserting separate date series.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('Error dropping DateTime')
+                    self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('Error inserting separate date series.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('Error dropping DateTime')
-                self.write.pop('Date')
-                self.write.insert(loc=0, column='Date', value=self.dtime_date) 
-            elif self.date == 'yyyy-mm-dd' and self.time == 'hh mm ss':
-                try:
-                    self.write.pop('Time')
-                except:
-                    print('Error dropping Time')
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                except:
-                    print('Error inserting separate time series.')
-                try:
+                    self.write['Time']=self.write['Time'].str.replace(':', ' ')
+                elif self.date == 'yyyy-mm-dd' and self.time =='SecOfDay':
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('No insert of DateTime')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('No time selection based on start time')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('No time selection based on end time')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('No insert of Date')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('No drop of DateTime')
+                elif self.date == 'yyyy mm dd' and self.time == 'hh:mm:ss':
+                    try:
+                        self.write.pop('Time')
+                    except:
+                        print('Error dropping Time')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
+                    except:
+                        print('Error inserting separate time series.')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('Error inserting separate date series.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('Error dropping DateTime')
+                    self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('Error inserting separate date series.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('Error dropping DateTime')
-                self.write.pop('Date')
-                self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                self.write['Time']=self.write['Time'].str.replace(':', ' ')
-            elif self.date == 'yyyy-mm-dd' and self.time =='SecOfDay':
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('No insert of DateTime')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('No time selection based on start time')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('No time selection based on end time')
-                try:
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('No insert of Date')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('No drop of DateTime')
-            elif self.date == 'yyyy mm dd' and self.time == 'hh:mm:ss':
-                try:
-                    self.write.pop('Time')
-                except:
-                    print('Error dropping Time')
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                except:
-                    print('Error inserting separate time series.')
-                try:
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('Error inserting separate date series.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('Error dropping DateTime')
-                self.write.pop('Date')
-                self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                self.write['Date']=self.write['Date'].str.replace('-', ' ')
-            elif self.date == 'yyyy mm dd' and self.time == 'hh mm ss':
-                try:
-                    self.write.pop('Time')
-                except:
-                    print('Error dropping Time')
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                except:
-                    print('Error inserting separate time series.')
-                try:
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('Error inserting separate date series.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('Error dropping DateTime')
-                self.write.pop('Date')
-                self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                self.write['Date']=self.write['Date'].str.replace('-', ' ')
-                self.write['Time']=self.write['Time'].str.replace(':', ' ')
-            elif self.date == 'yyyy mm dd' and self.time == 'SecOfDay':
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('No insert of DateTime')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('No time selection based on start time')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('No time selection based on end time')
-                try:
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('No insert of Date')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('No drop of DateTime')
-                try:
                     self.write['Date']=self.write['Date'].str.replace('-', ' ')
-                except:
-                    print('No replacement of -')
-            elif self.date == 'NoDate' and self.time == 'hh:mm:ss':
-                try:
-                    self.write.pop('Time')
-                except:
-                    print('Error dropping Time')
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                except:
-                    print('Error inserting separate time series.')
-                try:
+                elif self.date == 'yyyy mm dd' and self.time == 'hh mm ss':
+                    try:
+                        self.write.pop('Time')
+                    except:
+                        print('Error dropping Time')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
+                    except:
+                        print('Error inserting separate time series.')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('Error inserting separate date series.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('Error dropping DateTime')
+                    self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('Error inserting separate date series.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('Error dropping DateTime')
-                self.write.pop('Date')
-            elif self.date == 'NoDate' and self.time == 'hh mm ss':
-                try:
-                    self.write.pop('Time')
-                except:
-                    print('Error dropping Time')
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                except:
-                    print('Error inserting separate time series.')
-                try:
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                except:
-                    print('Error inserting separate date series.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('Error dropping DateTime')
-                self.write.pop('Date')
-                self.write['Time']=self.write['Time'].str.replace(':', ' ')
-            elif self.date == 'NoDate' and self.time == 'SecOfDay':
-                try:
-                    self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                except:
-                    print('Error inserting DateTime for subselection.')
-                try:
-                    self.write = self.write[self.write['DateTime']>start]
-                except:
-                    print('Error subselecting based on start time.')
-                try:
-                    self.write = self.write[self.write['DateTime']<end]
-                except:
-                    print('Error subselecting based on end time.')
-                try:
-                    self.write.pop('DateTime')
-                except:
-                    print('DateTime not dropped.')
-            else:
-                pass
-            # Plain header
-            if self.header == 'Plain':
-                if self.delimiter == 'comma':
-                    if self.fillvalue == '-32767':
-                        self.write.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
-                        try:
-                            self.processingSuccess_GUI()
-                            self.deselectAll_GUI()
-                        except:
-                            pass
-                    elif self.fillvalue == 'Blank':
-                        self.write.to_csv(self.output_file, header=True, index=False, na_rep='')
-                        try:
-                            self.processingSuccess_GUI()
-                            self.deselectAll_GUI()
-                        except:
-                            pass
-                    elif self.fillvalue == 'Replicate':
-                        self.write = self.write.fillna(method='ffill')
-                        self.write.to_csv(self.output_file, header=True, index=False)
-                        try:
-                            self.processingSuccess_GUI()
-                            self.deselectAll_GUI()
-                        except:
-                            pass
+                    self.write['Date']=self.write['Date'].str.replace('-', ' ')
+                    self.write['Time']=self.write['Time'].str.replace(':', ' ')
+                elif self.date == 'yyyy mm dd' and self.time == 'SecOfDay':
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('No insert of DateTime')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('No time selection based on start time')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('No time selection based on end time')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('No insert of Date')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('No drop of DateTime')
+                    try:
+                        self.write['Date']=self.write['Date'].str.replace('-', ' ')
+                    except:
+                        print('No replacement of -')
+                elif self.date == 'NoDate' and self.time == 'hh:mm:ss':
+                    try:
+                        self.write.pop('Time')
+                    except:
+                        print('Error dropping Time')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
+                    except:
+                        print('Error inserting separate time series.')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('Error inserting separate date series.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('Error dropping DateTime')
+                    self.write.pop('Date')
+                elif self.date == 'NoDate' and self.time == 'hh mm ss':
+                    try:
+                        self.write.pop('Time')
+                    except:
+                        print('Error dropping Time')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
+                    except:
+                        print('Error inserting separate time series.')
+                    try:
+                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
+                    except:
+                        print('Error inserting separate date series.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('Error dropping DateTime')
+                    self.write.pop('Date')
+                    self.write['Time']=self.write['Time'].str.replace(':', ' ')
+                elif self.date == 'NoDate' and self.time == 'SecOfDay':
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except:
+                        print('Error inserting DateTime for subselection.')
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except:
+                        print('Error subselecting based on start time.')
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except:
+                        print('Error subselecting based on end time.')
+                    try:
+                        self.write.pop('DateTime')
+                    except:
+                        print('DateTime not dropped.')
+                else:
+                    pass
+                # Plain header
+                if self.header == 'Plain':
+                    if self.delimiter == 'comma':
+                        if self.fillvalue == '-32767':
+                            self.write.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
+                            try:
+                                self.processingSuccess_GUI()
+                            except:
+                                pass
+                        elif self.fillvalue == 'Blank':
+                            self.write.to_csv(self.output_file, header=True, index=False, na_rep='')
+                            try:
+                                self.processingSuccess_GUI()
+                            except:
+                                pass
+                        elif self.fillvalue == 'Replicate':
+                            self.write = self.write.fillna(method='ffill')
+                            self.write.to_csv(self.output_file, header=True, index=False)
+                            try:
+                                self.processingSuccess_GUI()
+                            except:
+                                pass
+                        else:
+                            print('Error converting file: '+self.input_file)
+                    elif self.delimiter == 'space':
+                        if self.fillvalue == '-32767':
+                            self.write.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
+                            try:
+                                self.processingSuccess_GUI()
+                                #self.deselectAll_GUI()
+                            except:
+                                pass
+                        elif self.fillvalue == 'Blank':
+                            self.write.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
+                            try:
+                                self.processingSuccess_GUI()
+                                #self.deselectAll_GUI()
+                            except:
+                                pass
+                        elif self.fillvalue == 'Replicate':
+                            self.write = self.write.fillna(method='ffill')
+                            self.write.to_csv(self.output_file, header=True, index=False, sep=' ')
+                            try:
+                                self.processingSuccess()
+                                #self.deselectAll_GUI()
+                            except:
+                                pass
+                        else:
+                            print('Error converting file: '+self.input_file)
                     else:
                         print('Error converting file: '+self.input_file)
-                elif self.delimiter == 'space':
-                    if self.fillvalue == '-32767':
-                        self.write.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
-                        try:
-                            self.processingSuccess_GUI()
-                            self.deselectAll_GUI()
-                        except:
-                            pass
-                    elif self.fillvalue == 'Blank':
-                        self.write.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
-                        try:
-                            self.processingSuccess_GUI()
-                            self.deselectAll_GUI()
-                        except:
-                            pass
-                    elif self.fillvalue == 'Replicate':
-                        self.write = self.write.fillna(method='ffill')
-                        self.write.to_csv(self.output_file, header=True, index=False, sep=' ')
-                        try:
-                            self.processingSuccess()
-                            self.deselectAll_GUI()
-                        except:
-                            pass
-                    else:
-                       print('Error converting file: '+self.input_file)
-                else:
-                   print('Error converting file: '+self.input_file)
-            # ICARTT header
-            elif self.header == 'ICARTT':
-                try:
-                    self.ICARTTHeader(self.write)
-                except: 
-                    print('Error creating and appending ICARTT header to output file.')
-                try:
-                    self.processingSuccess_GUI()
-                    self.deselectAll_GUI()
-                except:
-                    pass
-            # AMES header
-            elif self.header == 'AMES':
-                try:
-                    self.AMESHeader(self.write)
-                except:
-                    print('Error creating and appending AMES header to output file.')
-                try:
-                    self.processingSuccess_GUI()
-                    self.deselectAll_GUI()
-                except:
-                    pass
-        except:
-            try:
-                processing_complete = QMessageBox()
-                processing_complete.setWindowTitle("Error")
-                processing_complete.setText("There was an error writing your ASCII file. Please try again.")
-                x = processing_complete.exec_()
+                # ICARTT header
+                elif self.header == 'ICARTT':
+                    try:
+                        self.ICARTTHeader(self.write)
+                    except: 
+                        print('Error creating and appending ICARTT header to output file.')
+                    try:
+                        self.processingSuccess_GUI()
+                        #self.deselectAll_GUI()
+                    except:
+                        pass
+                # AMES header
+                elif self.header == 'AMES':
+                    try:
+                        self.AMESHeader(self.write)
+                    except:
+                        print('Error creating and appending AMES header to output file.')
+                    try:
+                        self.processingSuccess_GUI()
+                        #self.deselectAll_GUI()
+                    except:
+                        pass
             except:
-                print('Data was not written. Please try again.')
+                try:
+                    processing_complete = QMessageBox()
+                    processing_complete.setWindowTitle("Error")
+                    processing_complete.setText("There was an error writing your ASCII file. Please try again.")
+                    x = processing_complete.exec_()
+                except:
+                    print('Data was not written. Please try again.')
 #######################################################################
 # Define main function
 #######################################################################
