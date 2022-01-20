@@ -216,7 +216,7 @@ main(int argc, char *argv[])
       start = start_t + i;
 
       if (debug)
-        cout << "take-off indx = " << ctime << " " << start << " " << j << endl;
+        cout << "take-off indx = " << start << " " << j << endl;
 
       break;
     }
