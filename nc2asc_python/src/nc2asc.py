@@ -680,11 +680,6 @@ class gui(QMainWindow):
                     try:
                         cellsize = nc.variables[i].getncattr('CellSizes')
                         self.cellsize = pd.Series(data=cellsize)
-                        cellsize_units = nc.variables[i].getncattr('CellSizeUnits')
-                        self.cellsize_units = pd.Series(data=cellsize_units)
-                        print(self.cellsize_units)
-                        self.cellsize_combined = self.cellsize.str.cat(self.cellsize_units, sep='_')
-                        print(self.cellsize_combined)
                         self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
                         
                     except:
@@ -896,13 +891,14 @@ class gui(QMainWindow):
             os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
             with open('./docs/header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines))+', 1001'
+                count = str(len(lines))+', 1001, V02_2016'
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count+'\n'
                 f.seek(0)
                 for line in lines:
                     f.write(line)
+
             os.system('head -n -1 ./docs/header.tmp > ./docs/trim.tmp ; mv ./docs/trim.tmp ./docs/header.tmp')
             os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
             os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
