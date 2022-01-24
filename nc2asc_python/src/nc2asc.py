@@ -29,12 +29,88 @@ class gui(QMainWindow):
     #########################################################################
     # Define layout of gui
     # Set up the fields, table, buttons, and menu
+    # nc2asc uses a combination of absolute positioning and QGridLayout
+    # Components of QGridLayout are added to layout before absolute position
     #########################################################################
     def initUI(self):               
 
         # bold font to help with organization of processing options
         myFont=QtGui.QFont()
         myFont.setBold(True)
+
+        #####################################################################
+        # QGridLayout: Variable table and selection / deselection options
+        #####################################################################
+        # button to select all variables
+        self.varbtn=QtWidgets.QPushButton('Select All', self)
+        self.varbtn.move(600, 30)
+        self.varbtn.clicked.connect(self.loadVars_GUI)
+        self.varbtn.clicked.connect(self.selectAll_GUI)
+        # button to de-select all variables
+        self.varbtn2=QtWidgets.QPushButton('Clear All', self)
+        self.varbtn2.move(700, 30)
+        self.varbtn2.clicked.connect(self.loadVars_GUI)
+        self.varbtn2.clicked.connect(self.deselectAll_GUI)
+        # button to remove current variable
+        self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
+        self.deselectvar.move(800, 30)
+        self.deselectvar.clicked.connect(self.deselectVar_GUI)
+        # variable table and buttons with labels
+        varlabel=QtWidgets.QLabel(self)
+        varlabel.setText('Click Vars:')
+        varlabel.move(500, 30)
+        varlabel.setFont(myFont)
+        self.var=QtWidgets.QTableWidget(self)
+        self.var.setColumnCount(3)
+        self.var.setColumnWidth(1, 200)
+        self.var.setColumnWidth(2, 200)
+        self.var.setColumnWidth(3, 400)
+        self.var.setRowCount(15)
+        self.var.move(500, 60)
+        self.var.resize(400, 430)
+        self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name'])
+        self.var.clicked.connect(self.selectVars_GUI)
+
+        ##################################################################### 
+        # QGridLayout: Output preview options
+        #####################################################################
+        # output preview label
+        outputpreviewlabel=QtWidgets.QLabel(self)
+        outputpreviewlabel.move(20, 470)
+        outputpreviewlabel.setText('Preview:')
+        outputpreviewlabel.setFont(myFont)
+        # output preview field with horizontal scroll bar
+        self.outputpreview=QtWidgets.QTextEdit(self)
+        self.outputpreview.move(20, 500)
+        self.outputpreview.resize(880, 150)
+        self.outputpreview.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+
+        # process button calls writeData function
+        self.processbtn=QtWidgets.QPushButton('Convert File', self)
+        self.processbtn.resize(self.processbtn.sizeHint())
+        self.processbtn.move(20, 670)
+        self.processbtn.clicked.connect(self.writeData)
+
+        #####################################################################
+        # Create a grid layout that can be populated with widgets
+        #####################################################################
+
+        grid = QGridLayout()
+        grid.setSpacing(10)
+        # populate the grid layout with the variable table
+        grid.addWidget(self.var,0, 5, 6, 5)
+        # populate the grid layout with the output preview field
+        grid.addWidget(self.outputpreview, 7, 0, 2, 10)
+        # populate the grid layout with buttons for var selection
+        grid.addWidget(self.varbtn, 0, 10)
+        grid.addWidget(self.varbtn2, 1, 10)
+        grid.addWidget(self.deselectvar, 2, 10)
+        # populate the grid layout with the processing button
+        grid.addWidget(self.processbtn, 11, 0)
+        wid = QtWidgets.QWidget(self)
+        self.setCentralWidget(wid)
+        wid.setLayout(grid)
+
         #####################################################################
         # Input file and output dir / file fields
         #####################################################################
@@ -235,56 +311,7 @@ class gui(QMainWindow):
         self.header2.clicked.connect(self.selectVars_GUI)
         self.header3.clicked.connect(self.ICARTT_AMES_toggle_GUI)
         self.header3.clicked.connect(self.selectVars_GUI)
-        # process button calls writeData function
-        self.processbtn=QtWidgets.QPushButton('Convert File', self)
-        self.processbtn.resize(self.processbtn.sizeHint())
-        self.processbtn.move(20, 670)
-        self.processbtn.clicked.connect(self.writeData)
-        #####################################################################
-        # Variable table and selection / deselection options
-        #####################################################################
-        # button to select all variables
-        self.varbtn=QtWidgets.QPushButton('Select All', self)
-        self.varbtn.move(600, 30)
-        self.varbtn.clicked.connect(self.loadVars_GUI)
-        self.varbtn.clicked.connect(self.selectAll_GUI)
-        # button to de-select all variables
-        self.varbtn2=QtWidgets.QPushButton('Clear All', self)
-        self.varbtn2.move(700, 30)
-        self.varbtn2.clicked.connect(self.loadVars_GUI)
-        self.varbtn2.clicked.connect(self.deselectAll_GUI)
-        # button to remove current variable
-        self.deselectvar=QtWidgets.QPushButton('Remove Var', self)
-        self.deselectvar.move(800, 30)
-        self.deselectvar.clicked.connect(self.deselectVar_GUI)
-        # variable table and buttons with labels
-        varlabel=QtWidgets.QLabel(self)
-        varlabel.setText('Click Vars:')
-        varlabel.move(500, 30)
-        varlabel.setFont(myFont)
-        self.var=QtWidgets.QTableWidget(self)
-        self.var.setColumnCount(3)
-        self.var.setColumnWidth(1, 200)
-        self.var.setColumnWidth(2, 200)
-        self.var.setColumnWidth(3, 400)
-        self.var.setRowCount(15)
-        self.var.move(500, 60)
-        self.var.resize(400, 430)
-        self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name']) 
-        self.var.clicked.connect(self.selectVars_GUI)
-        ##################################################################### 
-        # Output preview options
-        #####################################################################
-        # output preview label
-        outputpreviewlabel=QtWidgets.QLabel(self)
-        outputpreviewlabel.move(20, 470)
-        outputpreviewlabel.setText('Preview:')
-        outputpreviewlabel.setFont(myFont)
-        # output preview field with horizontal scroll bar
-        self.outputpreview=QtWidgets.QTextEdit(self)
-        self.outputpreview.move(20, 500)
-        self.outputpreview.resize(880, 150)
-        self.outputpreview.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+
         #####################################################################
         # Menu options
         #####################################################################
@@ -316,29 +343,11 @@ class gui(QMainWindow):
         # changing the background color to gray
         self.setWindowIcon(QIcon('raf.png'))
         self.setStyleSheet("background-color: light gray;")
-        self.setGeometry(100, 100, 980, 720)
+        self.setGeometry(100, 100, 1080, 720)
         self.setWindowTitle('NCAR/EOL RAF Aircraft NetCDF to ASCII File Converter')    
         p = self.palette()
         p.setColor(self.backgroundRole(), Qt.white)
         self.setPalette(p)
-       
-        # create a grid layout that can be populated with widgets
-        #grid = QGridLayout()
-        #grid.setSpacing(10)
-        #grid.addLayout(inputlayout) 
-        # populate the grid layout with the variable table
-        #grid.addWidget(self.var,0, 5, 6, 5)
-        # populate the grid layout with the output preview field
-        #grid.addWidget(self.outputpreview, 7, 0, 2, 10)
-        # populate the grid layout with buttons for var selection
-        #grid.addWidget(self.varbtn, 0, 10)
-        #grid.addWidget(self.varbtn2, 1, 10)
-        #grid.addWidget(self.deselectvar, 2, 10)
-        # populate the grid layout with the processing button
-        #grid.addWidget(self.processbtn, 11, 0)
-        #wid = QtWidgets.QWidget(self)
-        #self.setCentralWidget(wid) 
-        #self.setLayout(grid)
         self.show()
 
     #########################################################################
@@ -434,177 +443,177 @@ class gui(QMainWindow):
         try:
             self.inputbatch_file = self.inputbatch_file
         except:
-            self.inputbatch_file, _ = QFileDialog.getOpenFileName(self,"Select a Batch file to Read", "/scr/raf_data","filter = *")
-            # notify user that batch file has been read
-            readbatch = QMessageBox()
-            readbatch.setWindowTitle("Success!")
-            readbatch.setText("Batch file successfully imported!")
-            x = readbatch.exec_()
-        with open(self.inputbatch_file, 'r') as fil:
-            # create empty placeholders for objects
-            self.input_file = []
-            self.output_file = []
-            self.variables_extract_batch = []
-            # step through batchfile to find relevant information and assign
-            # to be used to populate fields (GUI) and format and convert data
-            for ln in fil:
-                # extract the path of the input file from the batch file
-                if ln.startswith('if='):
-                    self.input_file.append(ln[2:])
-                # extract the path of the output file
-                elif ln.startswith('of='):
-                    self.output_file.append(ln[2:])
-                # get the header format from the batch file
-                elif ln.startswith('hd=Plain'):
-                    try:
-                        self.header1.setChecked(True)
-                    except:
-                        self.header = 'Plain'
-                elif ln.startswith('hd=ICARTT'):
-                    try:
-                        self.header2.setChecked(True)
-                    except:
-                        self.header = 'ICARTT'
-                elif ln.startswith('hd=AMES'):
-                    try:
-                        self.header3.setChecked(True)
-                    except:
-                        self.header = 'AMES'
-                # get the date format from the batch file
-                elif ln.startswith('dt=yyyy-mm-dd'):
-                    try:
-                        self.date1.setChecked(True)
-                    except:
-                        self.date = 'yyyy-mm-dd'
-                elif ln.startswith('dt=yyyy mm dd'):
-                    try:
-                        self.date2.setChecked(True)
-                    except:
-                        self.date = 'yyyy mm dd'
-                elif ln.startswith('dt=NoDate'):
-                    try:
-                        self.date3.setChecked(True)
-                    except:
-                        self.date = 'NoDate'
-                # get the time format from the batch file
-                elif ln.startswith('tm=hh:mm:ss'):
-                    try:
-                        self.time1.setChecked(True)
-                    except:
-                        self.time = 'hh:mm:ss'
-                elif ln.startswith('tm=hh mm ss'):
-                    try:
-                        self.time2.setChecked(True)
-                    except:
-                        self.time = 'hh mm ss'
-                elif ln.startswith('tm=SecOfDay'):
-                    try:
-                        self.time3.setChecked(True)
-                    except:
-                        self.time = 'SecOfDay'
-                # get the delimiter from the batch faile
-                elif ln.startswith('sp=comma'):
-                    try:
-                        self.comma.setChecked(True)
-                    except:
-                        self.delimiter = 'comma'
-                elif ln.startswith('sp=space'):
-                    try:
-                        self.space.setChecked(True)
-                    except:
-                        self.delimiter = 'space'
-                # get the fill value from the batch file
-                elif ln.startswith('fv=-32767'):
-                    try:
-                        self.fillvalue1.setChecked(True)
-                    except:
-                        self.fillvalue = '-32767'
-                elif ln.startswith('fv=blank'):
-                     try:
-                         self.fillvalue2.setChecked(True)
-                     except:
-                         self.fillvalue = 'blank'
-                elif ln.startswith('fv=replicate'):
-                    try:
-                        self.fillvalue3.setChecked(True)
-                    except:
-                        self.fillvalue = 'replicate'
-                # get the time interval from the batch file
-                elif ln.startswith('ti='):
-                    self.ti = ln[2:]
-                # get the average value (if provided) from the bath file
-                elif ln.startswith('avg='):
-                    self.avg = ln[2:]
-                elif ln.startswith('Vars='):
-                    var_batchfile = str(ln)
-                    if var_batchfile not in self.variables_extract_batch:
-                        self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
-            # cleanup the extracted text from the batch file
-            # format the input file
-            self.input_file = str(self.input_file)
-            self.input_file = self.input_file.replace('[', '')
-            self.input_file = self.input_file.replace("'", '')
-            self.input_file = self.input_file.replace('=', '')
-            self.input_file = self.input_file.replace(']', '')
-            self.input_file = self.input_file[:-2]
-            # format the output dir and file
-            self.output_file = str(self.output_file)
-            self.output_file = self.output_file.replace('[', '')
-            self.output_file = self.output_file.replace("'", '')
-            self.output_file = self.output_file.replace('=', '')
-            self.output_file = self.output_file.replace(']', '')
-            self.output_file = self.output_file[:-2]
-            # format the start and end time
-            self.ti = self.ti.replace('[', '')
-            self.ti = self.ti.replace("'", '')
-            self.ti = self.ti.replace('=', '')
-            self.ti = self.ti.replace(']', '')
-            self.ti = self.ti[:-1]
-            self.ti = self.ti.split(',')
-            self.start_time = self.ti[0]
-            self.end_time = self.ti[1]
-            # format averaging
-            self.avg = self.avg.replace('[', '')
-            self.avg = self.avg.replace("'", '')
-            self.avg = self.avg.replace('=', '')
-            self.avg = self.avg.replace(']', '')
-            self.avg = self.avg.replace('g', '')
-            self.avg = self.avg[:-1]
-            # update the gui fields
             try:
-                self.inputfilebox.setText(self.input_file)
-                self.outputdirbox.setText(os.path.dirname(self.output_file))
-                self.outputfilebox.setText(os.path.basename(self.output_file))
-                self.start.setText(str(self.start_time))
-                self.end.setText(str(self.end_time))
-                self.averagingbox.setText(self.avg)
+                self.inputbatch_file, _ = QFileDialog.getOpenFileName(self,"Select a Batch file to Read", "/scr/raf_data","filter = *")
             except:
-                print('Not in GUI mode.')
-        # get data from input file field and format
+                pass
         try:
-            self.input_file = self.inputfilebox.text()
-        except:
-            self.input_file = self.input_file
-        self.variables_extract_batch = pd.Series(self.variables_extract_batch)
-        try:
-            self.formatData()
+            with open(self.inputbatch_file, 'r') as fil:
+                # create empty placeholders for objects
+                self.input_file = []
+                self.output_file = []
+                self.variables_extract_batch = []
+                # step through batchfile to find relevant information and assign
+                # to be used to populate fields (GUI) and format and convert data
+                for ln in fil:
+                    # extract the path of the input file from the batch file
+                    if ln.startswith('if='):
+                        self.input_file.append(ln[2:])
+                    # extract the path of the output file
+                    elif ln.startswith('of='):
+                        self.output_file.append(ln[2:])
+                    # get the header format from the batch file
+                    elif ln.startswith('hd=Plain'):
+                        try:
+                            self.header1.setChecked(True)
+                        except:
+                            self.header = 'Plain'
+                    elif ln.startswith('hd=ICARTT'):
+                        try:
+                            self.header2.setChecked(True)
+                        except:
+                            self.header = 'ICARTT'
+                    elif ln.startswith('hd=AMES'):
+                        try:
+                            self.header3.setChecked(True)
+                        except:
+                            self.header = 'AMES'
+                    # get the date format from the batch file
+                    elif ln.startswith('dt=yyyy-mm-dd'):
+                        try:
+                            self.date1.setChecked(True)
+                        except:
+                            self.date = 'yyyy-mm-dd'
+                    elif ln.startswith('dt=yyyy mm dd'):
+                        try:
+                            self.date2.setChecked(True)
+                        except:
+                            self.date = 'yyyy mm dd'
+                    elif ln.startswith('dt=NoDate'):
+                        try:
+                            self.date3.setChecked(True)
+                        except:
+                            self.date = 'NoDate'
+                    # get the time format from the batch file
+                    elif ln.startswith('tm=hh:mm:ss'):
+                        try:
+                            self.time1.setChecked(True)
+                        except:
+                            self.time = 'hh:mm:ss'
+                    elif ln.startswith('tm=hh mm ss'):
+                        try:
+                            self.time2.setChecked(True)
+                        except:
+                            self.time = 'hh mm ss'
+                    elif ln.startswith('tm=SecOfDay'):
+                        try:
+                            self.time3.setChecked(True)
+                        except:
+                            self.time = 'SecOfDay'
+                    # get the delimiter from the batch faile
+                    elif ln.startswith('sp=comma'):
+                        try:
+                            self.comma.setChecked(True)
+                        except:
+                            self.delimiter = 'comma'
+                    elif ln.startswith('sp=space'):
+                        try:
+                            self.space.setChecked(True)
+                        except:
+                            self.delimiter = 'space'
+                    # get the fill value from the batch file
+                    elif ln.startswith('fv=-32767'):
+                        try:
+                            self.fillvalue1.setChecked(True)
+                        except:
+                            self.fillvalue = '-32767'
+                    elif ln.startswith('fv=blank'):
+                        try:
+                            self.fillvalue2.setChecked(True)
+                        except:
+                            self.fillvalue = 'blank'
+                    elif ln.startswith('fv=replicate'):
+                        try:
+                            self.fillvalue3.setChecked(True)
+                        except:
+                            self.fillvalue = 'replicate'
+                    # get the time interval from the batch file
+                    elif ln.startswith('ti='):
+                        self.ti = ln[2:]
+                    # get the average value (if provided) from the bath file
+                    elif ln.startswith('avg='):
+                        self.avg = ln[2:]
+                    elif ln.startswith('Vars='):
+                        var_batchfile = str(ln)
+                        if var_batchfile not in self.variables_extract_batch:
+                            self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
+                # cleanup the extracted text from the batch file
+                # format the input file
+                self.input_file = str(self.input_file)
+                self.input_file = self.input_file.replace('[', '')
+                self.input_file = self.input_file.replace("'", '')
+                self.input_file = self.input_file.replace('=', '')
+                self.input_file = self.input_file.replace(']', '')
+                self.input_file = self.input_file[:-2]
+                # format the output dir and file
+                self.output_file = str(self.output_file)
+                self.output_file = self.output_file.replace('[', '')
+                self.output_file = self.output_file.replace("'", '')
+                self.output_file = self.output_file.replace('=', '')
+                self.output_file = self.output_file.replace(']', '')
+                self.output_file = self.output_file[:-2]
+                # format the start and end time
+                self.ti = self.ti.replace('[', '')
+                self.ti = self.ti.replace("'", '')
+                self.ti = self.ti.replace('=', '')
+                self.ti = self.ti.replace(']', '')
+                self.ti = self.ti[:-1]
+                self.ti = self.ti.split(',')
+                self.start_time = self.ti[0]
+                self.end_time = self.ti[1]
+                # format averaging
+                self.avg = self.avg.replace('[', '')
+                self.avg = self.avg.replace("'", '')
+                self.avg = self.avg.replace('=', '')
+                self.avg = self.avg.replace(']', '')
+                self.avg = self.avg.replace('g', '')
+                self.avg = self.avg[:-1]
+                # update the gui fields
+                try:
+                    self.inputfilebox.setText(self.input_file)
+                    self.outputdirbox.setText(os.path.dirname(self.output_file))
+                    self.outputfilebox.setText(os.path.basename(self.output_file))
+                    self.start.setText(str(self.start_time))
+                    self.end.setText(str(self.end_time))
+                    self.averagingbox.setText(self.avg)
+                except:
+                    print('Not in GUI mode.')
+            # get data from input file field and format
+            try:
+                self.input_file = self.inputfilebox.text()
+            except:
+                self.input_file = self.input_file
+            self.variables_extract_batch = pd.Series(self.variables_extract_batch)
+            try:
+                self.formatData()
+            except:
+                pass
+            self.asc_new_batch = self.asc[self.variables_extract_batch]
+            return self.asc_new_batch
+            try:
+                del self.asc, self.asc_new
+            except:
+                pass 
+            try:
+                self.loadVars_GUI()
+            except:
+                pass
+            try:
+                self.previewData_GUI()
+            except:
+                pass
         except:
             pass
-        self.asc_new_batch = self.asc[self.variables_extract_batch]
-        return self.asc_new_batch
-        try:
-            del self.asc, self.asc_new
-        except:
-            pass 
-        try:
-            self.loadVars_GUI()
-        except:
-            pass
-        try:
-            self.previewData_GUI()
-        except:
-            pass
-        
 #######################################################################
 # Function definitions for data loading, formatting, and processing
 #######################################################################
@@ -715,10 +724,9 @@ class gui(QMainWindow):
                 self.end.setText(self.end_time)
             except:
                 print('Not running in gui mode, not setting fields for start and end time.')
+            return self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
         except:
            print('Error in extracting variable in '+str(self.input_file))
-
-        return self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
 
     # define function to populate variables in the table
     def loadVars_GUI(self):
