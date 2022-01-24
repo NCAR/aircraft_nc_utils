@@ -135,7 +135,7 @@ class gui(QMainWindow):
         self.outputlabel.move(30, 100)        
         self.outputfilebox=QtWidgets.QLineEdit(self)
         self.outputfilebox.move(140, 100)
-        self.outputfilebox.resize(175, 20)
+        self.outputfilebox.resize(350, 20)
 
         #####################################################################
         # Start time, end time, and averaging options
@@ -311,6 +311,7 @@ class gui(QMainWindow):
         self.header2.clicked.connect(self.selectVars_GUI)
         self.header3.clicked.connect(self.ICARTT_AMES_toggle_GUI)
         self.header3.clicked.connect(self.selectVars_GUI)
+        self.header2.clicked.connect(self.ICARTTfilename_GUI)
 
         #####################################################################
         # Menu options
@@ -834,6 +835,11 @@ class gui(QMainWindow):
         self.date3.setChecked(True)
         self.comma.setChecked(True)
         self.fillvalue1.setChecked(True)
+
+    # Define function to update the output filename to adhere to ICARTT V2 standards
+    def ICARTTfilename_GUI(self):
+        self.icartt_filename_date = self.data_date.replace(', ', '')
+        self.outputfilebox.setText(self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_R0.ict')
     #########################################################################
     # Define function to format ICARTT header
     # Note: if used outside of this script, multiple vars needed
@@ -899,7 +905,7 @@ class gui(QMainWindow):
             os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
             with open('./docs/header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines))+', 1001, V02_2016'
+                count = str(len(lines)-1)+', 1001, V02_2016'
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count+'\n'
