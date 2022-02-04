@@ -840,7 +840,7 @@ class gui(QMainWindow):
     # Define function to update the output filename to adhere to ICARTT V2 standards
     def ICARTTfilename_GUI(self):
         self.icartt_filename_date = self.data_date.replace(', ', '')
-        self.outputfilebox.setText(self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_R0.ict')
+        self.outputfilebox.setText(self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict')
     #########################################################################
     # Define function to format ICARTT header
     # Note: if used outside of this script, multiple vars needed
@@ -1277,6 +1277,9 @@ class gui(QMainWindow):
                     print('Error converting file: '+self.input_file)
             # ICARTT header
             elif self.header2.isChecked()==True:
+                # drop the unit and dimension rows for ICARTT
+                self.preview.columns = self.preview.columns.droplevel(1)
+                self.preview.columns = self.preview.columns.droplevel(1)
                 self.ICARTTHeader(self.preview)
                 with open(self.output_file) as preview:
                     head = str(preview.readlines()[0:75])
@@ -1287,6 +1290,9 @@ class gui(QMainWindow):
                     head = head.replace("'", '')
                 self.outputpreview.setText(head)
             elif self.header3.isChecked()==True:
+                # drop the unit and dimension rows for ICARTT
+                self.preview.columns = self.preview.columns.droplevel(1)
+                self.preview.columns = self.preview.columns.droplevel(1)
                 self.AMESHeader(self.preview)
                 with open(self.output_file) as preview:
                     head = str(preview.readlines()[0:75])
@@ -1692,14 +1698,12 @@ class gui(QMainWindow):
                             self.write.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
                             try:
                                 self.processingSuccess_GUI()
-                                #self.deselectAll_GUI()
                             except:
                                 pass
                         elif self.fillvalue == 'Blank':
                             self.write.to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
                             try:
                                 self.processingSuccess_GUI()
-                                #self.deselectAll_GUI()
                             except:
                                 pass
                         elif self.fillvalue == 'Replicate':
@@ -1707,7 +1711,6 @@ class gui(QMainWindow):
                             self.write.to_csv(self.output_file, header=True, index=False, sep=' ')
                             try:
                                 self.processingSuccess()
-                                #self.deselectAll_GUI()
                             except:
                                 pass
                         else:
@@ -1717,23 +1720,27 @@ class gui(QMainWindow):
                 # ICARTT header
                 elif self.header == 'ICARTT':
                     try:
+                        # drop the unit and dimension rows for ICARTT
+                        self.write.columns = self.write.columns.droplevel(1)
+                        self.write.columns = self.write.columns.droplevel(1)                    
                         self.ICARTTHeader(self.write)
                     except: 
                         print('Error creating and appending ICARTT header to output file.')
                     try:
                         self.processingSuccess_GUI()
-                        #self.deselectAll_GUI()
                     except:
                         pass
                 # AMES header
                 elif self.header == 'AMES':
                     try:
+                        # drop the unit and dimension rows for AMES
+                        self.write.columns = self.write.columns.droplevel(1)
+                        self.write.columns = self.write.columns.droplevel(1)
                         self.AMESHeader(self.write)
                     except:
                         print('Error creating and appending AMES header to output file.')
                     try:
                         self.processingSuccess_GUI()
-                        #self.deselectAll_GUI()
                     except:
                         pass
             except:
