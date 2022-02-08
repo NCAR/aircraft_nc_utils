@@ -8,18 +8,17 @@ pipeline {
     stage('Checkout') {
       steps {
         'git config https://github.com/ncar/aircraft_nc_utils.git eolJenkins:ncar/aircraft_nc_utils'
-        'git --version # timeout=10'
-        'git fetch --tags --force --progress -- eolJenkins:ncar/aircraft_nc_utils +refs/heads/*:refs/remotes/origin/* # timeout=10'
-        'git rev-parse refs/remotes/origin/master^{commit} # timeout=10'
-        'git remote # timeout=10'
-        'git submodule init # timeout=10'
-        'git submodule sync # timeout=10'
-        'git config --get https://github.com/ncar/aircraft_nc_utils.git # timeout=10'
-        'git submodule init # timeout=10'
-        'git config -f .gitmodules --get-regexp ^submodule\.(.+)\.url # timeout=10'
-        'git config --get submodule.vardb.url # timeout=10'
-        'git config -f .gitmodules --get submodule.vardb.path # timeout=10'
-        'git submodule update --init --recursive vardb # timeout=10'
+        'git --version'
+        'git fetch --tags --force --progress -- eolJenkins:ncar/aircraft_nc_utils +refs/heads/*:refs/remotes/origin/*'
+        'git rev-parse refs/remotes/origin/master^{commit}'
+        'git submodule init'
+        'git submodule sync'
+        'git config --get https://github.com/ncar/aircraft_nc_utils.git'
+        'git submodule init'
+        'git config -f .gitmodules --get-regexp ^submodule\.(.+)\.url'
+        'git config --get submodule.vardb.url'
+        'git config -f .gitmodules --get submodule.vardb.path'
+        'git submodule update --init --recursive vardb'
       }
     }
     stage('Build') {
