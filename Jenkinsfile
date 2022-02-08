@@ -14,8 +14,8 @@ pipeline {
     }
   }
   post {
-    failure {
-      mail(to: 'taylort@ucar.edu', subject: 'nc_utils Jenkins failure', body: 'nc_utils Jenkins failure')
+    success {
+      mail(to: 'cjw@ucar.edu janine@ucar.edu cdewerd@ucar.edu taylort@ucar.edu', subject: 'nc_utils Jenkinsfile build successful', body: 'nc_utils Jenkinsfile build successful')
     }
   }
   options {
