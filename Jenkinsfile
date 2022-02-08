@@ -8,7 +8,6 @@ pipeline {
     stage('Checkout') {
       steps {
         'git config https://github.com/ncar/aircraft_nc_utils.git eolJenkins:ncar/aircraft_nc_utils'
-        'git --version'
         'git fetch --tags --force --progress -- eolJenkins:ncar/aircraft_nc_utils +refs/heads/*:refs/remotes/origin/*'
         'git rev-parse refs/remotes/origin/master^{commit}'
         'git submodule init'
