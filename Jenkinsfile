@@ -7,8 +7,6 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh 'git submodule init'
-        sh 'git submodule sync'
         sh 'git submodule update --init --recursive vardb'
         
         sh 'scons'
@@ -16,7 +14,7 @@ pipeline {
     }
   }
   post {
-    always {
+    failure {
       mail(to: 'taylort@ucar.edu', subject: 'nc_utils Jenkins failure', body: 'nc_utils Jenkins failure')
     }
   }
