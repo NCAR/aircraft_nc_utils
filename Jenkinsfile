@@ -29,7 +29,7 @@ pipeline {
     }
   }
   post {
-    failure {
+    always {
       mail(to: 'taylort@ucar.edu', body: 'nc_utils Jenkins failure')
     }
   }
