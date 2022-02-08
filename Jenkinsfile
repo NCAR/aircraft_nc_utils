@@ -7,8 +7,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sconsBuild parallel_build: true,
-         scons_exe: 'scons-3'
+        sh 'scons'
       }
     }
   }
