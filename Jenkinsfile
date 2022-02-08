@@ -9,9 +9,6 @@ pipeline {
       steps {
         sh 'git submodule init'
         sh 'git submodule sync'
-        sh 'git config -f .gitmodules --get-regexp ^submodule\.(.+)\.url'
-        sh 'git config --get submodule.vardb.url'
-        sh 'git config -f .gitmodules --get submodule.vardb.path'
         sh 'git submodule update --init --recursive vardb'
         
         sh 'scons'
