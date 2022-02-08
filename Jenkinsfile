@@ -13,7 +13,7 @@ pipeline {
   }
   post {
     always {
-      mail(to: 'taylort@ucar.edu', subject: 'nc_utils Jenkins failyure', body: 'nc_utils Jenkins failure')
+      mail(to: 'taylort@ucar.edu', subject: 'nc_utils Jenkins failure', body: 'nc_utils Jenkins failure')
     }
   }
   options {
