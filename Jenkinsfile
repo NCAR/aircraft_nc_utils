@@ -14,7 +14,7 @@ pipeline {
         'git remote # timeout=10'
         'git submodule init # timeout=10'
         'git submodule sync # timeout=10'
-        'git config --get remote.origin.url # timeout=10'
+        'git config --get https://github.com/ncar/aircraft_nc_utils.git # timeout=10'
         'git submodule init # timeout=10'
         'git config -f .gitmodules --get-regexp ^submodule\.(.+)\.url # timeout=10'
         'git config --get submodule.vardb.url # timeout=10'
