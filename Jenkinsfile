@@ -5,16 +5,17 @@ pipeline {
         }
   }
   stages {
-
     stage('Build') {
       steps {
-        'scons'
+        sconsBuild parallel_build: parallelBuild(),
+        scons_exe: 'scons-3',
+        scons_args: sconsFaultsArgs()
       }
     }
   }
   post {
     always {
-      mail(to: 'taylort@ucar.edu', body: 'nc_utils Jenkins failure')
+      mail(to: 'taylort@ucar.edu', subject: 'nc_utils Jenkins failyure', body: 'nc_utils Jenkins failure')
     }
   }
   options {
