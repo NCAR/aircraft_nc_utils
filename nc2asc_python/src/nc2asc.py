@@ -676,25 +676,25 @@ class gui(QMainWindow):
                     variables = nc.variables[i].name
                     self.variables[i]=pd.Series(variables)
                     self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.units[i]))
-                elif "sps1" in dims:
-                    histo_output = pd.DataFrame(nc.variables[i][:,0,:])
-                    self.asc[i] = pd.DataFrame(histo_output)
-                    # append self.units with netcdf attribute units
-                    units = nc.variables[i].getncattr('units')
-                    self.units[i]=pd.Series(units)
-                    # append self.long_name with netcdf attribute long_name
-                    long_name = nc.variables[i].getncattr('long_name')
-                    self.long_name[i]=pd.Series(long_name)
-                    # append self.variables with netcdf variable names
-                    variables = nc.variables[i].name
-                    self.variables[i]=pd.Series(variables)
-                    try:
-                        cellsize = nc.variables[i].getncattr('CellSizes')
-                        self.cellsize = pd.Series(data=cellsize)
-                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
-                        
-                    except:
-                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
+                #elif "sps1" in dims:
+                #    histo_output = pd.DataFrame(nc.variables[i][:,0,:])
+                #    self.asc[i] = pd.DataFrame(histo_output)
+                #    # append self.units with netcdf attribute units
+                #    units = nc.variables[i].getncattr('units')
+                #    self.units[i]=pd.Series(units)
+                #    # append self.long_name with netcdf attribute long_name
+                #    long_name = nc.variables[i].getncattr('long_name')
+                #    self.long_name[i]=pd.Series(long_name)
+                #    # append self.variables with netcdf variable names
+                #    variables = nc.variables[i].name
+                #    self.variables[i]=pd.Series(variables)
+                #    try:
+                #        cellsize = nc.variables[i].getncattr('CellSizes')
+                #        self.cellsize = pd.Series(data=cellsize)
+                #        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
+                #        
+                #    except:
+                #        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
                 else:
                     pass
             # concatenate
