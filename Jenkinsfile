@@ -4,6 +4,9 @@ pipeline {
         label 'CentOS8'
         }
   }
+  triggers {
+  pollSCM('H/15 7-20 * * *')
+  }
   stages {
     stage('Build') {
       steps {
@@ -20,8 +23,5 @@ pipeline {
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
-  }
-  triggers {
-    pollSCM('H/15 7-20 * * *')
   }
 }
