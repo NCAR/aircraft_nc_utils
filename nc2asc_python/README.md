@@ -93,11 +93,11 @@ If a user would like to change the start or end time of the file, the following 
 #### Variable Selection
 The desired vars should be inclueded with each Var listed on a separate line.
 
-`Var=<VarName>`
+`Vars=<VarName>`
 
-`Var=<VarName>`
+`Vars=<VarName>`
 
-`Var=<VarName>`
+`Vars=<VarName>`
 
 ### Example Batch File
 
@@ -108,7 +108,7 @@ of=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt
 
 hd=Plain
 
-avg=
+avg=1
 
 dt=yyyy-mm-dd
 
