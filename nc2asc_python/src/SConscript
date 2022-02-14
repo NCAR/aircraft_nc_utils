@@ -4,8 +4,8 @@ tools  = ['default', 'prefixoptions']
 env = Environment(tools=tools)
 
 env.Install('$INSTALL_PREFIX/bin', 'nc2asc_cl')
-env.Install('$INSTALL_PREFIX/bin', 'nc2asc')
-env.Install('$INSTALL_PREFIX/lib', './docs/header1.txt')
-env.Install('$INSTALL_PREFIX/lib', './docs/header1_ames.txt')
-env.Install('$INSTALL_PREFIX/lib', './docs/header2.txt')
-env.Install('$INSTALL_PREFIX/lib', './docs/header2_ames.txt')
+env.Install('$INSTALL_PREFIX/bin', 'nc2asc.py')
+env.Install('$INSTALL_PREFIX/lib/nc2asc', './docs/header1.txt')
+env.Install('$INSTALL_PREFIX/lib/nc2asc', './docs/header1_ames.txt')
+env.Install('$INSTALL_PREFIX/lib/nc2asc', './docs/header2.txt')
+env.Install('$INSTALL_PREFIX/lib/nc2asc', './docs/header2_ames.txt')
