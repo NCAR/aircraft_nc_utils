@@ -13,7 +13,7 @@ LLOD_FLAG: -88888
 LLOD_VALUE: N/A
 DM_CONTACT_INFO: NCAR/EOL Archive, eol-archive@ucar.edu
 PROJECT_INFO:
-STIPULATIONS_ON_USE: Final data for publication use
+STIPULATIONS_ON_USE: Field data not for publication use
 OTHER_COMMENTS: none
 REVISION: RA
 RA: Field Data
