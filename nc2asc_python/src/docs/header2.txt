@@ -1,7 +1,7 @@
 0
 18
 PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, raf-pm@ucar.edu
-<PLATFORM>>
+<PLATFORM>
 LOCATION: Aircraft location data is given in nav data file
 ASSOCIATED_DATA: Full data in NetCDF file.
 INSTRUMENT_INFO:

@@ -858,9 +858,9 @@ class gui(QMainWindow):
 
         # try renaming the time var to Start_UTC
         try:
-            icartt_header = pd.DataFrame(icartt_header.rename(columns={'Time': 'Start_UTC'}))
+            icartt_header = pd.DataFrame(icartt_header.rename(columns={'Time': 'Time_Start'}))
         except:
-            print('Start_UTC rename failed')
+            print('Time_Start rename failed')
         # get the varNumber from the # of columns in the dataframe
         self.varNumber = str(len(icartt_header.columns)-1)
         icartt_header.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
@@ -912,7 +912,7 @@ class gui(QMainWindow):
             os.system('cat '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp > '+lib_dir+'/header.tmp')
             with open(lib_dir+'/header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines)-1)+', 1001, V02_2016'
+                count = str(len(lines)+1)+', 1001, V02_2016'
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count+'\n'
@@ -920,7 +920,7 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
 
-            os.system('head -n -1 '+lib_dir+'/header.tmp > '+lib_dir+'/trim.tmp ; mv '+lib_dir+'/trim.tmp '+lib_dir+'/header.tmp')
+            #os.system('head -n -1 '+lib_dir+'/header.tmp > '+lib_dir+'/trim.tmp ; mv '+lib_dir+'/trim.tmp '+lib_dir+'/header.tmp')
             os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
             os.system('cat '+lib_dir+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
             os.system('rm '+lib_dir+'/header.tmp '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp '+str(self.output_file)+'.tmp')
@@ -1740,11 +1740,11 @@ class gui(QMainWindow):
                     self.write.columns = self.write.columns.droplevel(1)
                     self.write.columns = self.write.columns.droplevel(1)                    
 
-                    # try renaming the time var to Start_UTC
+                    # try renaming the time var to Time_Start
                     try:
-                        self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Start_UTC'}))
+                        self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
                     except:
-                        print('Start_UTC rename failed')
+                        print('Time_Start rename failed')
                     # get the varNumber from the # of columns in the dataframe
                     self.varNumber = str(len(self.write.columns)-1)
                     self.write.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
@@ -1796,7 +1796,7 @@ class gui(QMainWindow):
                         os.system('cat /opt/local/lib/header1.tmp /opt/local/lib/header2.tmp > /opt/local/lib/header.tmp')
                         with open('/opt/local/lib/header.tmp', 'r+') as f:
                             lines = f.readlines()
-                            count = str(len(lines)-1)+', 1001, V02_2016'
+                            count = str(len(lines)+1)+', 1001, V02_2016'
                             for i, line in enumerate(lines):
                                 if line.startswith('<ROWCOUNT>'):
                                     lines[i] = count+'\n'
@@ -1804,7 +1804,7 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
 
-                        os.system('head -n -1 /opt/local/lib/header.tmp > /opt/local/lib/trim.tmp ; mv /opt/local/lib/trim.tmp /opt/local/lib/header.tmp')
+                        #os.system('head -n -1 /opt/local/lib/header.tmp > /opt/local/lib/trim.tmp ; mv /opt/local/lib/trim.tmp /opt/local/lib/header.tmp')
                         os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
                         os.system('cat /opt/local/lib/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
                         os.system('rm /opt/local/lib/header.tmp /opt/local/lib/header1.tmp /opt/local/lib/header2.tmp '+str(self.output_file)+'.tmp')
