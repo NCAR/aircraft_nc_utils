@@ -79,7 +79,6 @@ class nc2asc_CL():
             print('****Data Output Successfully Written****')
         except:
             print('****Error writing to output file.****')
-
 #######################################################################
 # Call main function
 #######################################################################

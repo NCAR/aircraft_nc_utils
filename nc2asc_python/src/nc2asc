@@ -312,7 +312,7 @@ class gui(QMainWindow):
         self.header2.clicked.connect(self.selectVars_GUI)
         self.header3.clicked.connect(self.ICARTT_AMES_toggle_GUI)
         self.header3.clicked.connect(self.selectVars_GUI)
-        self.header2.clicked.connect(self.ICARTTfilename_GUI)
+        self.header2.clicked.connect(self.ICARTTfilename)
 
         #####################################################################
         # Menu options
@@ -838,9 +838,15 @@ class gui(QMainWindow):
         self.fillvalue1.setChecked(True)
 
     # Define function to update the output filename to adhere to ICARTT V2 standards
-    def ICARTTfilename_GUI(self):
+    def ICARTTfilename(self):
+
         self.icartt_filename_date = self.data_date.replace(', ', '')
-        self.outputfilebox.setText(self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict')
+        self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+
+        try:
+            self.outputfilebox.setText(self.icartt_filename)
+        except:
+            return self.icartt_filename
     #########################################################################
     # Define function to format ICARTT header
     # Note: if used outside of this script, multiple vars needed
@@ -1805,6 +1811,16 @@ class gui(QMainWindow):
                     except:
                         print('Error creating and appending ICARTT header to output file.')
 
+                    self.icartt_filename_date = self.data_date.replace(', ', '')
+                    self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+
+                    try:
+                        self.outputfilebox.setText(self.icartt_filename)
+                    except:
+                        try:
+                            os.system('mv '+self.output_file+' '+self.icartt_filename)
+                        except:
+                            pass
                     #try:
                     #    self.processingSuccess_GUI()
                     #except:
