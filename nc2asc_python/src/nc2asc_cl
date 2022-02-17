@@ -60,7 +60,7 @@ class nc2asc_CL():
         try:
             print('****Formatting data from input file. If CL argument provided, using by default.****')
             nc2asc.gui.formatData(self)
-            print('Data formatted succecssfully.')
+            print('Data formatted successfully.')
         except:
             print('Error formatting data.')
         try:
@@ -71,6 +71,10 @@ class nc2asc_CL():
             print('Error reading batch file')
         try:
             print('****Writing Data to Output File****')
+            try:
+                os.system('rm '+args.output_file_cl)
+            except:
+                pass
             nc2asc.gui.writeData(self)
             print('****Data Output Successfully Written****')
         except:
