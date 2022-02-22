@@ -1754,7 +1754,7 @@ class gui(QMainWindow):
                         self.data_date = str(self.dtime_sep[0].iloc[1])
                         self.data_date = self.data_date.replace('-', ', ')
                         # start going through the template text docs
-                        os.system('cp '+os.getenv('LOCAL')+'/lib '+os.getenv('LOCAL')+'/lib/header1.txt '+os.getenv('LOCAL')+'/lib/header1.tmp')
+                        os.system('cp '+os.getenv('LOCAL')+'/lib/header1.txt '+os.getenv('LOCAL')+'/lib/header1.tmp')
                         os.system("ex -s -c '5i' -c x "+os.getenv('LOCAL')+'/lib/header1.tmp')
                         os.system('cp '+os.getenv('LOCAL')+'/lib/header2.txt '+os.getenv('LOCAL')+'/lib/header2.tmp')
                         # get today's date
