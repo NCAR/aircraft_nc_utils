@@ -1286,7 +1286,7 @@ class gui(QMainWindow):
                 # drop the unit and dimension rows for ICARTT
                 self.preview.columns = self.preview.columns.droplevel(1)
                 self.preview.columns = self.preview.columns.droplevel(1)
-                self.ICARTTHeader(self.preview, '/opt/local/lib')
+                self.ICARTTHeader(self.preview, os.getenv('LOCAL')+'/lib')
                 with open(self.output_file) as preview:
                     head = str(preview.readlines()[0:75])
                     head = head.replace('\\n', '\n')
@@ -1754,13 +1754,13 @@ class gui(QMainWindow):
                         self.data_date = str(self.dtime_sep[0].iloc[1])
                         self.data_date = self.data_date.replace('-', ', ')
                         # start going through the template text docs
-                        os.system('cp /opt/local/lib/header1.txt /opt/local/lib/header1.tmp')
-                        os.system("ex -s -c '5i' -c x /opt/local/lib/header1.tmp")
-                        os.system('cp /opt/local/lib/header2.txt /opt/local/lib/header2.tmp')
+                        os.system('cp '+os.getenv('LOCAL')+'/lib '+os.getenv('LOCAL')+'/lib/header1.txt '+os.getenv('LOCAL')+'/lib/header1.tmp')
+                        os.system("ex -s -c '5i' -c x "+os.getenv('LOCAL')+'/lib/header1.tmp')
+                        os.system('cp '+os.getenv('LOCAL')+'/lib/header2.txt '+os.getenv('LOCAL')+'/lib/header2.tmp')
                         # get today's date
                         self.today = datetime.today().strftime('%Y, %m, %d')
                         # perform the replacements on the first header file
-                        with open('/opt/local/lib/header1.tmp', 'r+') as f:
+                        with open(os.getenv('LOCAL')+'/lib/header1.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('RAF instruments on'):
@@ -1783,7 +1783,7 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # perform the replacements on the second header file
-                        with open('/opt/local/lib/header2.tmp', 'r+') as f:
+                        with open(os.getenv('LOCAL')+'/lib/header2.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('<PLATFORM>'):
@@ -1792,9 +1792,9 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # combine and perform replacement on the combined header file
-                        self.fileheader.to_csv('/opt/local/lib/header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat /opt/local/lib/header1.tmp /opt/local/lib/header2.tmp > /opt/local/lib/header.tmp')
-                        with open('/opt/local/lib/header.tmp', 'r+') as f:
+                        self.fileheader.to_csv(os.getenv('LOCAL')+'/lib/header1.tmp', mode='a', header=False, index=False)
+                        os.system('cat '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp > '+os.getenv('LOCAL')+'/lib/header.tmp')
+                        with open(os.getenv('LOCAL')+'/lib/header.tmp', 'r+') as f:
                             lines = f.readlines()
                             count = str(len(lines)+1)+', 1001, V02_2016'
                             for i, line in enumerate(lines):
@@ -1806,8 +1806,8 @@ class gui(QMainWindow):
 
                         #os.system('head -n -1 /opt/local/lib/header.tmp > /opt/local/lib/trim.tmp ; mv /opt/local/lib/trim.tmp /opt/local/lib/header.tmp')
                         os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
-                        os.system('cat /opt/local/lib/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                        os.system('rm /opt/local/lib/header.tmp /opt/local/lib/header1.tmp /opt/local/lib/header2.tmp '+str(self.output_file)+'.tmp')
+                        os.system('cat '+os.getenv('LOCAL')+'/lib/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+                        os.system('rm '+os.getenv('LOCAL')+'/lib/header.tmp '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp '+str(self.output_file)+'.tmp')
                     except:
                         print('Error creating and appending ICARTT header to output file.')
 
