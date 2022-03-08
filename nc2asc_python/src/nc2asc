@@ -726,7 +726,7 @@ class gui(QMainWindow):
                 self.end.setText(self.end_time)
             except:
                 print('Not running in gui mode, not setting fields for start and end time.')
-            return self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
+            return self.start_time, self.end_time, self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
         except:
            print('Error in extracting variable in '+str(self.input_file))
 
@@ -1818,7 +1818,8 @@ class gui(QMainWindow):
                         self.outputfilebox.setText(self.icartt_filename)
                     except:
                         try:
-                            os.system('mv '+self.output_file+' '+self.icartt_filename)
+                            head_tail = os.path.split(self.output_file)
+                            os.system('mv '+self.output_file+' '+head_tail[0]+'/'+self.icartt_filename)
                         except:
                             pass
                     #try:
