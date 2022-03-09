@@ -312,7 +312,7 @@ class gui(QMainWindow):
         self.header2.clicked.connect(self.selectVars_GUI)
         self.header3.clicked.connect(self.ICARTT_AMES_toggle_GUI)
         self.header3.clicked.connect(self.selectVars_GUI)
-        self.header2.clicked.connect(self.ICARTTfilename_GUI)
+        self.header2.clicked.connect(self.ICARTTfilename)
 
         #####################################################################
         # Menu options
@@ -405,7 +405,7 @@ class gui(QMainWindow):
                         self.batchfile.write('tm=hh:mm:ss\n')
                     elif self.time2.isChecked() == True:
                         self.batchfile.write('tm=hh mm ss\n')
-                    elif slef.time3.isChecked() == True:
+                    elif self.time3.isChecked() == True:
                         self.batchfile.write('tm=SecOfDay\n')
                     # determine delimieter to write to the batch file
                     if self.comma.isChecked() == True:
@@ -726,7 +726,7 @@ class gui(QMainWindow):
                 self.end.setText(self.end_time)
             except:
                 print('Not running in gui mode, not setting fields for start and end time.')
-            return self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
+            return self.start_time, self.end_time, self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
         except:
            print('Error in extracting variable in '+str(self.input_file))
 
@@ -838,9 +838,15 @@ class gui(QMainWindow):
         self.fillvalue1.setChecked(True)
 
     # Define function to update the output filename to adhere to ICARTT V2 standards
-    def ICARTTfilename_GUI(self):
+    def ICARTTfilename(self):
+
         self.icartt_filename_date = self.data_date.replace(', ', '')
-        self.outputfilebox.setText(self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict')
+        self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+
+        try:
+            self.outputfilebox.setText(self.icartt_filename)
+        except:
+            return self.icartt_filename
     #########################################################################
     # Define function to format ICARTT header
     # Note: if used outside of this script, multiple vars needed
@@ -848,13 +854,13 @@ class gui(QMainWindow):
     # self.today, self.varNumber, self.output_file
     # also need header1.txt and header2.txt as templates
     #########################################################################
-    def ICARTTHeader(self, icartt_header):
+    def ICARTTHeader(self, icartt_header, lib_dir):
 
         # try renaming the time var to Start_UTC
         try:
-            icartt_header = pd.DataFrame(icartt_header.rename(columns={'Time': 'Start_UTC'}))
+            icartt_header = pd.DataFrame(icartt_header.rename(columns={'Time': 'Time_Start'}))
         except:
-            print('Start_UTC rename failed')
+            print('Time_Start rename failed')
         # get the varNumber from the # of columns in the dataframe
         self.varNumber = str(len(icartt_header.columns)-1)
         icartt_header.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
@@ -864,13 +870,13 @@ class gui(QMainWindow):
             self.data_date = str(self.dtime_sep[0].iloc[1])
             self.data_date = self.data_date.replace('-', ', ')
             # start going through the template text docs
-            os.system('cp ./docs/header1.txt ./docs/header1.tmp')
-            os.system("ex -s -c '5i' -c x ./docs/header1.tmp")
-            os.system('cp ./docs/header2.txt ./docs/header2.tmp') 
+            os.system('cp '+lib_dir+'/header1.txt '+lib_dir+'/header1.tmp')
+            os.system("ex -s -c '5i' -c x "+lib_dir+"/header1.tmp")
+            os.system('cp '+lib_dir+'/header2.txt '+lib_dir+'/header2.tmp') 
             # get today's date
             self.today = datetime.today().strftime('%Y, %m, %d')
             # perform the replacements on the first header file
-            with open('./docs/header1.tmp', 'r+') as f:
+            with open(lib_dir+'/header1.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
                     if line.startswith('RAF instruments on'):
@@ -893,7 +899,7 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
             # perform the replacements on the second header file
-            with open('./docs/header2.tmp', 'r+') as f:
+            with open(lib_dir+'/header2.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
                     if line.startswith('<PLATFORM>'):
@@ -902,11 +908,11 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
             # combine and perform replacement on the combined header file
-            self.fileheader.to_csv('./docs/header1.tmp', mode='a', header=False, index=False)
-            os.system('cat ./docs/header1.tmp ./docs/header2.tmp > ./docs/header.tmp')
-            with open('./docs/header.tmp', 'r+') as f:
+            self.fileheader.to_csv(lib_dir+'/header1.tmp', mode='a', header=False, index=False)
+            os.system('cat '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp > '+lib_dir+'/header.tmp')
+            with open(lib_dir+'/header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines)-1)+', 1001, V02_2016'
+                count = str(len(lines)+1)+', 1001, V02_2016'
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count+'\n'
@@ -914,10 +920,10 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
 
-            os.system('head -n -1 ./docs/header.tmp > ./docs/trim.tmp ; mv ./docs/trim.tmp ./docs/header.tmp')
+            #os.system('head -n -1 '+lib_dir+'/header.tmp > '+lib_dir+'/trim.tmp ; mv '+lib_dir+'/trim.tmp '+lib_dir+'/header.tmp')
             os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
-            os.system('cat ./docs/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-            os.system('rm ./docs/header.tmp ./docs/header1.tmp ./docs/header2.tmp '+str(self.output_file)+'.tmp')
+            os.system('cat '+lib_dir+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+            os.system('rm '+lib_dir+'/header.tmp '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp '+str(self.output_file)+'.tmp')
         except:
             print('Error creating and appending ICARTT header to output file.')
     #########################################################################
@@ -1280,7 +1286,7 @@ class gui(QMainWindow):
                 # drop the unit and dimension rows for ICARTT
                 self.preview.columns = self.preview.columns.droplevel(1)
                 self.preview.columns = self.preview.columns.droplevel(1)
-                self.ICARTTHeader(self.preview)
+                self.ICARTTHeader(self.preview, os.getenv('LOCAL')+'/lib')
                 with open(self.output_file) as preview:
                     head = str(preview.readlines()[0:75])
                     head = head.replace('\\n', '\n')
@@ -1333,7 +1339,7 @@ class gui(QMainWindow):
                 self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
             except:
                 # command line arg
-                self.output_file = self.args(output_file)
+                self.output_file = self.output_file_cl
         except:
             # batchfile
             self.output_file = self.output_file
@@ -1353,9 +1359,12 @@ class gui(QMainWindow):
                 start = self.start.text()
                 end = self.end.text()
             except:
+                pass
                 # batchfile
-                start = self.start_time
-                end = self.end_time
+                #start = self.start_time
+                #print(start)
+                #end = self.end_time
+                #print(end)
             # determine the date option based on gui or batchfile
             try:
                 if self.date1.isChecked()==True:
@@ -1366,6 +1375,7 @@ class gui(QMainWindow):
                     self.date = 'NoDate'
             except:
                 self.date = self.date
+                print(self.date)
             try:
                 if self.time1.isChecked()==True:
                     self.time = 'hh:mm:ss'
@@ -1375,6 +1385,7 @@ class gui(QMainWindow):
                     self.time = 'SecOfDay'
             except:
                 self.time = self.time
+                print(self.time)
             try:
                 if self.comma.isChecked()==True:
                     self.delimiter = 'comma'
@@ -1382,6 +1393,7 @@ class gui(QMainWindow):
                     self.delimiter = 'space'
             except:
                 self.delimiter = self.delimiter
+                print(self.delimiter)
             try:
                 if self.fillvalue1.isChecked()==True:
                     self.fillvalue = '-32767'
@@ -1391,6 +1403,7 @@ class gui(QMainWindow):
                     self.fillvalue = 'Replicate'
             except:
                 self.fillvalue = self.fillvalue
+                print(self.fillvalue)
             try:
                 if self.header1.isChecked()==True:
                     self.header = 'Plain'
@@ -1400,16 +1413,19 @@ class gui(QMainWindow):
                     self.header = 'AMES'
             except:
                 self.header = self.header
+                print(self.header)
             try:
                 # get averaging information from window then batchfile
                 try:
                     self.averaging_window = self.averagingbox.text()
                 except: 
                     self.averaging_window = self.avg
+                    print(self.averaging_window)
                 if len(self.averaging_window)!=0:
                     self.averaging_window=int(self.averaging_window)
                     self.write = self.write.rolling(self.averaging_window, min_periods=0).mean()
                     self.write = self.write.iloc[::self.averaging_window, :]
+                    print(self.write)
                 else:
                     pass
                 #################################################################
@@ -1653,20 +1669,21 @@ class gui(QMainWindow):
                 elif self.date == 'NoDate' and self.time == 'SecOfDay':
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                        print(self.write)
                     except:
                         print('Error inserting DateTime for subselection.')
-                    try:
-                        self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('Error subselecting based on start time.')
-                    try:
-                        self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('Error subselecting based on end time.')
-                    try:
-                        self.write.pop('DateTime')
-                    except:
-                        print('DateTime not dropped.')
+#                    try:
+#                        self.write = self.write[self.write['DateTime']>start]
+#                    except:
+#                        print('Error subselecting based on start time.')
+#                    try:
+#                        self.write = self.write[self.write['DateTime']<end]
+#                    except:
+#                        print('Error subselecting based on end time.')
+#                    try:
+#                        self.write.pop('DateTime')
+#                    except:
+#                        print('DateTime not dropped.')
                 else:
                     pass
                 # Plain header
@@ -1719,17 +1736,96 @@ class gui(QMainWindow):
                         print('Error converting file: '+self.input_file)
                 # ICARTT header
                 elif self.header == 'ICARTT':
+                    # drop the unit and dimension rows for ICARTT
+                    self.write.columns = self.write.columns.droplevel(1)
+                    self.write.columns = self.write.columns.droplevel(1)                    
+
+                    # try renaming the time var to Time_Start
                     try:
-                        # drop the unit and dimension rows for ICARTT
-                        self.write.columns = self.write.columns.droplevel(1)
-                        self.write.columns = self.write.columns.droplevel(1)                    
-                        self.ICARTTHeader(self.write)
-                    except: 
-                        print('Error creating and appending ICARTT header to output file.')
-                    try:
-                        self.processingSuccess_GUI()
+                        self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
                     except:
-                        pass
+                        print('Time_Start rename failed')
+                    # get the varNumber from the # of columns in the dataframe
+                    self.varNumber = str(len(self.write.columns)-1)
+                    self.write.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
+                    try:
+                        self.columns = pd.DataFrame(self.write.columns.values.tolist())
+                        self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
+                        self.data_date = str(self.dtime_sep[0].iloc[1])
+                        self.data_date = self.data_date.replace('-', ', ')
+                        # start going through the template text docs
+                        os.system('cp '+os.getenv('LOCAL')+'/lib/header1.txt '+os.getenv('LOCAL')+'/lib/header1.tmp')
+                        os.system("ex -s -c '5i' -c x "+os.getenv('LOCAL')+'/lib/header1.tmp')
+                        os.system('cp '+os.getenv('LOCAL')+'/lib/header2.txt '+os.getenv('LOCAL')+'/lib/header2.tmp')
+                        # get today's date
+                        self.today = datetime.today().strftime('%Y, %m, %d')
+                        # perform the replacements on the first header file
+                        with open(os.getenv('LOCAL')+'/lib/header1.tmp', 'r+') as f:
+                            lines = f.readlines()
+                            for i, line in enumerate(lines):
+                                if line.startswith('RAF instruments on'):
+                                    lines[i] = lines[i].strip()+' '+self.platform+'\n'
+                                if line.startswith('<PROJECT MANAGER>'):
+                                    lines[i] = self.project_manager+'\n'
+                                if line.startswith('<PROJECT>'):
+                                    lines[i] = self.project_name+'\n'
+                                if line.startswith('<YYYY, MM, DD,>'):
+                                    lines[i] = self.data_date+', '+self.today+'\n'
+                                if line.startswith('<varNumber>'):
+                                    lines[i] = self.varNumber+'\n'
+                                if line.startswith('<1.0>'):
+                                    lines[i] = '1.0,' * int(self.varNumber)+'\n'
+                                    lines[i] = lines[i][:-2]+'\n'
+                                if line.startswith('<-99999.0>'):
+                                    lines[i] = '-99999.0,' * int(self.varNumber)+'\n'
+                                    lines[i] = lines[i][:-2]+'\n'
+                            f.seek(0)
+                            for line in lines:
+                                f.write(line)
+                        # perform the replacements on the second header file
+                        with open(os.getenv('LOCAL')+'/lib/header2.tmp', 'r+') as f:
+                            lines = f.readlines()
+                            for i, line in enumerate(lines):
+                                if line.startswith('<PLATFORM>'):
+                                    lines[i] = 'PLATFORM: '+self.platform+'\n'
+                            f.seek(0)
+                            for line in lines:
+                                f.write(line)
+                        # combine and perform replacement on the combined header file
+                        self.fileheader.to_csv(os.getenv('LOCAL')+'/lib/header1.tmp', mode='a', header=False, index=False)
+                        os.system('cat '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp > '+os.getenv('LOCAL')+'/lib/header.tmp')
+                        with open(os.getenv('LOCAL')+'/lib/header.tmp', 'r+') as f:
+                            lines = f.readlines()
+                            count = str(len(lines)+1)+', 1001, V02_2016'
+                            for i, line in enumerate(lines):
+                                if line.startswith('<ROWCOUNT>'):
+                                    lines[i] = count+'\n'
+                            f.seek(0)
+                            for line in lines:
+                                f.write(line)
+
+                        #os.system('head -n -1 /opt/local/lib/header.tmp > /opt/local/lib/trim.tmp ; mv /opt/local/lib/trim.tmp /opt/local/lib/header.tmp')
+                        os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
+                        os.system('cat '+os.getenv('LOCAL')+'/lib/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+                        os.system('rm '+os.getenv('LOCAL')+'/lib/header.tmp '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp '+str(self.output_file)+'.tmp')
+                    except:
+                        print('Error creating and appending ICARTT header to output file.')
+
+                    self.icartt_filename_date = self.data_date.replace(', ', '')
+                    self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+
+                    try:
+                        self.outputfilebox.setText(self.icartt_filename)
+                    except:
+                        try:
+                            head_tail = os.path.split(self.output_file)
+                            os.system('mv '+self.output_file+' '+head_tail[0]+'/'+self.icartt_filename)
+                        except:
+                            pass
+                    #try:
+                    #    self.processingSuccess_GUI()
+                    #except:
+                    #    pass
                 # AMES header
                 elif self.header == 'AMES':
                     try:
