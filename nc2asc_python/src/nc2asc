@@ -437,7 +437,7 @@ class gui(QMainWindow):
                     x = savebatch.exec_()
                 except:
                     # if there is an error, notify user on command line
-                    print("Error writing batchfile.")
+                    print("Batchfile not written.")
 
     def readBatchFile(self):
 
@@ -929,7 +929,7 @@ class gui(QMainWindow):
             os.system('cat '+lib_dir+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
             os.system('rm '+lib_dir+'/header.tmp '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp '+str(self.output_file)+'.tmp')
         except:
-            print('Error creating and appending ICARTT header to output file.')
+            print('ICARTT header not created and appended to output file.')
     #########################################################################
     # Define function to format AMES header
     ########################################################################
@@ -995,7 +995,7 @@ class gui(QMainWindow):
             os.system('cat ./docs/header_ames.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
             os.system('rm ./docs/header_ames.tmp ./docs/header1_ames.tmp ./docs/header2_ames.tmp '+str(self.output_file)+'.tmp')
         except:
-            print('Error creating and appending AMES header to output file.')
+            print('AMES header not created or appended to output file.')
     #########################################################################
     # Define function to notify user that processing was successful.
     #########################################################################
@@ -1027,15 +1027,15 @@ class gui(QMainWindow):
         try:
             datasource.insert(loc=0, column='Time', value=self.dtime_time)
         except:
-            print('Error inserting separate time series.')      
+            print('Time series not inserted.')      
         try:
             datasource.insert(loc=0, column='Date', value=self.dtime_date)
         except:
-            print('Error inserting separate date series.')
+            print('Date series not inserted.')
         try:
             datasource.pop('DateTime')
         except:
-            print('Error dropping DateTime')
+            print('DateTime not dropped')
 #############################################################################
 # Function previewData_GUI creates an example output based on user settings and
 # populates the Preview field in the gui. It is set up to autmatically update
@@ -1077,97 +1077,97 @@ class gui(QMainWindow):
                 try:
                     self.preview.pop('Time')
                 except:
-                    print('Error dropping Time')
+                    print('Time not dropped.')
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 self.timeHandler(self.preview)
 
             elif self.date1.isChecked()==True and self.time2.isChecked()==True:
                 try:
                     self.preview.pop('Time')
                 except:
-                    print('Error dropping Time')
+                    print('Time not dropped.')
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 self.timeHandler(self.preview)
                 self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
             elif self.date1.isChecked()==True and self.time3.isChecked()==True:
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('No insert of DateTime')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('No time selection based on start time')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('No time selection based on end time')
+                    print('No subselection based on end time.')
                 try:
                     self.preview.insert(loc=0, column='Date', value=self.dtime_date)
                 except:
-                    print('No insert of Date')
+                    print('Date not inserted.')
                 try:
                     self.preview.pop('DateTime')
                 except:
-                    print('No drop of DateTime')
+                    print('DateTime not dropped.')
             elif self.date2.isChecked()==True and self.time1.isChecked()==True:
                 try:
                     self.preview.pop('Time')
                 except:
-                    print('Error dropping Time')
+                    print('Time not dropped.')
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 self.timeHandler(self.preview)
                 self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
             elif self.date2.isChecked()==True and self.time2.isChecked()==True:
                 try:
                     self.preview.pop('Time')
                 except:
-                    print('Error dropping Time')
+                    print('Time not dropped.')
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 self.timeHandler(self.preview)
                 self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
                 self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
@@ -1175,23 +1175,23 @@ class gui(QMainWindow):
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('No insert of DateTime')
+                    print('No insert of DateTime.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('No time selection based on start time')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('No time selection based on end time')
+                    print('No subselection based on end time.')
                 try:
                     self.preview.insert(loc=0, column='Date', value=self.dtime_date)
                 except:
-                    print('No insert of Date')
+                    print('Date not inserted.')
                 try:
                     self.preview.pop('DateTime')
                 except:
-                    print('No drop of DateTime')
+                    print('DateTime not dropped.')
                 try:
                     self.preview['Date']=self.preview['Date'].str.replace('-', ' ')
                 except:
@@ -1200,38 +1200,38 @@ class gui(QMainWindow):
                 try:
                     self.preview.pop('Time')
                 except:
-                    print('Error dropping Time')
+                    print('Time not dropped.')
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 self.timeHandler(self.preview)
                 self.preview.pop('Date')
             elif self.date3.isChecked()==True and self.time2.isChecked()==True:
                 try:
                     self.preview.pop('Time')
                 except:
-                    print('Error dropping Time')
+                    print('Time not dropped.')
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 self.timeHandler(self.preview)
                 self.preview.pop('Date')
                 self.preview['Time']=self.preview['Time'].str.replace(':', ' ')
@@ -1239,15 +1239,15 @@ class gui(QMainWindow):
                 try:
                     self.preview.insert(loc=0, column='DateTime', value=self.dtime)
                 except:
-                    print('Error inserting DateTime for subselection.')
+                    print('DateTime not inserted.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']>start]
                 except:
-                    print('Error subselecting based on start time.')
+                    print('No subselection based on start time.')
                 try:
                     self.preview = self.preview[self.preview['DateTime']<end]
                 except:
-                    print('Error subselecting based on end time.')
+                    print('No subselection based on end time.')
                 pass
                 try:
                     self.preview.pop('DateTime')
@@ -1269,7 +1269,7 @@ class gui(QMainWindow):
                         self.preview.head(20).to_csv(self.output_file, header=True, index=False)
                         self.formatPreview_GUI()
                     else:
-                        print('Error converting file: '+self.input_file)
+                        print('File not converted: '+self.input_file)
                 elif self.space.isChecked()==True:
                     if self.fillvalue1.isChecked()==True:
                         self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
@@ -1282,9 +1282,9 @@ class gui(QMainWindow):
                         self.preview.head(20).to_csv(self.output_file, header=True, index=False, sep=' ')
                         self.formatPreview_GUI()
                     else:
-                        print('Error converting file: '+self.input_file)
+                        print('File not converted: '+self.input_file)
                 else:
-                    print('Error converting file: '+self.input_file)
+                    print('File not converted: '+self.input_file)
             # ICARTT header
             elif self.header2.isChecked()==True:
                 # drop the unit and dimension rows for ICARTT
@@ -1447,62 +1447,62 @@ class gui(QMainWindow):
                     try:
                         self.write.pop('Time')
                     except:
-                        print('Error dropping Time')
+                        print('Time not dropped.')
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted for subselection.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('Error subselecting based on start time.')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('Error subselecting based on end time.')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except:
-                        print('Error inserting separate time series.')
+                        print('Time series not inserted.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('Error inserting separate date series.')
+                        print('Date series not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('Error dropping DateTime')
+                        print('DateTime not dropped.')
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date) 
                 elif self.date == 'yyyy-mm-dd' and self.time == 'hh mm ss':
                     try:
                         self.write.pop('Time')
                     except:
-                        print('Error dropping Time')
+                        print('Time not dropped.')
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('Error subselecting based on start time.')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('Error subselecting based on end time.')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except:
-                        print('Error inserting separate time series.')
+                        print('Time series not inserted.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('Error inserting separate date series.')
+                        print('Date series not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('Error dropping DateTime')
+                        print('DateTime not dropped.')
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     self.write['Time']=self.write['Time'].str.replace(':', ' ')
@@ -1510,52 +1510,52 @@ class gui(QMainWindow):
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('No insert of DateTime')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('No time selection based on start time')
+                        print('No time subselection based on start time')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('No time selection based on end time')
+                        print('No time subselection based on end time')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('No insert of Date')
+                        print('Date not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('No drop of DateTime')
+                        print('DateTime not dropped.')
                 elif self.date == 'yyyy mm dd' and self.time == 'hh:mm:ss':
                     try:
                         self.write.pop('Time')
                     except:
-                        print('Error dropping Time')
+                        print('Time not dropped.')
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('Error subselecting based on start time.')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('Error subselecting based on end time.')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except:
-                        print('Error inserting separate time series.')
+                        print('Time series not inserted.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('Error inserting separate date series.')
+                        print('Date series not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('Error dropping DateTime')
+                        print('DateTime not dropped')
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     self.write['Date']=self.write['Date'].str.replace('-', ' ')
@@ -1563,31 +1563,31 @@ class gui(QMainWindow):
                     try:
                         self.write.pop('Time')
                     except:
-                        print('Error dropping Time')
+                        print('Time not dropped.')
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('Error subselecting based on start time.')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('Error subselecting based on end time.')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except:
-                        print('Error inserting separate time series.')
+                        print('Time series not inserted.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('Error inserting separate date series.')
+                        print('Date series not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('Error dropping DateTime')
+                        print('DateTime not dropped.')
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     self.write['Date']=self.write['Date'].str.replace('-', ' ')
@@ -1596,23 +1596,23 @@ class gui(QMainWindow):
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('No insert of DateTime')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('No time selection based on start time')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('No time selection based on end time')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('No insert of Date')
+                        print('Date not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('No drop of DateTime')
+                        print('DateTime not dropped.')
                     try:
                         self.write['Date']=self.write['Date'].str.replace('-', ' ')
                     except:
@@ -1621,61 +1621,61 @@ class gui(QMainWindow):
                     try:
                         self.write.pop('Time')
                     except:
-                        print('Error dropping Time')
+                        print('Time not dropped.')
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('Error subselecting based on start time.')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('Error subselecting based on end time.')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except:
-                        print('Error inserting separate time series.')
+                        print('Time series not inserted.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('Error inserting separate date series.')
+                        print('Date series not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('Error dropping DateTime')
+                        print('DateTime not inserted.')
                     self.write.pop('Date')
                 elif self.date == 'NoDate' and self.time == 'hh mm ss':
                     try:
                         self.write.pop('Time')
                     except:
-                        print('Error dropping Time')
+                        print('Time not dropped.')
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted.')
                     try:
                         self.write = self.write[self.write['DateTime']>start]
                     except:
-                        print('Error subselecting based on start time.')
+                        print('No subselection based on start time.')
                     try:
                         self.write = self.write[self.write['DateTime']<end]
                     except:
-                        print('Error subselecting based on end time.')
+                        print('No subselection based on end time.')
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except:
-                        print('Error inserting separate time series.')
+                        print('Time series not inserted.')
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except:
-                        print('Error inserting separate date series.')
+                        print('Date series not inserted.')
                     try:
                         self.write.pop('DateTime')
                     except:
-                        print('Error dropping DateTime')
+                        print('DateTime not dropped.')
                     self.write.pop('Date')
                     self.write['Time']=self.write['Time'].str.replace(':', ' ')
                 elif self.date == 'NoDate' and self.time == 'SecOfDay':
@@ -1683,15 +1683,15 @@ class gui(QMainWindow):
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                         print(self.write)
                     except:
-                        print('Error inserting DateTime for subselection.')
+                        print('DateTime not inserted.')
 #                    try:
 #                        self.write = self.write[self.write['DateTime']>start]
 #                    except:
-#                        print('Error subselecting based on start time.')
+#                        print('No subselection based on start time.')
 #                    try:
 #                        self.write = self.write[self.write['DateTime']<end]
 #                    except:
-#                        print('Error subselecting based on end time.')
+#                        print('No subselection based on end time.')
 #                    try:
 #                        self.write.pop('DateTime')
 #                    except:
@@ -1721,7 +1721,7 @@ class gui(QMainWindow):
                             except:
                                 pass
                         else:
-                            print('Error converting file: '+self.input_file)
+                            print('File not converted: '+self.input_file)
                     elif self.delimiter == 'space':
                         if self.fillvalue == '-32767':
                             self.write.to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
@@ -1743,9 +1743,9 @@ class gui(QMainWindow):
                             except:
                                 pass
                         else:
-                            print('Error converting file: '+self.input_file)
+                            print('File not converted: '+self.input_file)
                     else:
-                        print('Error converting file: '+self.input_file)
+                        print('File not converted: '+self.input_file)
                 # ICARTT header
                 elif self.header == 'ICARTT':
                     # drop the unit and dimension rows for ICARTT
@@ -1753,18 +1753,16 @@ class gui(QMainWindow):
                         try:
                             self.write.columns = self.write.columns.droplevel(1)
                         except Exception as e:
-                            print(e)
                         try:
                             self.write.columns = self.write.columns.droplevel(1)                    
                         except Exception as e:
-                            print(e)
                     except:
                         pass
                     # try renaming the time var to Time_Start
                     try:
                         self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
                     except:
-                        print('Time_Start rename failed')
+                        print('Time_Start not renamed')
                     # get the varNumber from the # of columns in the dataframe
                     self.varNumber = str(len(self.write.columns)-1)
                     self.write.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
@@ -1829,7 +1827,7 @@ class gui(QMainWindow):
                         os.system('cat '+os.getenv('LOCAL')+'/lib/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
                         os.system('rm '+os.getenv('LOCAL')+'/lib/header.tmp '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp '+str(self.output_file)+'.tmp')
                     except:
-                        print('Error creating and appending ICARTT header to output file.')
+                        print('ICARTT header was not created or appended to output file')
 
                     self.icartt_filename_date = self.data_date.replace(', ', '')
                     self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
@@ -1854,7 +1852,7 @@ class gui(QMainWindow):
                         self.write.columns = self.write.columns.droplevel(1)
                         self.AMESHeader(self.write)
                     except:
-                        print('Error creating and appending AMES header to output file.')
+                        print('AMES header was not created or appended to output file.')
                     try:
                         self.processingSuccess_GUI()
                     except:
