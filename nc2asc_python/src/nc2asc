@@ -718,8 +718,6 @@ class gui(QMainWindow):
             # subset the start and end time from the dtime objet by position
             self.start_time = self.dtime.iloc[1]
             self.end_time = self.dtime.iloc[-1]
-            # create an object to store the NetCDF variable time 
-            self.dtime=nc.variables['Time']
             try:
                 # populate the start_time and end_time fields in the gui
                 self.start.setText(self.start_time)
@@ -1753,9 +1751,11 @@ class gui(QMainWindow):
                         try:
                             self.write.columns = self.write.columns.droplevel(1)
                         except Exception as e:
+                            print(e)
                         try:
                             self.write.columns = self.write.columns.droplevel(1)                    
                         except Exception as e:
+                            print(e)
                     except:
                         pass
                     # try renaming the time var to Time_Start
