@@ -9,7 +9,6 @@ import sys
 import argparse
 import imp
 nc2asc=imp.load_source('nc2asc','/opt/local/bin/nc2asc')
-
 #############################################################################
 # Define main function
 #############################################################################
@@ -66,9 +65,10 @@ class nc2asc_CL():
         try:
             print('****Reading Batch File****')
             nc2asc.gui.readBatchFile(self)
+            self.asc_new_batch = nc2asc.gui.asc_new_batch
             print('****Batch File Successfully Read****')
-        except:
-            print('Error reading batch file')
+        except Exception as e:
+            print(e)
         try:
             print('****Writing Data to Output File****')
             try:

@@ -473,8 +473,10 @@ class gui(QMainWindow):
                     elif ln.startswith('hd=ICARTT'):
                         try:
                             self.header2.setChecked(True)
+                            print('ICARTT')
                         except:
                             self.header = 'ICARTT'
+                            print('ICARTT')
                     elif ln.startswith('hd=AMES'):
                         try:
                             self.header3.setChecked(True)
@@ -595,27 +597,30 @@ class gui(QMainWindow):
                 self.input_file = self.inputfilebox.text()
             except:
                 self.input_file = self.input_file
+                print(self.input_file)
             self.variables_extract_batch = pd.Series(self.variables_extract_batch)
-            try:
-                self.formatData()
-            except:
-                pass
             self.asc_new_batch = self.asc[self.variables_extract_batch]
+            print("SELF ASC NEW BATCH"+self.asc_new_batch)
             return self.asc_new_batch
             try:
+                self.formatData()
+            except Exception as e:
+                print(e)
+            try:
                 del self.asc, self.asc_new
-            except:
-                pass 
+            except Exception as e:
+                print(e)
             try:
                 self.loadVars_GUI()
-            except:
-                pass
+            except Exception as e:
+                print(e)
             try:
                 self.previewData_GUI()
-            except:
-                pass
+            except Exception as e:
+                print(e)
         except:
             pass
+
 #######################################################################
 # Function definitions for data loading, formatting, and processing
 #######################################################################
@@ -941,19 +946,28 @@ class gui(QMainWindow):
         # get the varNumber from the # of columns in the dataframe
         self.varNumber = str(len(ames_header.columns)-1)
         ames_header.to_csv(self.output_file, header=True, index=False, na_rep='99999')
+        lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+        try:
+            lib_path = lib_path.replace("bin", "lib")
+        except:
+            try:
+                lib_path = './lib'
+            except Exception as e:
+                print(e)
+                print('Could not get an installed ../lib/.. path or a local ./lib path for header.')
         try:
             self.columns = pd.DataFrame(ames_header.columns.values.tolist())
             self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
             self.data_date = str(self.dtime_sep[0].iloc[1])
             self.data_date = self.data_date.replace('-', ', ')
             # start going through the template text docs
-            os.system('cp ./docs/header1_ames.txt ./docs/header1_ames.tmp')
-            os.system("ex -s -c '5i' -c x ./docs/header1_ames.tmp")
-            os.system('cp ./docs/header2_ames.txt ./docs/header2_ames.tmp')
+            os.system('cp '+lib_path+'/header1_ames.txt '+lib_path+'/header1_ames.tmp')
+            os.system("ex -s -c '5i' -c x "+lib_path+"/header1_ames.tmp")
+            os.system('cp '+lib_path+'/header2_ames.txt '+lib_path+'/header2_ames.tmp')
             # get today's date
             self.today = datetime.today().strftime('%Y, %m, %d')
             # perform the replacements on the first header file
-            with open('./docs/header1_ames.tmp', 'r+') as f:
+            with open(lib_dir+'/header1_ames.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
                     if line.startswith('Flight data from:'):
@@ -976,9 +990,9 @@ class gui(QMainWindow):
                 for line in lines:
                     f.write(line)
             # combine and perform replacement on the combined header file
-            self.fileheader.to_csv('./docs/header1_ames.tmp', mode='a', header=False, index=False)
-            os.system('cat ./docs/header1_ames.tmp ./docs/header2_ames.tmp > ./docs/header_ames.tmp')
-            with open('./docs/header_ames.tmp', 'r+') as f:
+            self.fileheader.to_csv(lib_path+'/header1_ames.tmp', mode='a', header=False, index=False)
+            os.system('cat '+lib_path+'/header1_ames.tmp '+lib_path+'/header2_ames.tmp > '+lib_path+'/header_ames.tmp')
+            with open(lib_path+'/header_ames.tmp', 'r+') as f:
                 lines = f.readlines()
                 count = str(len(lines))+', 1001'
                 print(count)
@@ -988,10 +1002,10 @@ class gui(QMainWindow):
                 f.seek(0)
                 for line in lines:
                     f.write(line)
-            os.system('head -n -3 ./docs/header_ames.tmp > ./docs/trim.tmp ; mv ./docs/trim.tmp ./docs/header_ames.tmp')
+            #os.system('head -n -3 ./docs/header_ames.tmp > ./docs/trim.tmp ; mv ./docs/trim.tmp ./docs/header_ames.tmp')
             os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
-            os.system('cat ./docs/header_ames.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-            os.system('rm ./docs/header_ames.tmp ./docs/header1_ames.tmp ./docs/header2_ames.tmp '+str(self.output_file)+'.tmp')
+            os.system('cat '+lib_path+'/header_ames.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+            os.system('rm '+lib_path+'/header_ames.tmp '+lib_path+'/header1_ames.tmp '+lib_path+'/header2_ames.tmp '+str(self.output_file)+'.tmp')
         except:
             print('AMES header not created or appended to output file.')
     #########################################################################
@@ -1285,10 +1299,20 @@ class gui(QMainWindow):
                     print('File not converted: '+self.input_file)
             # ICARTT header
             elif self.header2.isChecked()==True:
+                lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+                try:
+                    lib_path = lib_path.replace("bin", "lib")
+                except:
+                    try:
+                        lib_path = './lib'
+                    except Exception as e:
+                        print(e)
+                        print('Could not get an installed ../lib/.. path or a local ./lib path for header.')
                 # drop the unit and dimension rows for ICARTT
                 self.preview.columns = self.preview.columns.droplevel(1)
                 self.preview.columns = self.preview.columns.droplevel(1)
-                self.ICARTTHeader(self.preview, os.getenv('LOCAL')+'/lib')
+                self.ICARTTHeader(self.preview, lib_path)
+                #self.ICARTTHeader(self.preview, os.getenv('LOCAL')+'/lib')
                 with open(self.output_file) as preview:
                     head = str(preview.readlines()[0:75])
                     head = head.replace('\\n', '\n')
@@ -1330,9 +1354,11 @@ class gui(QMainWindow):
         try:
             try:
                 self.write = self.asc_new_batch
-            except:
+            except Exception as e:
+                print(e)
                 self.write = self.asc_new
-        except:
+        except Exception as e:
+            print(e)
             self.write = self.asc
         # determine which output file to use based on mode
         try:
@@ -1433,7 +1459,7 @@ class gui(QMainWindow):
                     print(self.averaging_window)
                 if len(self.averaging_window)!=0:
                     self.averaging_window=int(self.averaging_window)
-                    self.write = self.write.rolling(self.averaging_window, min_periods=0).mean()
+                    self.write = df.self.write.rolling(self.averaging_window, min_periods=0).mean()
                     self.write = self.write.iloc[::self.averaging_window, :]
                     print(self.write)
                 else:
@@ -1694,8 +1720,8 @@ class gui(QMainWindow):
 #                        self.write.pop('DateTime')
 #                    except:
 #                        print('DateTime not dropped.')
-                else:
-                    pass
+#                else:
+#                    pass
                 # Plain header
                 if self.header == 'Plain':
                     if self.delimiter == 'comma':
@@ -1746,6 +1772,15 @@ class gui(QMainWindow):
                         print('File not converted: '+self.input_file)
                 # ICARTT header
                 elif self.header == 'ICARTT':
+                    lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+                    try:
+                        lib_path = lib_path.replace("bin", "lib")
+                    except:
+                        try:
+                            lib_path = './lib'
+                        except Exception as e:
+                            print(e)
+                            print('Could not get an installed ../lib/.. path or a local ./lib path for header.')
                     # drop the unit and dimension rows for ICARTT
                     try:
                         try:
@@ -1763,6 +1798,10 @@ class gui(QMainWindow):
                         self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
                     except:
                         print('Time_Start not renamed')
+                    try:
+                        self.write = pd.DataFrame(self.write.rename(columns={'Time': 'Time_Start'}))
+                    except:
+                        print('Time_Start not renamed')
                     # get the varNumber from the # of columns in the dataframe
                     self.varNumber = str(len(self.write.columns)-1)
                     self.write.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
@@ -1772,13 +1811,13 @@ class gui(QMainWindow):
                         self.data_date = str(self.dtime_sep[0].iloc[1])
                         self.data_date = self.data_date.replace('-', ', ')
                         # start going through the template text docs
-                        os.system('cp '+os.getenv('LOCAL')+'/lib/header1.txt '+os.getenv('LOCAL')+'/lib/header1.tmp')
-                        os.system("ex -s -c '5i' -c x "+os.getenv('LOCAL')+'/lib/header1.tmp')
-                        os.system('cp '+os.getenv('LOCAL')+'/lib/header2.txt '+os.getenv('LOCAL')+'/lib/header2.tmp')
+                        os.system('cp '+lib_path+'/header1.txt '+lib_path+'/header1.tmp')
+                        os.system("ex -s -c '5i' -c x "+lib_path+'/header1.tmp')
+                        os.system('cp '+lib_path+'/header2.txt '+lib_path+'/header2.tmp')
                         # get today's date
                         self.today = datetime.today().strftime('%Y, %m, %d')
                         # perform the replacements on the first header file
-                        with open(os.getenv('LOCAL')+'/lib/header1.tmp', 'r+') as f:
+                        with open(lib_path+'/header1.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('RAF instruments on'):
@@ -1801,7 +1840,7 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # perform the replacements on the second header file
-                        with open(os.getenv('LOCAL')+'/lib/header2.tmp', 'r+') as f:
+                        with open(lib_path+'/header2.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('<PLATFORM>'):
@@ -1810,9 +1849,9 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # combine and perform replacement on the combined header file
-                        self.fileheader.to_csv(os.getenv('LOCAL')+'/lib/header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp > '+os.getenv('LOCAL')+'/lib/header.tmp')
-                        with open(os.getenv('LOCAL')+'/lib/header.tmp', 'r+') as f:
+                        self.fileheader.to_csv(lib_path+'/header1.tmp', mode='a', header=False, index=False)
+                        os.system('cat '+lib_path+'/header1.tmp '+lib_path+'/header2.tmp > '+lib_path+'/header.tmp')
+                        with open(lib_path+'/header.tmp', 'r+') as f:
                             lines = f.readlines()
                             count = str(len(lines)+1)+', 1001, V02_2016'
                             for i, line in enumerate(lines):
@@ -1822,10 +1861,9 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
 
-                        #os.system('head -n -1 /opt/local/lib/header.tmp > /opt/local/lib/trim.tmp ; mv /opt/local/lib/trim.tmp /opt/local/lib/header.tmp')
                         os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
-                        os.system('cat '+os.getenv('LOCAL')+'/lib/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                        os.system('rm '+os.getenv('LOCAL')+'/lib/header.tmp '+os.getenv('LOCAL')+'/lib/header1.tmp '+os.getenv('LOCAL')+'/lib/header2.tmp '+str(self.output_file)+'.tmp')
+                        os.system('cat '+lib_path+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+                        os.system('rm '+lib_path+'/header.tmp '+lib_path+'/header1.tmp '+lib_path+'/header2.tmp '+str(self.output_file)+'.tmp')
                     except:
                         print('ICARTT header was not created or appended to output file')
 
