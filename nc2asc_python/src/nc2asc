@@ -714,6 +714,7 @@ class gui(QMainWindow):
             # create separate date and time series for combination in previewData and writeData
             self.dtime_date = self.dtime_sep[0]
             self.dtime_time = self.dtime_sep[1]
+            print(self.dtime_time)
             # concatenate the units, long_name, variables, and header
             self.units=pd.concat(self.units, axis=0, ignore_index=True)
             print(len(self.units))
@@ -723,13 +724,14 @@ class gui(QMainWindow):
             # subset the start and end time from the dtime objet by position
             self.start_time = self.dtime.iloc[1]
             self.end_time = self.dtime.iloc[-1]
+            self.dtime=nc.variables['Time']
             try:
                 # populate the start_time and end_time fields in the gui
                 self.start.setText(self.start_time)
                 self.end.setText(self.end_time)
             except:
                 print('Not running in gui mode, not setting fields for start and end time.')
-            return self.start_time, self.end_time, self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time
+            return self.start_time, self.end_time, self.input_file, self.units, self.asc, self.fileheader, self.dtime_date, self.dtime_time, self.dtime
         except:
            print('Error in extracting variable in '+str(self.input_file))
 
@@ -1703,11 +1705,14 @@ class gui(QMainWindow):
                     self.write.pop('Date')
                     self.write['Time']=self.write['Time'].str.replace(':', ' ')
                 elif self.date == 'NoDate' and self.time == 'SecOfDay':
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                        print(self.write)
-                    except:
-                        print('DateTime not inserted.')
+                     try:
+                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                     except:
+                         print('DateTime not inserted.')
+#                    try:
+#                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+#                    except:
+#                        print('DateTime not inserted.')
 #                    try:
 #                        self.write = self.write[self.write['DateTime']>start]
 #                    except:
@@ -1716,12 +1721,13 @@ class gui(QMainWindow):
 #                        self.write = self.write[self.write['DateTime']<end]
 #                    except:
 #                        print('No subselection based on end time.')
+#                    pass
 #                    try:
 #                        self.write.pop('DateTime')
 #                    except:
 #                        print('DateTime not dropped.')
-#                else:
-#                    pass
+                else:
+                    pass
                 # Plain header
                 if self.header == 'Plain':
                     if self.delimiter == 'comma':
@@ -1785,21 +1791,17 @@ class gui(QMainWindow):
                     try:
                         try:
                             self.write.columns = self.write.columns.droplevel(1)
-                        except Exception as e:
-                            print(e)
+                        except:
+                            pass
                         try:
                             self.write.columns = self.write.columns.droplevel(1)                    
-                        except Exception as e:
-                            print(e)
+                        except:
+                            pass
                     except:
                         pass
                     # try renaming the time var to Time_Start
                     try:
                         self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
-                    except:
-                        print('Time_Start not renamed')
-                    try:
-                        self.write = pd.DataFrame(self.write.rename(columns={'Time': 'Time_Start'}))
                     except:
                         print('Time_Start not renamed')
                     # get the varNumber from the # of columns in the dataframe
