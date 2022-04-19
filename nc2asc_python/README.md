@@ -59,7 +59,7 @@ optional arguments:
 #### Date Format Options
 Date format options include `yyyy:mm:dd`, `yyyy mm dd`, or `NoDate`. The format of these selections should match the following when using a batch file:
 
-`dt=yyyy-mm-dd`
+`dt=yyyy:mm:dd`
 
 `dt=yyyy mm dd`
 
@@ -71,7 +71,7 @@ Time format options include `hhhh:mm:ss`, `hhhh mm ss`, or `SecOfDay`. The forma
 
 `tm=hhhh:mm:ss`
 
-`tm=hhhh:mm:ss`
+`tm=hhhh mm ss`
 
 `tm=SecOfDay`
 
@@ -95,7 +95,7 @@ AMES: `header=AMESDef`
 
 
 #### Fill Value Options
-Fill value options include `-32767`, `Replicate`, and `Blank` values. The format of these selections should match the following when using a batch file:
+Fill value options include `-32767`, `Blank`, and `Replicate` values. The format of these selections should match the following when using a batch file:
 
 `fv=-32767`
 
