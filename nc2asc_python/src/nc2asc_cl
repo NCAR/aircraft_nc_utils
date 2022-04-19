@@ -8,6 +8,8 @@ import os
 import sys
 import argparse
 import imp
+import netCDF4
+import pandas as pd
 nc2asc=imp.load_source('nc2asc','/opt/local/bin/nc2asc')
 #############################################################################
 # Define main function
@@ -56,19 +58,136 @@ class nc2asc_CL():
             print('BATCH_FILE:'+self.inputbatch_file)
         except:
             print('Error getting command line arguments.')
+        # try to get batch file from the gui prompt if in gui mode
+        try:
+            self.inputbatch_file = self.inputbatch_file
+        except:
+            try:
+                self.inputbatch_file, _ = QFileDialog.getOpenFileName(self,"Select a Batch file to Read", "/scr/raf_data","filter = *")
+            except:
+                pass
+
+        try:
+            nc = netCDF4.Dataset(self.input_file, mode='r')
+            self.asc = {}
+            for i in nc.variables.keys():
+                dims = str(nc.variables[i].dimensions)
+                if dims == "('Time',)":
+                    output=nc[i][:]
+                    self.asc[i]=pd.DataFrame(output)
+                else:
+                    pass
+            # concatenate
+            self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
+        except Exception as e:
+            print(e)
+
+        try:
+            with open(self.inputbatch_file, 'r') as fil:
+                self.variables_extract_batch = []
+                self.asc_new_batch = pd.DataFrame()
+                for ln in fil:
+                    # get the header format from the batch file
+                    if ln.startswith('hd=Plain'):
+                        try:
+                            self.header1.setChecked(True)
+                        except:
+                            self.header = 'Plain'
+                    elif ln.startswith('hd=ICARTT'):
+                        try:
+                            self.header2.setChecked(True)
+                            print('ICARTT')
+                        except:
+                            self.header = 'ICARTT'
+                            print('ICARTT')
+                    elif ln.startswith('hd=AMES'):
+                        try:
+                            self.header3.setChecked(True)
+                        except:
+                            self.header = 'AMES'
+                    elif ln.startswith('dt=yyyy-mm-dd'):
+                        try:
+                            self.date1.setChecked(True)
+                        except:
+                            self.date = 'yyyy-mm-dd'
+                    elif ln.startswith('dt=yyyy mm dd'):
+                        try:
+                            self.date2.setChecked(True)
+                        except:
+                            self.date = 'yyyy mm dd'
+                    elif ln.startswith('dt=NoDate'):
+                        try:
+                            self.date3.setChecked(True)
+                        except:
+                            self.date = 'NoDate'
+                    elif ln.startswith('tm=hh:mm:ss'):
+                        try:
+                            self.time1.setChecked(True)
+                        except:
+                            self.time = 'hh:mm:ss'
+                    elif ln.startswith('tm=hh mm ss'):
+                        try:
+                            self.time2.setChecked(True)
+                        except:
+                            self.time = 'hh mm ss'
+                    elif ln.startswith('tm=SecOfDay'):
+                        try:
+                            self.time3.setChecked(True)
+                        except:
+                            self.time = 'SecOfDay'
+                    elif ln.startswith('sp=comma'):
+                        try:
+                            self.comma.setChecked(True)
+                        except:
+                            self.delimiter = 'comma'
+                    elif ln.startswith('sp=space'):
+                        try:
+                            self.space.setChecked(True)
+                        except:
+                            self.delimiter = 'space'
+                    elif ln.startswith('fv=-32767'):
+                        try:
+                            self.fillvalue1.setChecked(True)
+                        except:
+                            self.fillvalue = '-32767'
+                    elif ln.startswith('fv=blank'):
+                        try:
+                            self.fillvalue2.setChecked(True)
+                        except:
+                            self.fillvalue = 'blank'
+                    elif ln.startswith('fv=replicate'):
+                        try:
+                            self.fillvalue3.setChecked(True)
+                        except:
+                            self.fillvalue = 'replicate'
+                    # get the average value (if provided) from the bath file
+                    elif ln.startswith('avg='):
+                        self.avg = ln[2:]
+                    elif ln.startswith('Vars='):
+                        var_batchfile = str(ln)
+                        if var_batchfile not in self.variables_extract_batch:
+                            self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
+                # format averaging
+                self.avg = self.avg.replace('[', '')
+                self.avg = self.avg.replace("'", '')
+                self.avg = self.avg.replace('=', '')
+                self.avg = self.avg.replace(']', '')
+                self.avg = self.avg.replace('g', '')
+                self.avg = self.avg[:-1]
+            #self.variables_extract_batch = pd.Series(self.variables_extract_batch)
+            for x in range(len(self.variables_extract_batch)): 
+                print(x)
+                self.asc_new_batch = pd.concat([self.asc_new_batch, self.asc[self.variables_extract_batch[x]]], axis=1, ignore_index=False)
+            self.asc_new_batch.columns = [self.variables_extract_batch]        
+        except Exception as e:
+            print(e)
+            #nc2asc.gui.readBatchFile(self)
         try:
             print('****Formatting data from input file. If CL argument provided, using by default.****')
             nc2asc.gui.formatData(self)
             print('Data formatted successfully.')
         except:
             print('Error formatting data.')
-        try:
-            print('****Reading Batch File****')
-            nc2asc.gui.readBatchFile(self)
-            self.asc_new_batch = nc2asc.gui.asc_new_batch
-            print('****Batch File Successfully Read****')
-        except Exception as e:
-            print(e)
         try:
             print('****Writing Data to Output File****')
             try:
