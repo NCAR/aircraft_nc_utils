@@ -33,8 +33,8 @@ parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=Fal
 parser.set_defaults(feature=False)
 parser.add_argument("-v", "--extravars", help="file containing comma separated list of vars")
 #parser.add_argument("-er", "--emulate_realtime", type=bool, const=True, nargs="?",\
-                    default=False, help="Emulate realtime mode, set to True. Only provide '-er' \
-                    with nothing following") 
+#                    default=False, help="Emulate realtime mode, set to True. Only provide '-er' \
+#                    with nothing following") 
 parser.add_argument("-so", "--standard_out", type=bool, const=True, nargs="?",\
                     default=False, help="Optional argument for standard out. \
                     If you don't provide, file writes to output file, and that's it. Only provide \
