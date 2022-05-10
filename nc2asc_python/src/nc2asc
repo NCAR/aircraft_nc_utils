@@ -421,10 +421,12 @@ class gui(QMainWindow):
                         self.batchfile.write('fv=replicate\n')
                     # determine the time interval to write to the batch file
                     # by default the self.start/end.text() method will return the full file
-                    self.batchfile.write('ti='+self.start.text()+','+self.end.text()+'\n\n')
+                    #self.batchfile.write('ti='+self.start.text()+','+self.end.text()+'\n\n')
+                    self.batchfile.write('ti=X,X\n')
                     # in order to display vars on separate lines to align with 
                     # nimbus batch file conventions, split by two spaces
-                    for i in self.var_selected.split(' '):
+#                    for i in self.var_selected.split(' '):
+                    for i in self.variables_extract:
                         try:
                             self.batchfile.write('Vars='+i+'\n')
                         except:
@@ -549,39 +551,43 @@ class gui(QMainWindow):
                         self.avg = ln[2:]
                     elif ln.startswith('Vars='):
                         var_batchfile = str(ln)
-                        if var_batchfile not in self.variables_extract_batch:
-                            self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
-                # cleanup the extracted text from the batch file
-                # format the input file
-                self.input_file = str(self.input_file)
-                self.input_file = self.input_file.replace('[', '')
-                self.input_file = self.input_file.replace("'", '')
-                self.input_file = self.input_file.replace('=', '')
-                self.input_file = self.input_file.replace(']', '')
-                self.input_file = self.input_file[:-2]
-                # format the output dir and file
-                self.output_file = str(self.output_file)
-                self.output_file = self.output_file.replace('[', '')
-                self.output_file = self.output_file.replace("'", '')
-                self.output_file = self.output_file.replace('=', '')
-                self.output_file = self.output_file.replace(']', '')
-                self.output_file = self.output_file[:-2]
-                # format the start and end time
-                self.ti = self.ti.replace('[', '')
-                self.ti = self.ti.replace("'", '')
-                self.ti = self.ti.replace('=', '')
-                self.ti = self.ti.replace(']', '')
-                self.ti = self.ti[:-1]
-                self.ti = self.ti.split(',')
-                self.start_time = self.ti[0]
-                self.end_time = self.ti[1]
-                # format averaging
-                self.avg = self.avg.replace('[', '')
-                self.avg = self.avg.replace("'", '')
-                self.avg = self.avg.replace('=', '')
-                self.avg = self.avg.replace(']', '')
-                self.avg = self.avg.replace('g', '')
-                self.avg = self.avg[:-1]
+                        var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', '')
+                        self.variables_extract_batch.append(var_batchfile)
+                        print(self.variables_extract_batch)
+                try:
+                    # cleanup the extracted text from the batch file
+                    # format the input file
+                    self.input_file = str(self.input_file)
+                    self.input_file = self.input_file.replace('[', '')
+                    self.input_file = self.input_file.replace("'", '')
+                    self.input_file = self.input_file.replace('=', '')
+                    self.input_file = self.input_file.replace(']', '')
+                    self.input_file = self.input_file[:-2]
+                    # format the output dir and file
+                    self.output_file = str(self.output_file)
+                    self.output_file = self.output_file.replace('[', '')
+                    self.output_file = self.output_file.replace("'", '')
+                    self.output_file = self.output_file.replace('=', '')
+                    self.output_file = self.output_file.replace(']', '')
+                    self.output_file = self.output_file[:-2]
+                    # format the start and end time
+                    self.ti = self.ti.replace('[', '')
+                    self.ti = self.ti.replace("'", '')
+                    self.ti = self.ti.replace('=', '')
+                    self.ti = self.ti.replace(']', '')
+                    self.ti = self.ti[:-1]
+                    self.ti = self.ti.split(',')
+                    self.start_time = self.ti[0]
+                    self.end_time = self.ti[1]
+                    # format averaging
+                    self.avg = self.avg.replace('[', '')
+                    self.avg = self.avg.replace("'", '')
+                    self.avg = self.avg.replace('=', '')
+                    self.avg = self.avg.replace(']', '')
+                    self.avg = self.avg.replace('g', '')
+                    self.avg = self.avg[:-1]
+                except Excetption as e:
+                    print(e)
                 # update the gui fields
                 try:
                     self.inputfilebox.setText(self.input_file)
@@ -598,9 +604,9 @@ class gui(QMainWindow):
             except:
                 self.input_file = self.input_file
                 print(self.input_file)
-            self.variables_extract_batch = pd.Series(self.variables_extract_batch)
+            print('SELF VARS EXTRACT BATCH '+self.variables_extract_batch)
             self.asc_new_batch = self.asc[self.variables_extract_batch]
-            print("SELF ASC NEW BATCH"+self.asc_new_batch)
+            print('SELF ASC NEW BATCH '+self.asc_new_batch)
             return self.asc_new_batch
             try:
                 self.formatData()
@@ -618,8 +624,8 @@ class gui(QMainWindow):
                 self.previewData_GUI()
             except Exception as e:
                 print(e)
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
 #######################################################################
 # Function definitions for data loading, formatting, and processing
