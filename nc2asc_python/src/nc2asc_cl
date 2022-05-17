@@ -114,10 +114,8 @@ class nc2asc_CL():
                     elif ln.startswith('hd=ICARTT'):
                         try:
                             self.header2.setChecked(True)
-                            print('ICARTT')
                         except:
                             self.header = 'ICARTT'
-                            print('ICARTT')
                     elif ln.startswith('hd=AMES'):
                         try:
                             self.header3.setChecked(True)
@@ -194,12 +192,19 @@ class nc2asc_CL():
                 self.avg = self.avg[:-1]
             #self.variables_extract_batch = pd.Series(self.variables_extract_batch)
             for x in range(len(self.variables_extract_batch)): 
-                print(x)
                 self.asc_new_batch = pd.concat([self.asc_new_batch, self.asc[self.variables_extract_batch[x]]], axis=1, ignore_index=False)
-            self.asc_new_batch.columns = [self.variables_extract_batch]        
+            self.asc_new_batch.columns = [self.variables_extract_batch]
         except Exception as e:
             print(e)
-            #nc2asc.gui.readBatchFile(self)
+        try:
+            for i in self.variables_extract_batch:
+                if i not in nc.variables.keys():
+                    print('***WARNING****Var '+str(i)+' not in netCDF file!!! Continuing with conversion****')
+                else:
+                    pass
+        except Exception as e:
+            print(e)
+
         try:
             print('****Formatting data from input file. If CL argument provided, using by default.****')
             nc2asc.gui.formatData(self)
