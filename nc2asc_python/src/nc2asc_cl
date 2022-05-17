@@ -84,9 +84,27 @@ class nc2asc_CL():
 
         try:
             with open(self.inputbatch_file, 'r') as fil:
+                # create empty placeholders
                 self.variables_extract_batch = []
+                self.output_file = []
                 self.asc_new_batch = pd.DataFrame()
                 for ln in fil:
+
+                    if ln.startswith('if='):
+                        ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                        if ip == 'Y' or 'y':
+                            self.input_file = []
+                            self.input_file.append(ln[2:])
+                        else:
+                            pass
+
+                    elif ln.startswith('of='):
+                        of = input('Please confirm: would you like to use the ouput file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                        if of == 'Y' or 'y':
+                            self.output_file = []
+                            self.output_file.append(ln[2:])
+                        else:
+                            pass
                     # get the header format from the batch file
                     if ln.startswith('hd=Plain'):
                         try:

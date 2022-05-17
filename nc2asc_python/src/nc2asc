@@ -377,11 +377,16 @@ class gui(QMainWindow):
 
                 try:
                     # if NetCDF file has been loaded start creating batch file
-                    self.batchfile = str(self.head)+'/batchfile'
+                    self.batchfile = str(self.outputdirbox.text())+'/batchfile'
                     os.system('touch '+ self.batchfile)
-                    self.batchfile = open(self.batchfile,"w") 
+                    self.batchfile = open(self.batchfile,"w")
+ 
+
+                    # get the output directory and filename from the gui
                     self.batchfile.write('if='+self.input_file+'\n')
-                    self.batchfile.write('of='+self.head+'/'+self.tail+'\n\n')
+                    #self.batchfile.write('of='+self.head+'/'+self.tail+'\n\n')
+                    self.batchfile.write('of='+str(self.outputdirbox.text())+'/'+str(self.outputfilebox.text()+'\n\n'))
+
                     # determine the settings from the gui to inlude in the batch file
                     # check which header to include in the batch file
                     if self.header1.isChecked() == True:
@@ -551,7 +556,7 @@ class gui(QMainWindow):
                         self.avg = ln[2:]
                     elif ln.startswith('Vars='):
                         var_batchfile = str(ln)
-                        var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', '')
+                        var_batchfile = str(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
                         self.variables_extract_batch.append(var_batchfile)
                         print(self.variables_extract_batch)
                 try:
@@ -604,18 +609,18 @@ class gui(QMainWindow):
             except:
                 self.input_file = self.input_file
                 print(self.input_file)
-            print('SELF VARS EXTRACT BATCH '+self.variables_extract_batch)
-            self.asc_new_batch = self.asc[self.variables_extract_batch]
-            print('SELF ASC NEW BATCH '+self.asc_new_batch)
-            return self.asc_new_batch
+            print('SELF VARS EXTRACT BATCH '+str(self.variables_extract_batch))
             try:
                 self.formatData()
+                self.asc_new_batch = self.asc[self.variables_extract_batch]
+                print('SELF ASC NEW BATCH '+self.asc_new_batch)
+                return self.asc_new_batch
             except Exception as e:
                 print(e)
-            try:
-                del self.asc, self.asc_new
-            except Exception as e:
-                print(e)
+#            try:
+#                del self.asc, self.asc_new
+#            except Exception as e:
+#                print(e)
             try:
                 self.loadVars_GUI()
             except Exception as e:
