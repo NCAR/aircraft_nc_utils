@@ -430,7 +430,6 @@ class gui(QMainWindow):
                     self.batchfile.write('ti=X,X\n')
                     # in order to display vars on separate lines to align with 
                     # nimbus batch file conventions, split by two spaces
-#                    for i in self.var_selected.split(' '):
                     for i in self.variables_extract:
                         try:
                             self.batchfile.write('Vars='+i+'\n')
@@ -617,10 +616,6 @@ class gui(QMainWindow):
                 return self.asc_new_batch
             except Exception as e:
                 print(e)
-#            try:
-#                del self.asc, self.asc_new
-#            except Exception as e:
-#                print(e)
             try:
                 self.loadVars_GUI()
             except Exception as e:
@@ -671,6 +666,12 @@ class gui(QMainWindow):
             self.fileheader = {}
             self.project_manager = 'Pavel Romashkin'
             self.platform = nc.getncattr('Platform')
+            if self.platform == 'N677F':
+                self.platform = 'NCAR_GV'
+            elif self.plaform == 'N130AR':
+                self.platform = 'NCAR_C130'
+            else:
+                pass
             self.project_name=nc.getncattr('project')
             self.today = str(datetime.today().strftime('%Y, %m, %d'))
             self.today = self.today.replace('-', ', ')
@@ -1312,19 +1313,22 @@ class gui(QMainWindow):
                     print('File not converted: '+self.input_file)
             # ICARTT header
             elif self.header2.isChecked()==True:
-                lib_path = str(os.path.abspath(os.path.dirname(__file__)))
-                try:
-                    lib_path = lib_path.replace("bin", "lib")
-                except:
+                self.lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+                if self.lib_path == '/opt/local/bin':
                     try:
-                        lib_path = './lib'
+                        self.lib_path = self.lib_path.replace("bin", "lib")
                     except Exception as e:
                         print(e)
-                        print('Could not get an installed ../lib/.. path or a local ./lib path for header.')
+                else:
+                    try:
+                        self.lib_path = str(self.lib_path)+'/lib/'
+                        print(self.lib_path)
+                    except Exception as e:
+                        print(e)
                 # drop the unit and dimension rows for ICARTT
                 self.preview.columns = self.preview.columns.droplevel(1)
                 self.preview.columns = self.preview.columns.droplevel(1)
-                self.ICARTTHeader(self.preview, lib_path)
+                self.ICARTTHeader(self.preview, self.lib_path)
                 #self.ICARTTHeader(self.preview, os.getenv('LOCAL')+'/lib')
                 with open(self.output_file) as preview:
                     head = str(preview.readlines()[0:75])
@@ -1404,16 +1408,6 @@ class gui(QMainWindow):
                 end = self.end.text()
             except:
                 pass
-                # batchfile
-                #try:
-                #    if self.ti == 'all':
-                #        self.start_time = self.dtime.iloc[1]
-                #        self.end_time = self.dtime.iloc[-1]
-                #    else:
-                #        self.start = self.start_time
-                #        self.end = self.end_time
-                #except:
-                #    pass
             # determine the date option based on gui or batchfile
             try:
                 if self.date1.isChecked()==True:
@@ -1720,23 +1714,6 @@ class gui(QMainWindow):
                          self.write.insert(loc=0, column='DateTime', value=self.dtime)
                      except:
                          print('DateTime not inserted.')
-#                    try:
-#                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-#                    except:
-#                        print('DateTime not inserted.')
-#                    try:
-#                        self.write = self.write[self.write['DateTime']>start]
-#                    except:
-#                        print('No subselection based on start time.')
-#                    try:
-#                        self.write = self.write[self.write['DateTime']<end]
-#                    except:
-#                        print('No subselection based on end time.')
-#                    pass
-#                    try:
-#                        self.write.pop('DateTime')
-#                    except:
-#                        print('DateTime not dropped.')
                 else:
                     pass
                 # Plain header
@@ -1789,15 +1766,18 @@ class gui(QMainWindow):
                         print('File not converted: '+self.input_file)
                 # ICARTT header
                 elif self.header == 'ICARTT':
-                    lib_path = str(os.path.abspath(os.path.dirname(__file__)))
-                    try:
-                        lib_path = lib_path.replace("bin", "lib")
-                    except:
+                    self.lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+                    if self.lib_path == '/opt/local/bin':
                         try:
-                            lib_path = './lib'
+                            self.lib_path = self.lib_path.replace("bin", "lib")
                         except Exception as e:
                             print(e)
-                            print('Could not get an installed ../lib/.. path or a local ./lib path for header.')
+                    else:
+                        try:
+                            self.lib_path = str(self.lib_path)+'/lib/'
+                            print(self.lib_path)
+                        except Exception as e:
+                            print(e)
                     # drop the unit and dimension rows for ICARTT
                     try:
                         try:
@@ -1824,13 +1804,13 @@ class gui(QMainWindow):
                         self.data_date = str(self.dtime_sep[0].iloc[1])
                         self.data_date = self.data_date.replace('-', ', ')
                         # start going through the template text docs
-                        os.system('cp '+lib_path+'/header1.txt '+lib_path+'/header1.tmp')
-                        os.system("ex -s -c '5i' -c x "+lib_path+'/header1.tmp')
-                        os.system('cp '+lib_path+'/header2.txt '+lib_path+'/header2.tmp')
+                        os.system('cp '+self.lib_path+'/header1.txt '+self.lib_path+'/header1.tmp')
+                        os.system("ex -s -c '5i' -c x "+self.lib_path+'/header1.tmp')
+                        os.system('cp '+self.lib_path+'/header2.txt '+self.lib_path+'/header2.tmp')
                         # get today's date
                         self.today = datetime.today().strftime('%Y, %m, %d')
                         # perform the replacements on the first header file
-                        with open(lib_path+'/header1.tmp', 'r+') as f:
+                        with open(self.lib_path+'/header1.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('RAF instruments on'):
@@ -1853,7 +1833,7 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # perform the replacements on the second header file
-                        with open(lib_path+'/header2.tmp', 'r+') as f:
+                        with open(self.lib_path+'/header2.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('<PLATFORM>'):
@@ -1862,9 +1842,9 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # combine and perform replacement on the combined header file
-                        self.fileheader.to_csv(lib_path+'/header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat '+lib_path+'/header1.tmp '+lib_path+'/header2.tmp > '+lib_path+'/header.tmp')
-                        with open(lib_path+'/header.tmp', 'r+') as f:
+                        self.fileheader.to_csv(self.lib_path+'/header1.tmp', mode='a', header=False, index=False)
+                        os.system('cat '+self.lib_path+'/header1.tmp '+self.lib_path+'/header2.tmp > '+self.lib_path+'/header.tmp')
+                        with open(self.lib_path+'/header.tmp', 'r+') as f:
                             lines = f.readlines()
                             count = str(len(lines)+1)+', 1001, V02_2016'
                             for i, line in enumerate(lines):
@@ -1875,8 +1855,8 @@ class gui(QMainWindow):
                                 f.write(line)
 
                         os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
-                        os.system('cat '+lib_path+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-                        os.system('rm '+lib_path+'/header.tmp '+lib_path+'/header1.tmp '+lib_path+'/header2.tmp '+str(self.output_file)+'.tmp')
+                        os.system('cat '+self.lib_path+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+                        os.system('rm '+self.lib_path+'/header.tmp '+self.lib_path+'/header1.tmp '+self.lib_path+'/header2.tmp '+str(self.output_file)+'.tmp')
                     except:
                         print('ICARTT header was not created or appended to output file')
 
@@ -1891,10 +1871,10 @@ class gui(QMainWindow):
                             os.system('mv '+self.output_file+' '+head_tail[0]+'/'+self.icartt_filename)
                         except:
                             pass
-                    #try:
-                    #    self.processingSuccess_GUI()
-                    #except:
-                    #    pass
+                    try:
+                        self.processingSuccess_GUI()
+                    except:
+                        print('Processing successful!')
                 # AMES header
                 elif self.header == 'AMES':
                     try:

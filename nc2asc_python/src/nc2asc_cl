@@ -99,7 +99,7 @@ class nc2asc_CL():
                             pass
 
                     elif ln.startswith('of='):
-                        of = input('Please confirm: would you like to use the ouput file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                        of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
                         if of == 'Y' or 'y':
                             self.output_file = []
                             self.output_file.append(ln[2:])
