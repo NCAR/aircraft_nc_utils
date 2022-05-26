@@ -3,7 +3,7 @@
 
 ## Arguments
 
-There are ten possible arguments that can be included when executing the script. Only one of them is required. The remaining are option depending on the user's preferences. This section describes each argument and provides examples for the use of arguments. 
+There are nine possible arguments that can be included when executing the script. Only one of them is required. The remaining are optional depending on the user's preferences. This section describes each argument and provides examples for the use of arguments. 
 
 ### Argument Descriptions
 
@@ -30,24 +30,19 @@ OPTIONAL: The fifth (-v) allows users to select additional variables beyond the 
 `./nc2iwg1.py input_file -v extravarsfile.txt`
 
 
-OPTIONAL: The sixth (-er) allows users to have a realtime emulator for complete netCDF files after a given flight is complete. This is intended to be used for testing purposes to mimic the functionality of the script while a flight is in progress. If you have a complete netCDF file as an input, and include the -er flag followed by 'True', the script will start the conversion and generate the IWG1 packet starting at the beginning of the file. 
-
-`./nc2iwg1.py input_file -er True`
-
-
-OPTIONAL: The seventh (-so) is standard out and should be included with the first input netCDF argument if you want standard out along with a conversion to a file.
+OPTIONAL: The sixth (-so) is standard out and should be included with the first input netCDF argument if you want standard out along with a conversion to a file.
 
 `./nc2iwg1.py input_file -so True`
 
-OPTIONAL: The eighth (-hn) allows users to define a hostname. If no hostname is provided, the default is localhost.
+OPTIONAL: The sevent (-hn) allows users to define a hostname. If no hostname is provided, the default is localhost.
 
 `./nc2iwg1.py input_file -u True -hn <hostname>`
 
-OPTIONAL: The ninth (-p) allows users to define a port number. If no port number is provided, the default is 7071.
+OPTIONAL: The eight (-p) allows users to define a port number. If no port number is provided, the default is 7071.
 
 `./nc2iwg1.py input_file -u True -hn <hostname> -p <port#>`
 
-OPTIONAL: The tenth (-k) allows users to define a plaform ID such as GV, C130, WB57, etc. If no platform is provided, none is stored an each IWG1 line begins with IWG1.
+OPTIONAL: The ninth (-k) allows users to define a plaform ID such as GV, C130, WB57, etc. If no platform is provided, none is stored an each IWG1 line begins with IWG1.
 
 `./nc2iwg1.py input_file -k GV`
 
