@@ -7,44 +7,44 @@ There are nine possible arguments that can be included when executing the script
 
 ### Argument Descriptions
 
-REQUIRED: The first is the input netCDF file containing the variables that you wish to extract and either write to standard out, broadcast via UDP, or write to the IWG1 file. This is a required argument.
+REQUIRED: The first is the input netCDF file containing the variables that you wish to extract and either write to standard out, broadcast via UDP, or write to the IWG1 file. This is the only required argument.
 
-`./nc2iwg1.py input_file`
+`nc2iwg1 input_file`
 
 OPTIONAL: The second (-o) is an output filename in the iwg1 file format. This is optional. If no argument is provided, the script continues to run without a user defined output filename, defaulting to the input filename with extension ".iwg1". (e.g. if input file is SOCRATESrf01.nc, the output filename with no option included will be SOCRATESrf01.iwg1)
 
-`./nc2iwg1.py input_file -o output_file`
+`nc2iwg1 input_file -o output_file`
 
 
 OPTIONAL: The third (-d) is the delay interval at which the user would like the conversion to take place. This should be an integer representing the number of microseconds. This is optional and if not provided, the program will execute the conversion at 1 second (1000000 microseconds) intervals. It seems odd to have the units associated with the delay in unit microseconds, but the legacy C++ script had this, so this is being carried forward so anyone using this new Python script won't immediately break things. 
 
-`./nc2iwg1.py input_file -d interval`
+`nc2iwg1 input_file -d interval`
 
 OPTIONAL: The fourth (-u) should be included if you would like the data to be broadcast via UDP. If not provided, then the script will not broadcast via UDP. The script assigns the variable 'UDP_PORT' = 7071 and assigns the variable 'UDP_IP' automatically. If you want to change either of these variables, you must provide these as separate arguments (see below).
 
-`./nc2iwg1.py input_file -u True`
+`nc2iwg1 input_file -u True`
 
 
 OPTIONAL: The fifth (-v) allows users to select additional variables beyond the standard IWG1 list. These variables should be included in a text file in a single row delimited by a single space. See example below.
 
-`./nc2iwg1.py input_file -v extravarsfile.txt`
+`nc2iwg1 input_file -v extravarsfile.txt`
 
 
 OPTIONAL: The sixth (-so) is standard out and should be included with the first input netCDF argument if you want standard out along with a conversion to a file.
 
-`./nc2iwg1.py input_file -so True`
+`nc2iwg1 input_file -so True`
 
 OPTIONAL: The sevent (-hn) allows users to define a hostname. If no hostname is provided, the default is localhost.
 
-`./nc2iwg1.py input_file -u True -hn <hostname>`
+`nc2iwg1 input_file -u True -hn <hostname>`
 
 OPTIONAL: The eight (-p) allows users to define a port number. If no port number is provided, the default is 7071.
 
-`./nc2iwg1.py input_file -u True -hn <hostname> -p <port#>`
+`nc2iwg1 input_file -u True -hn <hostname> -p <port#>`
 
 OPTIONAL: The ninth (-k) allows users to define a plaform ID such as GV, C130, WB57, etc. If no platform is provided, none is stored an each IWG1 line begins with IWG1.
 
-`./nc2iwg1.py input_file -k GV`
+`nc2iwg1 input_file -k GV`
 
 ### Format of text file with extra variables to include in the IWG1 packet
 Example contents of extra_variables.txt:
