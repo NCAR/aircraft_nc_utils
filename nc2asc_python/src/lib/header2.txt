@@ -6,7 +6,7 @@ LOCATION: Aircraft location data is given in nav data file
 ASSOCIATED_DATA: Full data in NetCDF file.
 INSTRUMENT_INFO:
 DATA_INFO: data reported in ambient condition, ambient temperature and pressure are given for conversion to STP (273.15K and 1013 mb)
-UNCERTAINTY: contact RAF/APO Manager Pavel Romashkin, pavel@ucar.edu 303-497-1028
+UNCERTAINTY: contact RSIG Manager Julie Haggerty (haggerty@ucar.edu) or RAF/APO Manager Pavel Romashkin (pavel@ucar.edu)
 ULOD_FLAG: -77777
 ULOD_VALUE: N/A
 LLOD_FLAG: -88888

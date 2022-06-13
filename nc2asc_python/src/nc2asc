@@ -10,10 +10,10 @@
 # Function names include "_GUI" if the function is only used within 
 # the GUI. 
 #
-# Main function determines whether the mode is GUI or command line 
-# based on the number of arguments included. 
+# Update June 2022 (TMT):Main function determines whether the mode 
+# is GUI or command line based on the number of arguments included. 
 #
-# Copyright University Corporation for Atmospheric Research (2021)
+# Copyright University Corporation for Atmospheric Research (2021-2022)
 #######################################################################
 
 import os
@@ -24,10 +24,9 @@ import netCDF4
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import netCDF4
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
+from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 class gui(QMainWindow):
 
@@ -335,6 +334,7 @@ class gui(QMainWindow):
         saveBatchFile = QAction('Save Batch File', self)
         readBatchFile = QAction('Read Batch File', self)
         exit = QAction('Exit', self)
+        readme = QAction('nc2asc GitHub readme', self)
         fileMenu.addAction(importFile)
         fileMenu.addAction(saveBatchFile)
         fileMenu.addAction(readBatchFile)
@@ -350,6 +350,10 @@ class gui(QMainWindow):
         # connect the save batch file menu option to the function
         saveBatchFile.triggered.connect(self.saveBatchFile_GUI)
 
+        # help launches readme
+        helpMenu.addAction(readme)
+        readme.triggered.connect(self.openhelp)
+
         #####################################################################
         # General setup options
         #####################################################################
@@ -363,6 +367,11 @@ class gui(QMainWindow):
 #############################################################################
 ######################   End UI Setup   #####################################
 #############################################################################
+
+    def openhelp(self):
+        url = QtCore.QUrl('https://github.com/NCAR/aircraft_nc_utils/blob/master/nc2asc_python/README.md')
+        if not QtGui.QDesktopServices.openUrl(url):
+            QtGui.QMessageBox.warning(self, 'readme', 'Could not open url')
 
     #########################################################################
     # Function definitions for batch file saving and reading
@@ -589,7 +598,6 @@ class gui(QMainWindow):
                         var_batchfile = str(ln)
                         var_batchfile = str(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
                         self.variables_extract_batch.append(var_batchfile)
-                        print(self.variables_extract_batch)
                 try:
                     # cleanup the extracted text from the batch file
                     # format the input file
@@ -627,7 +635,7 @@ class gui(QMainWindow):
                 # update the gui fields
                 try:
                     self.inputfilebox.setText(self.input_file)
-                    self.outputdirbox.setText(os.path.dirname(self.output_file))
+                    self.outputdirbox.setText(os.path.dirname(self.output_file)+'/')
                     self.outputfilebox.setText(os.path.basename(self.output_file))
                     self.start.setText(str(self.start_time))
                     self.end.setText(str(self.end_time))
@@ -640,13 +648,13 @@ class gui(QMainWindow):
                 self.input_file = self.inputfilebox.text()
             except:
                 self.input_file = self.input_file
-                print(self.input_file)
             print('SELF VARS EXTRACT BATCH '+str(self.variables_extract_batch))
             try:
                 self.formatData()
                 self.asc_new_batch = self.asc[self.variables_extract_batch]
                 print('SELF ASC NEW BATCH '+self.asc_new_batch)
-                return self.asc_new_batch
+                return self.input_file, self.asc_new_batch, self.output_file, self.ti, self.avg, self.start_time, self.end_time
+                self.formatData()
             except Exception as e:
                 print(e)
             try:
@@ -691,21 +699,19 @@ class gui(QMainWindow):
             # read in the input file
             nc = netCDF4.Dataset(self.input_file, mode='r')
             # create an empty pandas series to hold variables
-            self.variables_extract = pd.Series([])
+            self.variables_extract = pd.Series([], dtype="string")
             # create empty dicts
             self.asc = {}
             self.units = {}
             self.long_name = {}
             self.variables= {}
             self.fileheader = {}
-            self.project_manager = 'Pavel Romashkin'
-            self.platform = nc.getncattr('Platform')
-            if self.platform == 'N677F':
-                self.platform = 'NCAR_GV'
-            elif self.plaform == 'N130AR':
-                self.platform = 'NCAR_C130'
-            else:
-                pass
+            self.project_manager = 'Julie Haggerty, Pavel Romashkin'
+            self.tail_number = nc.getncattr('Platform')
+            if self.tail_number == 'N677F':
+                self.platform = 'GV'
+            elif self.tail_number == 'N130AR':
+                self.platform = 'C130'
             self.project_name=nc.getncattr('project')
             self.today = str(datetime.today().strftime('%Y, %m, %d'))
             self.today = self.today.replace('-', ', ')
@@ -750,7 +756,6 @@ class gui(QMainWindow):
                     pass
             # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
-            #self.asc.columns = self.asc.columns.droplevel(-1)
             # create an object to store the NetCDF variable time
             self.dtime=nc.variables['Time']
             # use num2date to setup dtime object
@@ -760,17 +765,14 @@ class gui(QMainWindow):
             # create separate date and time series for combination in previewData and writeData
             self.dtime_date = self.dtime_sep[0]
             self.dtime_time = self.dtime_sep[1]
-            print(self.dtime_time)
             # concatenate the units, long_name, variables, and header
             self.units=pd.concat(self.units, axis=0, ignore_index=True)
-            print(len(self.units))
             self.long_name=pd.concat(self.long_name, axis=0, ignore_index=True)
             self.variables = pd.concat(self.variables, axis=0, ignore_index=True)
             self.fileheader = pd.concat([self.variables, self.units, self.long_name], axis=1, ignore_index=True)
             # subset the start and end time from the dtime objet by position
-            self.start_time = self.dtime.iloc[1]
+            self.start_time = self.dtime.iloc[0]
             self.end_time = self.dtime.iloc[-1]
-            self.dtime=nc.variables['Time']
             try:
                 # populate the start_time and end_time fields in the gui
                 self.start.setText(self.start_time)
@@ -820,15 +822,18 @@ class gui(QMainWindow):
 
         self.formatData()
         self.asc_new = {}
+        self.loadVars_GUI()
         try:
             for i in range(self.row_count):
                 self.var.item(i, 0).setBackground(QtGui.QColor(255,255,255))
+            self.outputfilebox.setText(os.path.basename(self.output_file))
             self.outputpreview.setText('')
             self.date1.setChecked(True)
             self.time1.setChecked(True)
             self.comma.setChecked(True)
             self.fillvalue1.setChecked(True)
             self.header1.setChecked(True)
+            self.averagingbox.setText('')
         except:
             no_data = QMessageBox()
             no_data.setWindowTitle("Error")
@@ -842,8 +847,8 @@ class gui(QMainWindow):
         try:
             del(self.asc_new_batch)
             del(self.variables_extract_batch)
-        except:
-            print('No batch objects to remove.')
+        except Exception as e:
+            print(e)
         try:
             self.output=pd.Series(self.var.item(self.var.currentRow(), 0).text())
             self.variables_extract = self.variables_extract.append(self.output)
@@ -896,7 +901,7 @@ class gui(QMainWindow):
         except:
             pass
         self.icartt_filename_date = self.data_date.replace(', ', '')
-        self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
 
         try:
             self.outputfilebox.setText(self.icartt_filename)
@@ -925,13 +930,13 @@ class gui(QMainWindow):
             self.data_date = str(self.dtime_sep[0].iloc[1])
             self.data_date = self.data_date.replace('-', ', ')
             # start going through the template text docs
-            os.system('cp '+lib_dir+'/header1.txt '+lib_dir+'/header1.tmp')
-            os.system("ex -s -c '5i' -c x "+lib_dir+"/header1.tmp")
-            os.system('cp '+lib_dir+'/header2.txt '+lib_dir+'/header2.tmp')
+            os.system('cp '+lib_dir+'/header1.txt ./header1.tmp')
+            os.system("ex -s -c '5i' -c x "'/header1.tmp')
+            os.system('cp '+lib_dir+'/header2.txt ./header2.tmp')
             # get today's date
             self.today = datetime.today().strftime('%Y, %m, %d')
             # perform the replacements on the first header file
-            with open(lib_dir+'/header1.tmp', 'r+') as f:
+            with open('./header1.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
                     if line.startswith('RAF instruments on'):
@@ -946,26 +951,24 @@ class gui(QMainWindow):
                         lines[i] = self.varNumber+'\n'
                     if line.startswith('<1.0>'):
                         lines[i] = '1.0,' * int(self.varNumber)+'\n'
-                        lines[i] = lines[i][:-2]+'\n'
-                    if line.startswith('<-99999.0>'):
+                    if line.startswith('<-99999.0'):
                         lines[i] = '-99999.0,' * int(self.varNumber)+'\n'
-                        lines[i] = lines[i][:-2]+'\n'
                 f.seek(0)
                 for line in lines:
                     f.write(line)
             # perform the replacements on the second header file
-            with open(lib_dir+'/header2.tmp', 'r+') as f:
+            with open('./header2.tmp', 'r+') as f:
                 lines = f.readlines()
                 for i, line in enumerate(lines):
                     if line.startswith('<PLATFORM>'):
-                        lines[i] = 'PLATFORM: '+self.platform+'\n'
+                        lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
                 f.seek(0)
                 for line in lines:
                     f.write(line)
             # combine and perform replacement on the combined header file
-            self.fileheader.to_csv(lib_dir+'/header1.tmp', mode='a', header=False, index=False)
-            os.system('cat '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp > '+lib_dir+'/header.tmp')
-            with open(lib_dir+'/header.tmp', 'r+') as f:
+            self.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
+            os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
+            with open('./header.tmp', 'r+') as f:
                 lines = f.readlines()
                 count = str(len(lines)+1)+', 1001, V02_2016'
                 for i, line in enumerate(lines):
@@ -974,11 +977,9 @@ class gui(QMainWindow):
                 f.seek(0)
                 for line in lines:
                     f.write(line)
-
-            #os.system('head -n -1 '+lib_dir+'/header.tmp > '+lib_dir+'/trim.tmp ; mv '+lib_dir+'/trim.tmp '+lib_dir+'/header.tmp')
             os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
-            os.system('cat '+lib_dir+'/header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-            os.system('rm '+lib_dir+'/header.tmp '+lib_dir+'/header1.tmp '+lib_dir+'/header2.tmp '+str(self.output_file)+'.tmp')
+            os.system('cat ./header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
+            os.system('rm ./header.tmp ./header1.tmp ./header2.tmp '+str(self.output_file)+'.tmp')
         except:
             print('ICARTT header not created and appended to output file.')
     #########################################################################
@@ -1043,7 +1044,6 @@ class gui(QMainWindow):
             with open(lib_path+'/header_ames.tmp', 'r+') as f:
                 lines = f.readlines()
                 count = str(len(lines))+', 1001'
-                print(count)
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count+'\n'
@@ -1116,7 +1116,7 @@ class gui(QMainWindow):
         except:
             self.preview = self.asc
         # get the output file from the text box
-        self.output_file = self.outputdirbox.text()+self.outputfilebox.text()
+        self.output_file = os.path.join(self.outputdirbox.text(), self.outputfilebox.text())
         # get the start and end times from the text box in the gui
         start = self.start.text()
         end = self.end.text()
@@ -1356,7 +1356,6 @@ class gui(QMainWindow):
                 else:
                     try:
                         self.lib_path = str(self.lib_path)+'/lib/'
-                        print(self.lib_path)
                     except Exception as e:
                         print(e)
                 # drop the unit and dimension rows for ICARTT
@@ -1401,7 +1400,6 @@ class gui(QMainWindow):
         #####################################################################
         # Get inputs from GUI or CL depending on mode
         #####################################################################
-        # determine which dataframe to use based on mode
         try:
             try:
                 self.write = self.asc_new_batch
@@ -1413,27 +1411,13 @@ class gui(QMainWindow):
             self.write = self.asc
         # determine which output file to use based on mode
         try:
-            # gui field
-            output_file = self.outputdirbox.text()+self.outputfilebox.text()
-
+            output_file = os.path.join(self.outputdirbox.text(), self.outputfilebox.text())
+        except:
+            output_file = self.output_file
+        try:
+            os.remove(str(self.output_file))
         except Exception as e:
             print(e)
-
-            try:
-                # command line arg
-                output_file = self.output_file_cl
-
-            except Exception as e:
-                print(e)
-
-                try:
-                    # batchfile
-                    output_file = self.output_file
-
-                except Exception as e:
-                    print(e)
-
-
         # try to get the start and end time from the gui then from the batchfile
         buttonReply = 'No'
         if exists(output_file) == True:
@@ -1481,7 +1465,7 @@ class gui(QMainWindow):
                     self.delimiter = 'space'
             except:
                 self.delimiter = self.delimiter
-                print('Delimieter Format: '+self.delimiter)
+                print('Delimiter Format: '+self.delimiter)
             try:
                 if self.fillvalue1.isChecked()==True:
                     self.fillvalue = '-32767'
@@ -1508,12 +1492,10 @@ class gui(QMainWindow):
                     self.averaging_window = self.averagingbox.text()
                 except:
                     self.averaging_window = self.avg
-                    print(self.averaging_window)
                 if len(self.averaging_window)!=0:
                     self.averaging_window=int(self.averaging_window)
-                    self.write = df.self.write.rolling(self.averaging_window, min_periods=0).mean()
+                    self.write = self.write.rolling(self.averaging_window, min_periods=0).mean()
                     self.write = self.write.iloc[::self.averaging_window, :]
-                    print(self.write)
                 else:
                     pass
                 #################################################################
@@ -1522,59 +1504,59 @@ class gui(QMainWindow):
                 if self.date == 'yyyy-mm-dd' and self.time == 'hh:mm:ss':
                     try:
                         self.write.pop('Time')
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
                 elif self.date == 'yyyy-mm-dd' and self.time == 'hh mm ss':
                     try:
                         self.write.pop('Time')
-                    except:
-                        print('Time not dropped.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No subselection based on start time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No subselection based on end time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except:
-                        print('Time series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
                     except:
@@ -1585,85 +1567,85 @@ class gui(QMainWindow):
                 elif self.date == 'yyyy-mm-dd' and self.time =='SecOfDay':
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No time subselection based on start time')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No time subselection based on end time')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        print('DateTime not dropped.')
+                    except Exception as e:
+                        print(e)
                 elif self.date == 'yyyy mm dd' and self.time == 'hh:mm:ss':
                     try:
                         self.write.pop('Time')
-                    except:
-                        print('Time not dropped.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No subselection based on start time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No subselection based on end time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except:
-                        print('Time series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        print('DateTime not dropped')
+                    except Exception as e:
+                        print(e)
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     self.write['Date']=self.write['Date'].str.replace('-', ' ')
                 elif self.date == 'yyyy mm dd' and self.time == 'hh mm ss':
                     try:
                         self.write.pop('Time')
-                    except:
-                        print('Time not dropped.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No subselection based on start time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No subselection based on end time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except:
-                        print('Time series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date series not inserted.')
+                    except Excaption as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        print('DateTime not dropped.')
+                    except Exception as e:
+                        print(e)
                     self.write.pop('Date')
                     self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     self.write['Date']=self.write['Date'].str.replace('-', ' ')
@@ -1671,94 +1653,106 @@ class gui(QMainWindow):
                 elif self.date == 'yyyy mm dd' and self.time == 'SecOfDay':
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No subselection based on start time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No subselection based on end time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        print('DateTime not dropped.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write['Date']=self.write['Date'].str.replace('-', ' ')
-                    except:
-                        print('No replacement of -')
+                    except Exception as e:
+                        print(e)
                 elif self.date == 'NoDate' and self.time == 'hh:mm:ss':
                     try:
                         self.write.pop('Time')
-                    except:
-                        print('Time not dropped.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No subselection based on start time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No subselection based on end time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except:
-                        print('Time series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     self.write.pop('Date')
                 elif self.date == 'NoDate' and self.time == 'hh mm ss':
                     try:
                         self.write.pop('Time')
-                    except:
-                        print('Time not dropped.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except:
-                        print('DateTime not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except:
-                        print('No subselection based on start time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except:
-                        print('No subselection based on end time.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except:
-                        print('Time series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except:
-                        print('Date series not inserted.')
+                    except Exception as e:
+                        print(e)
                     try:
                         self.write.pop('DateTime')
-                    except:
-                        print('DateTime not dropped.')
+                    except Exception as e:
+                        print(e)
                     self.write.pop('Date')
                     self.write['Time']=self.write['Time'].str.replace(':', ' ')
                 elif self.date == 'NoDate' and self.time == 'SecOfDay':
-                     try:
-                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                     except:
-                         print('DateTime not inserted.')
+                    try:
+                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    except Exception as e:
+                        print(e)
+                    try:
+                        self.write = self.write[self.write['DateTime']>start]
+                    except Exception as e:
+                        print(e)
+                    try:
+                        self.write = self.write[self.write['DateTime']<end]
+                    except Exception as e:
+                        print(e)
+                    try:
+                        self.write.pop('DateTime')
+                    except Exception as e:
+                        print(e)
                 else:
                     pass
 
@@ -1766,13 +1760,11 @@ class gui(QMainWindow):
                 if self.header == 'Plain':
                     if self.delimiter == 'comma':
                         if self.fillvalue == '-32767':
-                            print(output_file)
-                            print(self.write)
                             self.write.to_csv(output_file, header=True, index=False, na_rep='-32767.0')
-                            #try:
-                            #    self.processingSuccess_GUI()
-                            #except Exception as e:
-                            #    print(e)
+                            try:
+                                self.processingSuccess_GUI()
+                            except Exception as e:
+                                print(e)
                         elif self.fillvalue == 'Blank':
                             self.write.to_csv(output_file, header=True, index=False, na_rep='')
                             try:
@@ -1805,7 +1797,7 @@ class gui(QMainWindow):
                             self.write = self.write.fillna(method='ffill')
                             self.write.to_csv(output_file, header=True, index=False, sep=' ')
                             try:
-                                self.processingSuccess()
+                                self.processingSuccess_GUI()
                             except:
                                 pass
                         else:
@@ -1823,7 +1815,6 @@ class gui(QMainWindow):
                     else:
                         try:
                             self.lib_path = str(self.lib_path)+'/lib/'
-                            print(self.lib_path)
                         except Exception as e:
                             print(e)
                     # drop the unit and dimension rows for ICARTT
@@ -1840,25 +1831,23 @@ class gui(QMainWindow):
                         pass
                     # try renaming the time var to Time_Start
                     try:
-                        self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
+                        self.write = pd.DataFrame(self.write.rename(columns={'Time': 'Time_Start'}))
                     except:
                         print('Time_Start not renamed')
                     # get the varNumber from the # of columns in the dataframe
                     self.varNumber = str(len(self.write.columns)-1)
                     self.write.to_csv(output_file, header=True, index=False, na_rep='-99999.0')
                     try:
-                        self.columns = pd.DataFrame(self.write.columns.values.tolist())
-                        self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
                         self.data_date = str(self.dtime_sep[0].iloc[1])
                         self.data_date = self.data_date.replace('-', ', ')
                         # start going through the template text docs
-                        os.system('cp '+self.lib_path+'/header1.txt '+self.lib_path+'/header1.tmp')
-                        os.system("ex -s -c '5i' -c x "+self.lib_path+'/header1.tmp')
-                        os.system('cp '+self.lib_path+'/header2.txt '+self.lib_path+'/header2.tmp')
+                        os.system('cp '+self.lib_path+'/header1.txt ./header1.tmp')
+                        os.system("ex -s -c '5i' -c x "' ./header1.tmp')
+                        os.system('cp '+self.lib_path+'/header2.txt ./header2.tmp')
                         # get today's date
                         self.today = datetime.today().strftime('%Y, %m, %d')
                         # perform the replacements on the first header file
-                        with open(self.lib_path+'/header1.tmp', 'r+') as f:
+                        with open('./header1.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('RAF instruments on'):
@@ -1873,26 +1862,26 @@ class gui(QMainWindow):
                                     lines[i] = self.varNumber+'\n'
                                 if line.startswith('<1.0>'):
                                     lines[i] = '1.0,' * int(self.varNumber)+'\n'
-                                    lines[i] = lines[i][:-2]+'\n'
                                 if line.startswith('<-99999.0>'):
                                     lines[i] = '-99999.0,' * int(self.varNumber)+'\n'
-                                    lines[i] = lines[i][:-2]+'\n'
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
                         # perform the replacements on the second header file
-                        with open(self.lib_path+'/header2.tmp', 'r+') as f:
+                        with open('./header2.tmp', 'r+') as f:
                             lines = f.readlines()
                             for i, line in enumerate(lines):
                                 if line.startswith('<PLATFORM>'):
-                                    lines[i] = 'PLATFORM: '+self.platform+'\n'
+                                    lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
                         # combine and perform replacement on the combined header file
-                        self.fileheader.to_csv(self.lib_path+'/header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat '+self.lib_path+'/header1.tmp '+self.lib_path+'/header2.tmp > '+self.lib_path+'/header.tmp')
-                        with open(self.lib_path+'/header.tmp', 'r+') as f:
+                        self.columns = pd.DataFrame(self.write.columns.values.tolist())
+                        self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
+                        self.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
+                        os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
+                        with open('./header.tmp', 'r+') as f:
                             lines = f.readlines()
                             count = str(len(lines)+1)+', 1001, V02_2016'
                             for i, line in enumerate(lines):
@@ -1901,28 +1890,25 @@ class gui(QMainWindow):
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
-
-                        os.system('mv '+str(output_file)+' '+str(output_file)+'.tmp')
-                        os.system('cat '+self.lib_path+'/header.tmp '+str(output_file)+'.tmp >> '+str(output_file))
-                        os.system('rm '+self.lib_path+'/header.tmp '+self.lib_path+'/header1.tmp '+self.lib_path+'/header2.tmp '+str(output_file)+'.tmp')
-                    except:
-                        print('ICARTT header was not created or appended to output file')
-
-                    self.icartt_filename_date = self.data_date.replace(', ', '')
-                    self.icartt_filename = self.project_name+'_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
-
-                    try:
-                        self.outputfilebox.setText(self.icartt_filename)
-                    except:
                         try:
-                            head_tail = os.path.split(output_file)
-                            os.system('mv '+output_file+' '+head_tail[0]+'/'+self.icartt_filename)
+                            self.data_date = str(self.dtime_sep[0].iloc[1])
+                            self.data_date = self.data_date.replace('-', ', ')
                         except:
                             pass
-                    #try:
-                    #    self.processingSuccess_GUI()
-                    #except:
-                    #    print('Processing successful!')
+                        self.icartt_filename_date = self.data_date.replace(', ', '')
+                        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+                        print('Overwriting Output Filename, since ICARTT file has strict format: '+self.icartt_filename)
+                        os.system('mv '+str(output_file)+' '+str(output_file)+'.tmp')
+                        os.system('cat ./header.tmp '+str(output_file)+'.tmp >> '+str(output_file))
+                        os.system('mv '+str(output_file)+' '+str(os.path.abspath(os.path.dirname(output_file)))+'/'+str(self.icartt_filename))
+                        os.system('rm ./header.tmp ./header1.tmp ./header2.tmp '+str(output_file)+'.tmp')
+                    except Exception as e:
+                        print(e)
+                        print('ICARTT header was not created or appended to output file')
+                    try:
+                        self.processingSuccess_GUI()
+                    except:
+                        print('Processing complete')
                 # AMES header
                 elif self.header == 'AMES':
                     try:
@@ -1934,18 +1920,18 @@ class gui(QMainWindow):
                         print('AMES header was not created or appended to output file.')
                     try:
                         self.processingSuccess_GUI()
-                    except:
-                        pass
+                        self.deselectAll_GUI()
+                    except Exception as e:
+                        print(e)
             except Exception as e:
                 print(e)
-                #try:
-                #    processing_complete = QMessageBox()
-                #    processing_complete.setWindowTitle("Error")
-                #    processing_complete.setText("There was an error writing your ASCII file. Please try again.")
-                #    x = processing_complete.exec_()
-                #except:
-                #    print('Data was not written. Please try again.')
-
+                try:
+                    processing_complete = QMessageBox()
+                    processing_complete.setWindowTitle("Error")
+                    processing_complete.setText("There was an error writing your ASCII file. Please try again.")
+                    x = processing_complete.exec_()
+                except:
+                    print('Data was not written. Please try again.')
 
 #############################################################################
 # nc2asc CL Class
@@ -1957,9 +1943,9 @@ class nc2asc_CL():
         parser = argparse.ArgumentParser(
             description='Provide (Optional) (-i) Input File (Optional) (-o) Output File and (-b) Batch File')
         # define input file(s) to process
-        parser.add_argument('-i', '--input_file', type=str, help='(Optional) Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
-        parser.add_argument('-o', '--output_file_cl', type=str, help='(Optional) Output file')
-        parser.add_argument('-b', '--batch_file', type=str, help='Batch file')
+        parser.add_argument('-i', type=str, help='(Optional) Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
+        parser.add_argument('-o', type=str, help='(Optional) Output file')
+        parser.add_argument('-b', type=str, help='Batch file')
         args = parser.parse_args()
         return(args)
 
@@ -1968,39 +1954,82 @@ class nc2asc_CL():
     #######################################################################
     def processData(self, args):
         self.timeHandler = gui.timeHandler
-        self.input_file = args.input_file
-        self.output_file_cl = args.output_file_cl
-        self.inputbatch_file = args.batch_file
+        self.input_file = args.i
+        self.output_file = args.o
+        self.inputbatch_file = args.b
         try:
             print('****Storing Command Line Arguments****')
             print('INPUT FILE:'+self.input_file)
-            print('OUTPUT_FILE:'+self.output_file_cl)
+            print('OUTPUT_FILE:'+self.output_file)
             print('BATCH_FILE:'+self.inputbatch_file)
         except:
             print('Error getting command line arguments.')
-        # try to get batch file from the gui prompt if in gui mode
-        try:
-            self.inputbatch_file = self.inputbatch_file
-        except:
-            try:
-                self.inputbatch_file, _ = QFileDialog.getOpenFileName(self,"Select a Batch file to Read", "/scr/raf_data","filter = *")
-            except:
-                pass
 
         try:
+            # read in the input file
             nc = netCDF4.Dataset(self.input_file, mode='r')
+            # create an empty pandas series to hold variables
+            self.variables_extract = pd.Series([], dtype="string")
+            # create empty dicts
             self.asc = {}
+            self.units = {}
+            self.long_name = {}
+            self.variables= {}
+            self.fileheader = {}
+            self.project_manager = 'Julie Haggerty, Pavel Romashkin'
+            self.tail_number = nc.getncattr('Platform')
+            if self.tail_number == 'N677F':
+                self.platform = 'GV'
+            elif self.tail_number == 'N130AR':
+                self.platform = 'C130'
+            self.project_name=nc.getncattr('project')
+            self.today = str(datetime.today().strftime('%Y, %m, %d'))
+            self.today = self.today.replace('-', ', ')
+
             for i in nc.variables.keys():
+                # handle only time dimension variables
                 dims = str(nc.variables[i].dimensions)
                 if dims == "('Time',)":
                     output=nc[i][:]
+                   
+                    # append self.asc with vars in file
                     self.asc[i]=pd.DataFrame(output)
+                    # append self.units with netcdf attribute units
+                    units = nc.variables[i].getncattr('units')
+                    self.units[i]=pd.Series(units)
+                    # append self.long_name with netcdf attribute long_name
+                    long_name = nc.variables[i].getncattr('long_name')
+                    self.long_name[i]=pd.Series(long_name)
+                    # append self.variables with netcdf variable names
+                    variables = nc.variables[i].name
+                    self.variables[i]=pd.Series(variables)
+                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.units[i]))
+
+                elif "sps1" in dims:
+                    histo_output = pd.DataFrame(nc.variables[i][:,0,:])
+                    self.asc[i] = pd.DataFrame(histo_output)
+                    # append self.units with netcdf attribute units
+                    units = nc.variables[i].getncattr('units')
+                    self.units[i]=pd.Series(units)
+                    # append self.long_name with netcdf attribute long_name
+                    long_name = nc.variables[i].getncattr('long_name')
+                    self.long_name[i]=pd.Series(long_name)
+                    # append self.variables with netcdf variable names
+                    variables = nc.variables[i].name
+                    self.variables[i]=pd.Series(variables)
+                    try:
+                        cellsize = nc.variables[i].getncattr('CellSizes')
+                        self.cellsize = pd.Series(data=cellsize)
+                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
+
+                    except Exception as e:
+                        print(e)
+                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
                 else:
                     pass
             # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
-
-            # create an object to store the NetCDF variable time
+            # create an object to store the netCDF variable time
             self.dtime=nc.variables['Time']
             # use num2date to setup dtime object
             self.dtime=netCDF4.num2date(self.dtime[:],self.dtime.units)
@@ -2009,32 +2038,49 @@ class nc2asc_CL():
             # create separate date and time series for combination in previewData and writeData
             self.dtime_date = self.dtime_sep[0]
             self.dtime_time = self.dtime_sep[1]
-
+            # concatenate the units, long_name, variables, and header
+            self.units=pd.concat(self.units, axis=0, ignore_index=True)
+            self.long_name=pd.concat(self.long_name, axis=0, ignore_index=True)
+            self.variables = pd.concat(self.variables, axis=0, ignore_index=True)
+            self.fileheader = pd.concat([self.variables, self.units, self.long_name], axis=1, ignore_index=True)
+            # subset the start and end time from the dtime object by position
+            self.start_time = self.dtime.iloc[0]
+            self.end_time = self.dtime.iloc[-1]
+            self.dtime=nc.variables['Time']
         except Exception as e:
-            print(e)
+           print(e)
+           print('Error in extracting variable in '+str(self.inputbatch_file))
 
         try:
             with open(self.inputbatch_file, 'r') as fil:
                 # create empty placeholders
                 self.variables_extract_batch = []
-                self.output_file = []
                 self.asc_new_batch = pd.DataFrame()
                 for ln in fil:
                     if ln.startswith('if='):
                         ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                        if ip == 'Y' or 'y':
+                        if ip == 'Y' or ip == 'y':
                             self.input_file = []
-                            self.input_file.append(ln[2:])
+                            self.input_file = str(ln[2:])
+                            self.input_file = self.input_file.replace('=', '')
+                            self.input_file = self.input_file.replace("'", '')
+                            self.input_file = self.input_file.replace('\n', '')
+                            print('Using input file from the batch file: '+self.input_file)
                         else:
                             pass
 
                     elif ln.startswith('of='):
                         of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                        if of == 'Y' or 'y':
+                        if of == 'Y' or of == 'y':
                             self.output_file = []
-                            self.output_file.append(ln[2:])
+                            self.output_file = str(ln[2:])
+                            self.output_file = self.output_file.replace('=', '')
+                            self.output_file = self.output_file.replace("'", '')
+                            self.output_file = self.output_file.replace('\n', '')
+                            print('Using output file from the batch file: '+self.output_file)
                         else:
-                            pass
+                            self.output_file = self.output_file
+
                     # get the header format from the batch file
                     if ln.startswith('hd=Plain'):
                         try:
@@ -2133,7 +2179,6 @@ class nc2asc_CL():
                     pass
         except Exception as e:
             print(e)
-
         try:
             print('****Formatting data from input file. If CL argument provided, using by default.****')
             print('Data formatted successfully.')
@@ -2148,13 +2193,12 @@ class nc2asc_CL():
                 print(e)
             try:
                 gui.writeData(self)
-                print('****Data Output Successfully Written****')
+                print('****Write Data Process Complete****')
             except Exception as e:
                 print(e)
+            return self.asc, self.input_file, self.output_file
         except:
             print('****Error writing to output file.****')
-        return self.output_file_cl
-
 #############################################################################
 # Define main function to determine mode
 # Program can execute to render GUI or can process via command line
