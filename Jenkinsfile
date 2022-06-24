@@ -11,13 +11,16 @@ pipeline {
     stage('Build') {
       steps {
         sh 'git submodule update --init --recursive vardb'
-        sh 'scons'
+        sh 'scons install'
       }
     }
   }
   post {
-    failure {
-      mail(to: 'cjw@ucar.edu janine@ucar.edu cdewerd@ucar.edu taylort@ucar.edu', subject: 'nc_utils Jenkinsfile build failed', body: 'nc_utils Jenkinsfile build failed')
+    always {
+      emailext to: "taylort@ucar.edu",
+      subject: "Jenkinsfile aircraft_nc_utils build complete",
+      body: "See console output attached",
+      attachLog: true
     }
   }
   options {
