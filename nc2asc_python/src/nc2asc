@@ -598,6 +598,7 @@ class gui(QMainWindow):
                         var_batchfile = str(ln)
                         var_batchfile = str(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
                         self.variables_extract_batch.append(var_batchfile)
+                        print(self.variables_extract_batch)
                 try:
                     # cleanup the extracted text from the batch file
                     # format the input file
@@ -699,7 +700,7 @@ class gui(QMainWindow):
             # read in the input file
             nc = netCDF4.Dataset(self.input_file, mode='r')
             # create an empty pandas series to hold variables
-            self.variables_extract = pd.Series([], dtype="string")
+            self.variables_extract = pd.Series().astype(str)#[], dtype="string")
             # create empty dicts
             self.asc = {}
             self.units = {}
@@ -756,6 +757,7 @@ class gui(QMainWindow):
                     pass
             # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
+            print(self.asc)
             # create an object to store the NetCDF variable time
             self.dtime=nc.variables['Time']
             # use num2date to setup dtime object
@@ -1485,7 +1487,7 @@ class gui(QMainWindow):
                     self.header = 'AMES'
             except:
                 self.header = self.header
-                print('Header Foramt: '+self.header)
+                print('Header Format: '+self.header)
             try:
                 # get averaging information from window then batchfile
                 try:
@@ -1740,19 +1742,20 @@ class gui(QMainWindow):
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except Exception as e:
+                        self.write = self.write
                         print(e)
                     try:
                         self.write = self.write[self.write['DateTime']>start]
-                    except Exception as e:
-                        print(e)
+                    except:
+                        self.write = self.write
                     try:
                         self.write = self.write[self.write['DateTime']<end]
-                    except Exception as e:
-                        print(e)
+                    except:
+                        self.write = self.write
                     try:
                         self.write.pop('DateTime')
-                    except Exception as e:
-                        print(e)
+                    except:
+                        self.write=self.write
                 else:
                     pass
 
@@ -1823,10 +1826,10 @@ class gui(QMainWindow):
                             self.write.columns = self.write.columns.droplevel(1)
                         except:
                             pass
-                        try:
-                            self.write.columns = self.write.columns.droplevel(1)
-                        except:
-                            pass
+                    #    try:
+                    #        self.write.columns = self.write.columns.droplevel(1)
+                    #    except:
+                    #        pass
                     except:
                         pass
                     # try renaming the time var to Time_Start
@@ -1834,6 +1837,11 @@ class gui(QMainWindow):
                         self.write = pd.DataFrame(self.write.rename(columns={'Time': 'Time_Start'}))
                     except:
                         print('Time_Start not renamed')
+                    try:
+                        self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
+                    except:
+                        print('DateTime not renamed')
+                    
                     # get the varNumber from the # of columns in the dataframe
                     self.varNumber = str(len(self.write.columns)-1)
                     self.write.to_csv(output_file, header=True, index=False, na_rep='-99999.0')
@@ -1861,9 +1869,11 @@ class gui(QMainWindow):
                                 if line.startswith('<varNumber>'):
                                     lines[i] = self.varNumber+'\n'
                                 if line.startswith('<1.0>'):
-                                    lines[i] = '1.0,' * int(self.varNumber)+'\n'
+                                    lines[i] = '1.0,' * int(self.varNumber)
+                                    lines[i] = lines[i].rstrip(lines[i][-1])+'\n'
                                 if line.startswith('<-99999.0>'):
-                                    lines[i] = '-99999.0,' * int(self.varNumber)+'\n'
+                                    lines[i] = '-99999.0,' * int(self.varNumber)
+                                    lines[i] = lines[i].rstrip(lines[i][-1])+'\n'
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
@@ -1969,7 +1979,7 @@ class nc2asc_CL():
             # read in the input file
             nc = netCDF4.Dataset(self.input_file, mode='r')
             # create an empty pandas series to hold variables
-            self.variables_extract = pd.Series([], dtype="string")
+            self.variables_extract = pd.Series().astype(str)#[], dtype="string")
             # create empty dicts
             self.asc = {}
             self.units = {}
