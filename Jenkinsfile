@@ -17,7 +17,7 @@ pipeline {
   }
   post {
     always {
-      emailext to: "taylort@ucar.edu",
+      emailext to: "cjw@ucar.edu janine@ucar.edu cdeward@ucar.edu taylort@ucar.edu",
       subject: "Jenkinsfile aircraft_nc_utils build complete",
       body: "See console output attached",
       attachLog: true
