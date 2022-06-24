@@ -16,9 +16,9 @@ pipeline {
     }
   }
   post {
-    always {
-      emailext to: "taylort@ucar.edu",
-      subject: "Jenkinsfile aircraft_nc_utils build complete",
+    failure {
+      emailext to: "cjw@ucar.edu janine@ucar.edu cdewerd@ucar.edu taylort@ucar.edu",
+      subject: "Jenkinsfile aircraft_nc_utils build failed",
       body: "See console output attached",
       attachLog: true
     }
