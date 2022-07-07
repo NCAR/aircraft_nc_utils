@@ -7,6 +7,13 @@
 #include "compare_lists.h"
 #include "gsl.hh"
 
+const bool PRINT_DEBUG = false;
+
+#include <iostream>
+
+using std::cerr;
+using std::endl;
+
 using boost::make_shared;
 using boost::shared_ptr;
 
@@ -378,6 +385,39 @@ TEST(compare_floating_point, compare)
 }
 
 
+int getbit(const double& d, int bit)
+{
+  return ((*(unsigned long*)(&d)) >> (bit)) & 1;
+};
+
+
+void printbits(const double& d)
+{
+  auto nbits = sizeof(d) * 8;
+  auto b = nbits-1;
+  do
+  {
+    cerr << getbit(d, b);
+    if (b == nbits - 1 or b == nbits - 12)
+      cerr << " ";
+  } while (b-- != 0);
+  cerr << endl;
+}
+
+
+double setbit(const double& d, int bit, int value)
+{
+  union {
+    double d;
+    long i;
+  } ut;
+  ut.d = d;
+  auto& i = ut.i;
+  i = (i & (~(1ul << bit))) | (value << bit);
+  return ut.d;
+};
+
+
 TEST(compare_floating_point, ulps)
 {
   compare_floating_point cfp;
@@ -392,6 +432,8 @@ TEST(compare_floating_point, ulps)
   cfp.setULPS(4);
   EXPECT_EQ(cfp.near_equal(x, x+1), true);
   EXPECT_EQ(cfp.near_equal(-x, -x-1), true);
+  EXPECT_EQ(cfp.near_equal(x, x-1), true);
+  EXPECT_EQ(cfp.near_equal(-x, -x+1), true);
   cfp.setULPS(2);
   EXPECT_EQ(cfp.near_equal(x, x+1), false);
   EXPECT_EQ(cfp.near_equal(-x, -x-1), false);
@@ -407,10 +449,49 @@ TEST(compare_floating_point, ulps)
   // Test setting steps to zero to require exact equality.
   cfp.setULPS(0);
   EXPECT_EQ(cfp.near_equal(y, y), true);
+  EXPECT_EQ(cfp.near_equal(y, nextafterf(y, y+1)), false);
   EXPECT_EQ(cfp.near_equal(y, y+1), false);
   EXPECT_EQ(cfp.near_equal(x, x), true);
   EXPECT_EQ(cfp.near_equal(x, x+1), false);
+  EXPECT_EQ(cfp.near_equal(x, nextafter(x, x-1)), false);
 
+  // Actually test that ULPs equates to number of bits.
+  x = 2.0;
+  if (PRINT_DEBUG)
+  {
+    cerr << std::setprecision(20);
+    cerr << "bytes in double: " << sizeof(x)
+        << "; bytes in long: " << sizeof(0ul) << endl;
+    EXPECT_EQ(sizeof(x), sizeof(0ul));
+
+    cerr << "bits of x=" << x << endl;
+    printbits(x);
+    x = setbit(x, 0, 1);
+    cerr << "after setting bit 0, x = " << x << ", bits:" << endl;
+    printbits(x);
+  }
+
+  x = 2.0;
+  auto dnext = x;
+  for (int i = 1; i <= 1 << 4; ++i)
+  {
+    dnext = nextafter(dnext, dnext+1000);
+    if (PRINT_DEBUG)
+    {
+      cerr << "Step " << std::setw(2) << i
+          << ": nextafter(x) => " << dnext << ", bits:" << endl;
+      printbits(dnext);
+    }
+  }
+
+  // dnext now contains a number that is 16 steps from x.  It is the same
+  // value as x up until the 5th bit.  So if ULPs is less than 5, then an
+  // equality test of the numbers should be false.
+
+  cfp.setULPS(4);
+  EXPECT_EQ(cfp.near_equal(x, dnext), false);
+  cfp.setULPS(5);
+  EXPECT_EQ(cfp.near_equal(x, dnext), true);
 }
 
 

@@ -56,9 +56,14 @@ nc_compare(int argc, char *argv[])
      "range are close enough, use the ulps option.")
     ("ulps",
      po::value<int>()->default_value(compare_floating_point().getULPS()),
-     "Number of Units the Last Places in which floating point numbers can "
+     "Number of Units in the Last Places (bits) "
+     "in which floating point numbers can "
      "differ and still be considered equal.  This is the floating point "
-     "comparison used if --delta or --ulps is not specified explicitly.")
+     "comparison used if --delta or --ulps is not specified explicitly.  "
+     "For example, ULPS=4 means two floats must be within 15 (2^4-1) steps "
+     "of each other to compare as equal.  "
+     "If ULPS is 0, then floats must be exactly equal.  "
+     "The same ULPS setting is used for float and double types.")
     ("limit",
      po::value<int>()->default_value(ReportStyle::DEFAULT_REPORT_LIMIT),
      "Maximum number of differences to show in the report.  Once the limit "

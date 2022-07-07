@@ -3,12 +3,18 @@
 #include "NcComparison.h"
 
 #include <iostream>
-#include <boost/bind.hpp>
-#include <boost/format.hpp>
 
 #include "compare_lists.h"
 
-using boost::bind;
+#include <boost/format.hpp>
+#include <boost/bind/bind.hpp>
+
+#if BOOST_VERSION >= 106000
+// Placeholders moved into their own namespace in the bind library as of
+// Boost 1.60, so in more recent versions of boost, this avoids a
+// deprecation warning about _1 no longer being in the global namespace.
+using boost::placeholders::_1;
+#endif
 using boost::mem_fn;
 using boost::format;
 using boost::shared_ptr;

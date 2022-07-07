@@ -25,7 +25,7 @@ ignored by default since they are expected to be different in different
 files.  Also time coordinates are interpreted as times and reported as
 different if they do not overlap exactly.
 
-Numberic variables with identical names are compared statistically.  All
+Numeric variables with identical names are compared statistically.  All
 the values for each variable are read, missing values removed, and the mean
 is computed.  The means of the two variables are used to compute an
 absolute difference and a relative error between the variables.  Variables
@@ -41,10 +41,9 @@ point comparison method.
 
 By default, floating point values only have to be close to be considered
 equal, even if they are not exactly equal.  For all other data types, the
-values must be exactly equal or else they are different.  There are two
-options for comparing floats, one uses an error delta and the other
-compares Units in the Last Place.  See the --delta and --ulps options for
-details.
+values must be exactly equal.  There are two options for comparing floats, one
+uses an error delta and the other compares Units in the Last Place.  See the
+--delta and --ulps options for details.
 
 
 OPTIONS
@@ -135,4 +134,4 @@ AUTHOR
 ------
 
 nc_compare was originally written by Chris Webster for EOL aircraft data files,
-then extended by Gary Granger to work with EOL profiler data files.
+then extended by Gary Granger to work with EOL ISS and ISFS data files.

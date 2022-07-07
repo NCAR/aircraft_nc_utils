@@ -5,117 +5,59 @@
 #include <math.h>
 
 /**
- * Utilities for testing numeric values for equality, especially floating
- * point values which need to be tested for near equality.  The
- * compare_floating_point class parameterizes comparison methods and allows
- * alternate methods to be configured and selected.  For testing that
- * floating point values are near each other, regardless of magnitude,
- * there are implementations for each of two diferent approaches.
+ * The compare_floating_point class parameterizes floating point comparison
+ * methods and allows alternate methods to be configured and selected.  For
+ * testing that floating point values are near each other, regardless of
+ * magnitude, there are implementations for each of two diferent approaches.
  *
- * The almost_equal_floats() and almost_equal_doubles() functions test that
- * two floats are within some number of Units in the Last Places, by
- * translating the IEEE bit representation into integers whose difference
- * is the number of representable floats between the two numbers.  The
- * implementation is taken from the page below, as referenced in the google
- * test documentation about comparing floats:
- * 
+ * One approach is based on the number of distinct values between two numbers.
+ * Closer values differ by fewer Units in the Last Places (bits).  The ULPs
+ * can be computed by translating the IEEE bit representation into integers
+ * whose difference is the number of representable floats between the two
+ * numbers, as described here:
+ *
  * http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm
  *
- * The other implementation, in almost_equal_float_nsteps() and
- * almost_equal_double_nsteps(), uses the nextafter() functions available
- * as of C99.  The nextafter() functions allow stepping through each
- * successive representable floating point value.  If two floats are not
- * equal after stepping from one to the other for a maximum number of
- * steps, then they are not close enough.
+ * However, that implementation is no longer used, because it lacks
+ * portability and is harder to understand, and the original implementations
+ * have been removed.  The current implementations, in
+ * almost_equal_float_nsteps() and almost_equal_double_nsteps(), use the
+ * nextafter() functions available as of C99.  The nextafter() functions allow
+ * stepping through each successive representable floating point value.  If
+ * two floats are not equal after stepping from one to the other for a maximum
+ * number of steps, then they are not close enough.  The performance may not
+ * be as good as using the integer representation, but so far that has not
+ * been a concern.
  *
- * Right now the nsteps functions are being used for the
- * compare_floating_point ULPS selection, since the implementation is much
- * more straightforward and probably more portable also.  However, no
- * performance testing has been done.
+ * Since the _nsteps functions work by counting steps between two numbers, the
+ * number of ULPs is translated to (1 << ulps) - 1 steps.  That is, 1 ULP bit
+ * represents one step, since that changes the least significant bit.  2 ULP
+ * bits is within 3 steps, ie, either the two numbers are exactly equal down
+ * to the least significant bit, or they are only 3 steps away from each
+ * other.  If the last two bits of A are 00, then the last two bits of B can
+ * be 00, 01, 10, or 11.  The magnitude of those steps depends on the
+ * exponent.
  *
- * The near_equal_ulps_float() and near_equal_ulps_double() methods below
- * select the ULP comparison instead of the delta comparison, and that's
- * where the _nsteps() algorithms are chosen to implement ULPS instead of
- * 2's complement.  The almost_equal_floats() and almost_equal_doubles()
- * choices are commented out, so currently there is not actually any way to
- * select those implementations at run-time.
+ * The other floating point comparison approach is based strictly on the
+ * magnitude of the difference between the two numbers.  Two numbers differ if
+ * their absolute difference exceeds some delta.  Given the same delta, two
+ * larger numbers must have fewer bit differences to compare as equal compared
+ * to two smaller numbers.
  **/
 
-typedef union
+
+/**
+ * @brief Translate ULPs to steps.
+ * 
+ * One bit is one step, two bits are 3 steps, and so on.
+ * 
+ * @param nulps 
+ * @return int 
+ */
+
+inline int ulps_to_steps(int nulps)
 {
-  int asInt;
-  float asFloat;
-}
-twos_complement_float_t;
-
-
-inline bool
-almost_equal_floats(float A, float B, int maxUlps=2)
-{
-  // Because this algorithm uses aliasing to access the floating point as
-  // an integer, it requires the types to have the same size.  If this is
-  // not the case on a particular platform, don't use this algorithm.
-  // Hopefully this is just optimized out by the compiler on the platforms
-  // where this is a compile-time true.
-  assert(sizeof(int) == sizeof(float));
-  // Make sure maxUlps is non-negative and small enough that the
-  // default NAN won't compare as equal to anything.
-  twos_complement_float_t a;
-  a.asFloat = A;
-  int aInt = a.asInt;
-  // Make aInt lexicographically ordered as a twos-complement int
-  if (aInt < 0)
-    aInt = 0x80000000 - aInt;
-  // Make bInt lexicographically ordered as a twos-complement int
-  twos_complement_float_t b;
-  b.asFloat = B;
-  int bInt = b.asInt;
-  if (bInt < 0)
-    bInt = 0x80000000 - bInt;
-  int intDiff = aInt - bInt;
-  if (intDiff < 0)
-    intDiff = -intDiff;
-  if (intDiff <= maxUlps)
-    return true;
-  return false;
-}
-
-
-typedef union
-{
-  long int asInt;
-  double asDouble;
-}
-twos_complement_double_t;
-
-inline bool
-almost_equal_doubles(double A, double B, int maxUlps=2)
-{
-  // Because this algorithm uses aliasing to access the floating point
-  // double as a long integer, it requires the types to have the same size.
-  // If this is not the case on a particular platform, don't use this
-  // algorithm.  Hopefully this is just optimized out by the compiler on
-  // the platforms where this is a compile-time true.
-  assert(sizeof(long int) == sizeof(double));
-  twos_complement_double_t a;
-  a.asDouble = A;
-  long int aInt = a.asInt;
-  // Make aInt lexicographically ordered as a twos-complement int
-  if (aInt < 0)
-    aInt = 0x8000000000000000 - aInt;
-  // Make bInt lexicographically ordered as a twos-complement int
-  twos_complement_double_t b;
-  b.asDouble = B;
-  long int bInt = b.asInt;
-  if (bInt < 0)
-    bInt = 0x8000000000000000 - bInt;
-
-  long int intDiff = aInt - bInt;
-  if (intDiff < 0)
-    intDiff = -intDiff;
-  if (intDiff <= maxUlps)
-    return true;
-  return false;
+  return (1 << nulps) - 1;
 }
 
 
@@ -150,7 +92,6 @@ almost_equal_double_nsteps(double a, double b, int nsteps)
   }
   return false;
 }
-
 
 
 /**
@@ -246,15 +187,13 @@ public:
   bool
   near_equal_ulps_float(float left, float right)
   {
-    // return almost_equal_floats(left, right, _nulps);
-    return almost_equal_float_nsteps(left, right, _nulps);
+    return almost_equal_float_nsteps(left, right, ulps_to_steps(_nulps));
   }
 
   bool
   near_equal_ulps_double(double left, double right)
   {
-    // return almost_equal_doubles(left, right, _nulps);
-    return almost_equal_double_nsteps(left, right, _nulps);
+    return almost_equal_double_nsteps(left, right, ulps_to_steps(_nulps));
   }
 
   bool
