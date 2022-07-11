@@ -586,6 +586,9 @@ class gui(QMainWindow):
                             self.fillvalue3.setChecked(True)
                         except:
                             self.fillvalue = 'replicate'
+                    # get the version information from file for appending
+                    elif ln.startswith('version='):
+                        self.version = str(ln).replace('version=', '').replace('\n', '')
 
                     # get the time interval from the batch file
                     elif ln.startswith('ti='):
@@ -599,6 +602,7 @@ class gui(QMainWindow):
                         var_batchfile = str(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
                         self.variables_extract_batch.append(var_batchfile)
                         print(self.variables_extract_batch)
+
                 try:
                     # cleanup the extracted text from the batch file
                     # format the input file
@@ -654,7 +658,7 @@ class gui(QMainWindow):
                 self.formatData()
                 self.asc_new_batch = self.asc[self.variables_extract_batch]
                 print('SELF ASC NEW BATCH '+self.asc_new_batch)
-                return self.input_file, self.asc_new_batch, self.output_file, self.ti, self.avg, self.start_time, self.end_time
+                return self.input_file, self.asc_new_batch, self.output_file, self.version, self.ti, self.avg, self.start_time, self.end_time
                 self.formatData()
             except Exception as e:
                 print(e)
@@ -903,7 +907,7 @@ class gui(QMainWindow):
         except:
             pass
         self.icartt_filename_date = self.data_date.replace(', ', '')
-        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
 
         try:
             self.outputfilebox.setText(self.icartt_filename)
@@ -1908,7 +1912,7 @@ class gui(QMainWindow):
                         except:
                             pass
                         self.icartt_filename_date = self.data_date.replace(', ', '')
-                        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
+                        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
                         print('Overwriting Output Filename, since ICARTT file has strict format: '+self.icartt_filename)
                         os.system('mv '+str(output_file)+' '+str(output_file)+'.tmp')
                         os.system('cat ./header.tmp '+str(output_file)+'.tmp >> '+str(output_file))
@@ -2164,6 +2168,13 @@ class nc2asc_CL():
                             self.fillvalue3.setChecked(True)
                         except:
                             self.fillvalue = 'replicate'
+
+                    # get the version information from file for appending
+                    elif ln.startswith('version='):
+                        self.version = str(ln).replace('version=', '').replace('\n', '')
+                    # get the time interval from the batch file
+                    elif ln.startswith('ti='):
+                        self.ti = ln[2:]
                     # get the average value (if provided) from the bath file
                     elif ln.startswith('avg='):
                         self.avg = ln[2:]
