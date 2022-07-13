@@ -6,7 +6,7 @@
 # Generates plain text, ICARTT or AMES header files with multiple
 # delimiter, fill value, date, and time formats.
 #
-# Program consists of two classes 1) "gui" and 2) "nc2asc_CL"#
+# Program consists of two classes 1) "gui" and 2) "nc2asc_CL"
 # Function names include "_GUI" if the function is only used within 
 # the GUI. 
 #
@@ -907,8 +907,10 @@ class gui(QMainWindow):
         except:
             pass
         self.icartt_filename_date = self.data_date.replace(', ', '')
-        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
-
+        try:
+            self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
+        except:
+            self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
         try:
             self.outputfilebox.setText(self.icartt_filename)
         except:
@@ -970,6 +972,17 @@ class gui(QMainWindow):
                 for i, line in enumerate(lines):
                     if line.startswith('<PLATFORM>'):
                         lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
+                    if line.startswith('REVISION: RA'):
+                        try:
+                            lines[i] = str(line)+'\n'
+                            lines[i] = line.replace('RA', self.version)
+                        except:
+                            pass
+                    if line.startswith('RA: Field Data'):
+                        try:
+                            lines[i] = str(line)+self.version+':'+'\n'
+                        except:
+                            pass
                 f.seek(0)
                 for line in lines:
                     f.write(line)
@@ -987,7 +1000,7 @@ class gui(QMainWindow):
                     f.write(line)
             os.system('mv '+str(self.output_file)+' '+str(self.output_file)+'.tmp')
             os.system('cat ./header.tmp '+str(self.output_file)+'.tmp >> '+str(self.output_file))
-            os.system('rm ./header.tmp ./header1.tmp ./header2.tmp '+str(self.output_file)+'.tmp')
+            os.system('rm header.tmp header1.tmp header2.tmp '+str(self.output_file)+'.tmp')
         except:
             print('ICARTT header not created and appended to output file.')
     #########################################################################
@@ -1889,6 +1902,17 @@ class gui(QMainWindow):
                             for i, line in enumerate(lines):
                                 if line.startswith('<PLATFORM>'):
                                     lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
+                                if line.startswith('REVISION: RA'):
+                                    try:
+                                        lines[i] = str(line)+'\n'
+                                        lines[i] = line.replace('RA', self.version)
+                                    except:
+                                        pass
+                                if line.startswith('RA: Field Data'):
+                                    try:
+                                        lines[i] = str(line)+self.version+':'+'\n'
+                                    except:
+                                        pass
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
@@ -1912,12 +1936,15 @@ class gui(QMainWindow):
                         except:
                             pass
                         self.icartt_filename_date = self.data_date.replace(', ', '')
-                        self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
+                        try:
+                            self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
+                        except:
+                            self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
                         print('Overwriting Output Filename, since ICARTT file has strict format: '+self.icartt_filename)
                         os.system('mv '+str(output_file)+' '+str(output_file)+'.tmp')
                         os.system('cat ./header.tmp '+str(output_file)+'.tmp >> '+str(output_file))
                         os.system('mv '+str(output_file)+' '+str(os.path.abspath(os.path.dirname(output_file)))+'/'+str(self.icartt_filename))
-                        os.system('rm ./header.tmp ./header1.tmp ./header2.tmp '+str(output_file)+'.tmp')
+                        os.system('rm header.tmp header1.tmp header2.tmp '+str(output_file)+'.tmp')
                     except Exception as e:
                         print(e)
                         print('ICARTT header was not created or appended to output file')
@@ -2064,8 +2091,8 @@ class nc2asc_CL():
             self.end_time = self.dtime.iloc[-1]
             self.dtime=nc.variables['Time']
         except Exception as e:
-           print(e)
-           print('Error in extracting variable in '+str(self.inputbatch_file))
+            print(e)
+            print('Error in extracting variable in '+str(self.inputbatch_file))
 
         try:
             with open(self.inputbatch_file, 'r') as fil:
@@ -2219,7 +2246,7 @@ class nc2asc_CL():
                 print('****Write Data Process Complete****')
             except Exception as e:
                 print(e)
-            return self.asc, self.input_file, self.output_file
+            return self.asc, self.input_file, self.output_file, self.dtime_date, self.dtime_time, self.dtime
         except:
             print('****Error writing to output file.****')
 #############################################################################
