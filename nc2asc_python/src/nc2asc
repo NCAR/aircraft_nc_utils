@@ -1904,13 +1904,13 @@ class gui(QMainWindow):
                                     lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
                                 if line.startswith('REVISION: RA'):
                                     try:
-                                        lines[i] = str(line)+'\n'
+                                        lines[i] = str(line)
                                         lines[i] = line.replace('RA', self.version)
                                     except:
                                         pass
                                 if line.startswith('RA: Field Data'):
                                     try:
-                                        lines[i] = str(line)+self.version+':'+'\n'
+                                        lines[i] = str(line)+self.version+':\n'
                                     except:
                                         pass
                             f.seek(0)
