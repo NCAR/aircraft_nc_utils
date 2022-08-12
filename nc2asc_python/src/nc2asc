@@ -974,7 +974,7 @@ class gui(QMainWindow):
                         lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
                     if line.startswith('REVISION: RA'):
                         try:
-                            lines[i] = str(line)+'\n'
+                            lines[i] = str(line)
                             lines[i] = line.replace('RA', self.version)
                         except:
                             pass
@@ -1393,7 +1393,7 @@ class gui(QMainWindow):
                     head = head.replace("'", '')
                 self.outputpreview.setText(head)
             elif self.header3.isChecked()==True:
-                # drop the unit and dimension rows for ICARTT
+                # drop the unit and dimension rows for AMES
                 self.preview.columns = self.preview.columns.droplevel(1)
                 self.preview.columns = self.preview.columns.droplevel(1)
                 self.AMESHeader(self.preview)
@@ -1843,12 +1843,12 @@ class gui(QMainWindow):
                     try:
                         try:
                             self.write.columns = self.write.columns.droplevel(1)
-                        except:
-                            pass
-                    #    try:
-                    #        self.write.columns = self.write.columns.droplevel(1)
-                    #    except:
-                    #        pass
+                        except Exception as e:
+                            print(e)
+                        try:
+                            self.write.columns = self.write.columns.droplevel(1)
+                        except Exception as e:
+                            print(e)
                     except:
                         pass
                     # try renaming the time var to Time_Start
