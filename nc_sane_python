@@ -135,8 +135,7 @@ class ncSane():
 
         Reports falied lines and the time on the command line.
         """
-        print('Starting histo checks using histogram var:
-              ' + args.histo_var + ' and total var: ' + args.total_var)
+        print('Starting histo checks using histogram var: ' + args.histo_var + ' and total var: ' + args.total_var)
         # read input file, histogram count data, and total count for comparison
         input_file = args.file_pattern
         histo_var = args.histo_var
@@ -168,8 +167,7 @@ class ncSane():
                         pass
                     # report failure
                     else:
-                        print('Calculated total for ' + str(histo_var) + '
-                              ' + str(da_long_name) + ' at time: '
+                        print('Calculated total for ' + str(histo_var) + ' ' + str(da_long_name) + ' at time: '
                               + str(time[i]) + ', row :' + str(i) + ': '
                               + str(np.sum(da[i])))
                         print('Reported total for ' + str(total_var) +
@@ -177,7 +175,7 @@ class ncSane():
                               ' at time: ' + str(time[i]) + ', row '
                               + str(i) + ': ' + str(da_compare[i]))
                         print('*Failed histogram checker*')
-         print('Done with histogram checking.')
+        print('Done with histogram checking.')
 
 
 if __name__ == "__main__":
