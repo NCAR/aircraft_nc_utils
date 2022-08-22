@@ -137,15 +137,41 @@ def buildIWG():
                     pass
             except:
                 print(("Error in extracting variable "+i+" in "+input_file))
-            df[i] = pd.DataFrame(output)  
+            df[i] = pd.DataFrame(output)
+            df[i] = df[i].round(decimals = 4) 
     global iwg
-    iwg = pd.concat([dtime, df["GGLAT"], df["GGLON"], df["GGALT"], df["NAVAIL"], df["PALTF"], \
-           df["HGM232"], df["GSF"], df["TASX"], df["IAS"], df["MACH_A"], \
-           df["VSPD"], df["THDG"], df["TKAT"], df["DRFTA"], df["PITCH"], \
-           df["ROLL"], df["SSLIP"], df["ATTACK"], df["ATX"], df["DPXC"], \
-           df["TTX"], df["PSXC"], df["QCXC"], df["PCAB"], df["WSC"], \
-           df["WDC"], df["WIC"], df["SOLZE"], df["Solar_El_AC"], df["SOLAZ"], \
-           df["Sun_Az_AC"]], axis=1, ignore_index=True)
+    iwg = pd.concat([dtime, df["GGLAT"].astype(float).round(decimals = 4), \
+           df["GGLON"].astype(float).round(decimals = 4), \
+           df["GGALT"].astype(float).round(decimals = 4), \
+           df["NAVAIL"].astype(float).round(decimals = 4), \
+           df["PALTF"].astype(float).round(decimals = 3), \
+           df["HGM232"].astype(float).round(decimals = 3), \
+           df["GSF"].astype(float).round(decimals = 4), \
+           df["TASX"].astype(float).round(decimals = 4), \
+           df["IAS"].astype(float).round(decimals = 5), \
+           df["MACH_A"].astype(float).round(decimals = 5), \
+           df["VSPD"].astype(float).round(decimals = 4), \
+           df["THDG"].astype(float).round(decimals = 7), \
+           df["TKAT"].astype(float).round(decimals = 7), \
+           df["DRFTA"].astype(float).round(decimals = 3), 
+           df["PITCH"].astype(float).round(decimals = 4), \
+           df["ROLL"].astype(float).round(decimals = 4), \
+           df["SSLIP"].astype(float).round(decimals = 6), \
+           df["ATTACK"].astype(float).round(decimals = 6), \
+           df["ATX"].astype(float).round(decimals = 4), \
+           df["DPXC"].astype(float).round(decimals = 4), \
+           df["TTX"].astype(float).round(decimals = 5), \
+           df["PSXC"].astype(float).round(decimals = 4), \
+           df["QCXC"].astype(float).round(decimals = 2), \
+           df["PCAB"].astype(float).round(decimals = 2), \
+           df["WSC"].astype(float).round(decimals = 2), \
+           df["WDC"].astype(float).round(decimals = 4), \
+           df["WIC"].astype(float).round(decimals = 4), \
+           df["SOLZE"].astype(float).round(decimals = 4), \
+           df["Solar_El_AC"].astype(float).round(decimals = 3), \
+           df["SOLAZ"].astype(float).round(decimals = 4), \
+           df["Sun_Az_AC"].astype(float).round(decimals = 4)], axis=1, ignore_index=True)
+
     try:
         iwg.insert(loc=0, column='PID', value=platform)
     except:
