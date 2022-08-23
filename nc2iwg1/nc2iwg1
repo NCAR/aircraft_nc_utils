@@ -138,40 +138,47 @@ def buildIWG():
             except:
                 print(("Error in extracting variable "+i+" in "+input_file))
             df[i] = pd.DataFrame(output)
-            df[i] = df[i].round(decimals = 4) 
     global iwg
-    iwg = pd.concat([dtime, df["GGLAT"].astype(float).round(decimals = 4), \
-           df["GGLON"].astype(float).round(decimals = 4), \
-           df["GGALT"].astype(float).round(decimals = 4), \
-           df["NAVAIL"].astype(float).round(decimals = 4), \
-           df["PALTF"].astype(float).round(decimals = 3), \
-           df["HGM232"].astype(float).round(decimals = 3), \
-           df["GSF"].astype(float).round(decimals = 4), \
-           df["TASX"].astype(float).round(decimals = 4), \
-           df["IAS"].astype(float).round(decimals = 5), \
-           df["MACH_A"].astype(float).round(decimals = 5), \
-           df["VSPD"].astype(float).round(decimals = 4), \
-           df["THDG"].astype(float).round(decimals = 7), \
-           df["TKAT"].astype(float).round(decimals = 7), \
-           df["DRFTA"].astype(float).round(decimals = 3), 
-           df["PITCH"].astype(float).round(decimals = 4), \
-           df["ROLL"].astype(float).round(decimals = 4), \
-           df["SSLIP"].astype(float).round(decimals = 6), \
-           df["ATTACK"].astype(float).round(decimals = 6), \
-           df["ATX"].astype(float).round(decimals = 4), \
-           df["DPXC"].astype(float).round(decimals = 4), \
-           df["TTX"].astype(float).round(decimals = 5), \
-           df["PSXC"].astype(float).round(decimals = 4), \
+    iwg = pd.concat([dtime, df["GGLAT"].astype(float).round(decimals = 5), \
+           df["GGLON"].astype(float).round(decimals = 5), \
+           df["GGALT"].astype(float).round(decimals = 2), \
+           df["NAVAIL"].astype(float).round(decimals = 2), \
+           df["PALTF"].astype(float).round(decimals = 2), \
+           df["HGM232"].astype(float).round(decimals = 2), \
+           df["GSF"].astype(float).round(decimals = 2), \
+           df["TASX"].astype(float).round(decimals = 2), \
+           df["IAS"].astype(float).round(decimals = 2), \
+           df["MACH_A"].astype(float).round(decimals = 2), \
+           df["VSPD"].astype(float).round(decimals = 2), \
+           df["THDG"].astype(float).round(decimals = 2), \
+           df["TKAT"].astype(float).round(decimals = 2), \
+           df["DRFTA"].astype(float).round(decimals = 2), 
+           df["PITCH"].astype(float).round(decimals = 2), \
+           df["ROLL"].astype(float).round(decimals = 2), \
+           df["SSLIP"].astype(float).round(decimals = 2), \
+           df["ATTACK"].astype(float).round(decimals = 2), \
+           df["ATX"].astype(float).round(decimals = 2), \
+           df["DPXC"].astype(float).round(decimals = 2), \
+           df["TTX"].astype(float).round(decimals = 2), \
+           df["PSXC"].astype(float).round(decimals = 2), \
            df["QCXC"].astype(float).round(decimals = 2), \
            df["PCAB"].astype(float).round(decimals = 2), \
            df["WSC"].astype(float).round(decimals = 2), \
-           df["WDC"].astype(float).round(decimals = 4), \
-           df["WIC"].astype(float).round(decimals = 4), \
-           df["SOLZE"].astype(float).round(decimals = 4), \
-           df["Solar_El_AC"].astype(float).round(decimals = 3), \
-           df["SOLAZ"].astype(float).round(decimals = 4), \
-           df["Sun_Az_AC"].astype(float).round(decimals = 4)], axis=1, ignore_index=True)
+           df["WDC"].astype(float).round(decimals = 2), \
+           df["WIC"].astype(float).round(decimals = 2), \
+           df["SOLZE"].astype(float).round(decimals = 2), \
+           df["Solar_El_AC"].astype(float).round(decimals = 2), \
+           df["SOLAZ"].astype(float).round(decimals = 2), \
+           df["Sun_Az_AC"].astype(float).round(decimals = 2)], axis=1, ignore_index=True)
 
+    # since longitude can have three digits to left of decimal
+    # need to set precision in those cases
+    for i in iwg[2]:
+        if abs(i) >= 100:
+            i = round(i, 4)
+            iwg[2] = i
+        else:
+            pass
     try:
         iwg.insert(loc=0, column='PID', value=platform)
     except:
