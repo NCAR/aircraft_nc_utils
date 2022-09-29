@@ -12,6 +12,7 @@
 
 import os
 import sys
+import re
 import argparse
 import xarray as xr
 import datetime
@@ -30,11 +31,11 @@ def main():
     ncsane.checkBasetime(ncsane.timeformat)
     ncsane.histoCheck(args, ncsane.ds)
     try:
-        ncsane.histoCheck2(ncsane.da_counts, ncsane.da_compare_counts, ncsane.da_compare_long_name_counts, ncsane.ds)
+        ncsane.histoCheck2(ncsane.args, ncsane.da_counts, ncsane.da_compare_counts, ncsane.da_compare_long_name_counts, ncsane.ds)
     except Exception as e:
         print(e)
     try:
-        ncsane.histoCheck2(ncsane.da_conc, ncsane.da_compare_conc, ncsane.da_compare_long_name_conc, ncsane.ds)
+        ncsane.histoCheck2(ncsane.args, ncsane.da_conc, ncsane.da_compare_conc, ncsane.da_compare_long_name_conc, ncsane.ds)
     except Exception as e:
         print(e)
 class ncSane():
@@ -55,6 +56,7 @@ class ncSane():
             self.d = date(1900, 1, 1)
             self.start = datetime.strptime(self.start, '%H:%M:%S').time()
             self.end = datetime.strptime(self.end, '%H:%M:%S').time()
+            print('****************************************')
             print('Start Time: ' + str(self.start))
             print('End Time: ' + str(self.end))
             # calculate difference in time interval
@@ -73,6 +75,7 @@ class ncSane():
         account for midnight rollover
         """
         if end < start:
+            print('****************************************')
             print('Midnight rollover detected.')
             midnight = str(end).replace('1', '0').replace('2', '0')\
                 .replace('3', '0').replace('4', '0').replace('5', '0')\
@@ -85,10 +88,12 @@ class ncSane():
             diff2 = diff2 + timedelta(hours=24)
             self.diff = (diff1 + diff2)
             print('Flight Duration: ' + str(self.diff))
-
+            print('****************************************')
         else:
+            print('****************************************')
             print('No midnight rollover detected.')
             print('Flight Duration: ' + str(self.diff))
+            print('****************************************')
         return self.diff
 
     def recordNum_timeInterval_compare(self, diff, time):
@@ -111,10 +116,12 @@ class ncSane():
         """
 
         if timeformat == "seconds since %F %T %z":
+            print('****************************************')
             print('Time format is correct: ' + timeformat)
+            print('****************************************')
         else:
             print('Time format does not match: ' + timeformat)
-
+            print('****************************************')
     def parseArgs(self):
         """
         Set up argument parsing
@@ -125,11 +132,8 @@ class ncSane():
         parser.add_argument('file_pattern', type=str, nargs='*',
                             help='Input file to check' +
                             'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
-
-        #parser.add_argument('verbosity', type=str, help='Verbose output')
-
-        #parser.add_argument('histo_var', type=str, help='Histogram variable')
-        #parser.add_argument('total_var', type=str, help='Total variable')
+        parser.add_argument('-v', '--verbose', action='store_true', 
+                            help="flag for verbose output")
 
         if len(sys.argv) < 1:
             parser.print_help(sys.stderr)
@@ -146,14 +150,35 @@ class ncSane():
 
         Reports falied lines and the time on the command line.
         """
-        #print('Starting histo checks using histogram var: ' + args.histo_var + ' and total var: ' + args.total_var)
         # read input file, histogram count data, and total count for comparison
         input_file = args.file_pattern
+        counts_pattern1 = ['ACDP_RPC', 'ACDP_LWOO', 'ACDP_RWOO', 'ACDP_LWIO', 'ACDP_RWIO']
+        counts_pattern2 = ['TCNTD_RPC', 'TCNTD_LWOO', 'TCNTD_RWOO', 'TCNTD_LWIO', 'TCNTD_RWIO']
+        conc_pattern1 = ['CCDP_RPC', 'CCDP_LWOO', 'CCDP_RWOO', 'CCDP_LWIO', 'CCDP_RWIO']
+        conc_pattern2 = ['CONCD_RPC', 'CONCD_LWOO', 'CONCD_RWOO', 'CONCD_LWIO', 'CONCD_RWIO']
+        for i in counts_pattern1:
+            try:
+                self.da_counts = ds[i]
+            except:
+                pass
+        for i in counts_pattern2:
+            try:
+                self.da_compare_counts = ds[i]
+            except:
+                pass
 
+        for i in conc_pattern1:
+            try:
+                self.da_conc = ds[i]
+            except:
+                pass
+        for i in conc_pattern2:
+            try:
+                self.da_compare_conc = ds[i]
+            except:
+                pass
         try:
             try:
-                self.da_counts = ds['ACDP_LWOO']
-                self.da_compare_counts = ds['TCNTD_LWOO']
                 self.da_long_name_counts = self.da_counts.long_name
                 self.da_counts = self.da_counts.values
                 self.da_compare_long_name_counts = self.da_compare_counts.long_name
@@ -161,8 +186,6 @@ class ncSane():
             except Exception as e:
                 print(e)
             try:
-                self.da_conc = ds['CCDP_LWOO']
-                self.da_compare_conc = ds['CONCD_LWOO']
                 self.da_long_name_conc = self.da_conc.long_name
                 self.da_conc = self.da_conc.values
                 self.da_compare_long_name_conc = self.da_compare_conc.long_name
@@ -173,9 +196,10 @@ class ncSane():
             print(e)
         return(self.da_counts, self.da_compare_long_name_counts, self.da_compare_counts, self.da_conc, self.da_compare_conc, self.da_compare_long_name_conc)
 
-    def histoCheck2(self, da, da_compare, da_compare_long_name, ds):
-
+    def histoCheck2(self, args, da, da_compare, da_compare_long_name, ds):
+        verbose = args.verbose
         time = ds["Time"].values
+        print('Starting histogram checking: ' + str(da_compare_long_name))
         # loop over time dimension to calculate sum
         for i in range(0, len(da)):
             # calculate sum from histo var and check if matches reported total
@@ -196,14 +220,16 @@ class ncSane():
                         pass
                     # report failure
                     else:
-                        print('Calculated total for ' + str(da_long_name) + ' at time: '
-                              + str(time[i]) + ', row :' + str(i) + ': '
-                              + str(np.sum(da[i])))
-                        print('Reported total for ' + ' ' + str(da_compare_long_name) +
-                              ' at time: ' + str(time[i]) + ', row '
-                              + str(i) + ': ' + str(da_compare[i]))
-                        print('*Failed histogram checker*')
+                        if verbose == True:
+                            print('Calculated total for ' + str(da_compare_long_name) + ' at time: '
+                                  + str(time[i]) + ', row :' + str(i) + ': '
+                                  + str(np.sum(da[i])))
+                            print('Reported total for ' + ' ' + str(da_compare_long_name) +
+                                  ' at time: ' + str(time[i]) + ', row '
+                                  + str(i) + ': ' + str(da_compare[i]))
+                        else:
+                           print('Error on line: ' + str(i))
         print('Done with histogram checking: ' + str(da_compare_long_name))
-
+        print('****************************************')
 if __name__ == "__main__":
     main()
