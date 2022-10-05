@@ -30,15 +30,6 @@ def main():
     ncsane.recordNum_timeInterval_compare(args, ncsane.diff, ncsane.time)
     ncsane.checkBasetime(args, ncsane.timeformat)
     ncsane.histoCheck(args, ncsane.ds, ncsane.histo_count_list, ncsane.histo_count_list2, ncsane.histo_conc_list, ncsane.histo_conc_list2)
-    try:
-        ncsane.histoCheck2(ncsane.args, ncsane.da_counts, ncsane.da_compare_counts, ncsane.da_compare_long_name_counts, ncsane.ds)
-    except Exception as e:
-        print(e)
-    try:
-        ncsane.histoCheck2(ncsane.args, ncsane.da_conc, ncsane.da_compare_conc, ncsane.da_compare_long_name_conc, ncsane.ds)
-    except Exception as e:
-        print(e)
-
 
 class ncSane():
 
@@ -82,10 +73,10 @@ class ncSane():
             self.histo_count_list2 = []
             self.histo_conc_list = []
             self.histo_conc_list2 = []
-            counts_pattern1 = ['ACDP']
-            counts_pattern2 = ['TCNTD']
-            conc_pattern1 = ['CCDP']
-            conc_pattern2 = ['CONCD']
+            counts_pattern1 = ['ACDP', 'AUHSAS']
+            counts_pattern2 = ['TCNTD', 'TCNTU']
+            conc_pattern1 = ['CCDP', 'CUHSAS']
+            conc_pattern2 = ['CONCD', 'CONCU']
             for i in var_list:
                 for j in counts_pattern1:
                     if i.startswith(j):
@@ -199,6 +190,108 @@ class ncSane():
         self.args = parser.parse_args()
         return(self.args)
 
+    def histoVarSetup(self, ds, index, histo1, histo2, histo3, histo4):
+        try:
+            self.da_counts = ds[histo1[index]]
+            self.da_long_name_counts = self.da_counts.long_name
+            self.da_counts = self.da_counts.values
+        except Exception as e:
+            print(e)
+        try:
+            self.da_compare_counts = ds[histo2[index]]
+            self.da_compare_long_name_counts = self.da_compare_counts.long_name
+            self.da_compare_counts = self.da_compare_counts.values
+        except Exception as e:
+            print(e)
+        try:
+            self.da_conc = ds[histo3[index]]
+            self.da_long_name_conc = self.da_conc.long_name
+            self.da_conc = self.da_conc.values
+        except Exception as e:
+            print(e)
+        try:
+            self.da_compare_conc = ds[histo4[index]]
+            self.da_compare_long_name_conc = self.da_compare_conc.long_name
+            self.da_compare_conc = self.da_compare_conc.values
+        except Exception as e:
+            print(e)
+
+        return(self.da_counts, self.da_long_name_counts, self.da_compare_counts,
+               self.da_compare_long_name_counts, self.da_conc,
+               self.da_long_name_conc, self.da_compare_conc, self.da_compare_long_name_conc)
+
+    def histoLoop(self, args, da_counts, da_compare_counts,
+                  da_compare_long_name_counts, da_conc, da_compare_conc, da_compare_long_name_conc, da_long_name_counts, da_long_name_conc):
+            verbose = self.args.verbose
+            if verbose == True:
+                print('Starting histogram checking: ' + str(da_compare_long_name_counts))
+            else:
+                pass
+            # loop over time dimension to calculate sum
+            for i in range(0, len(da_counts)):
+                # calculate sum from histo var and check if matches reported total
+                if np.sum(da_counts[i]) == da_compare_counts[i]:
+                    pass
+                # handle cases where there are missing or nan values
+                else:
+                    if da_compare_counts[i] == -32767.:
+                        pass
+                    elif str(da_compare_counts[i]) == 'nan':
+                        pass
+                    elif str(np.sum(da_compare_counts[i])) == 'nan':
+                        pass
+                    # report if the sum values do not match
+                    else:
+                        # handle float rounding errors
+                        if np.sum(da_counts[i]) - da_compare_counts[i] < .01:
+                            pass
+                        # report failure
+                        else:
+                            if verbose == True:
+                                print('Error on line: ' + str(i) + ' Calculated total for ' +
+                                str(da_compare_long_name_counts) + ' at time: ' + str(time[i]) + ': ' +
+                                str(np.sum(da_counts[i])) + ' Reported total for ' + ' ' +
+                                str(da_compare_long_name_counts) + ' at time: ' + str(time[i]) + ': ' +
+                                str(da_compare_counts[i]))
+                            else:
+                                print('Histogram Check: Failed on line' + str(i) +'. Run with -v for verbose mode.')
+            if verbose == True:
+                print('Done with histogram checking: ' + str(da_compare_long_name_counts))
+                print('****************************************')
+            if verbose == True:
+                print('Starting histogram checking: ' + str(da_compare_long_name_conc))
+            else:
+                pass
+            # loop over time dimension to calculate sum
+            for i in range(0, len(da_conc)):
+                # calculate sum from histo var and check if matches reported total
+                if np.sum(da_conc[i]) == da_compare_conc[i]:
+                    pass
+                # handle cases where there are missing or nan values
+                else:
+                    if da_compare_conc[i] == -32767.:
+                        pass
+                    elif str(da_compare_conc[i]) == 'nan':
+                        pass
+                    elif str(np.sum(da_compare_conc[i])) == 'nan':
+                        pass
+                    # report if the sum values do not match
+                    else:
+                        # handle float rounding errors
+                        if np.sum(da_conc[i]) - da_compare_conc[i] < .01:
+                            pass
+                        # report failure
+                        else:
+                            if verbose == True:
+                                print('Error on line: ' + str(i) + ' Calculated total not equal to reported total')
+                            else:
+                                print('Histogram Check: Failed Run with -v for verbose mode.')
+            if verbose == True:
+                print('Done with histogram checking: ' + str(da_compare_long_name_conc))
+                print('****************************************')
+            else:
+                pass
+
     def histoCheck(self, args, ds, histo1, histo2, histo3, histo4):
         """
         Function that reads input file, histogram variable, total variable
@@ -210,82 +303,27 @@ class ncSane():
         """
         # read input file, histogram count data, and total count for comparison
         input_file = args.file_pattern
-        for i in histo1:
-            try:
-                self.da_counts = ds[i]
-            except:
-                pass
-        for i in histo2:
-            try:
-                self.da_compare_counts = ds[i]
-            except:
-                pass
-
-        for i in histo3:
-            try:
-                self.da_conc = ds[i]
-            except:
-                pass
-        for i in histo4:
-            try:
-                self.da_compare_conc = ds[i]
-            except:
-                pass
-        try:
-            try:
-                self.da_long_name_counts = self.da_counts.long_name
-                self.da_counts = self.da_counts.values
-                self.da_compare_long_name_counts = self.da_compare_counts.long_name
-                self.da_compare_counts = self.da_compare_counts.values
-            except Exception as e:
-                print(e)
-            try:
-                self.da_long_name_conc = self.da_conc.long_name
-                self.da_conc = self.da_conc.values
-                self.da_compare_long_name_conc = self.da_compare_conc.long_name
-                self.da_compare_conc = self.da_compare_conc.values
-            except Exception as e:
-                print(e)
-        except Exception as e:
-            print(e)
-        return(self.da_counts, self.da_compare_long_name_counts, self.da_compare_counts, self.da_conc, self.da_compare_conc, self.da_compare_long_name_conc)
-
-    def histoCheck2(self, args, da, da_compare, da_compare_long_name, ds):
         verbose = args.verbose
         time = ds["Time"].values
-        if verbose == True:
-            print('Starting histogram checking: ' + str(da_compare_long_name))
-        else:
-            pass
-        # loop over time dimension to calculate sum
-        for i in range(0, len(da)):
-            # calculate sum from histo var and check if matches reported total
-            if np.sum(da[i]) == da_compare[i]:
-                pass
-            # handle cases where there are missing or nan values
-            else:
-                if da_compare[i] == -32767.:
-                    pass
-                elif str(da_compare[i]) == 'nan':
-                    pass
-                elif str(np.sum(da_compare[i])) == 'nan':
-                    pass
-                # report if the sum values do not match
-                else:
-                    # handle float rounding errors
-                    if np.sum(da[i]) - da_compare[i] < .01:
-                        pass
-                    # report failure
-                    else:
-                        if verbose == True:
-                            print('Error on line: ' + str(i) + ' Calculated total for ' + str(da_compare_long_name) + ' at time: ' + str(time[i]) + ': ' + str(np.sum(da[i])) + ' Reported total for ' + ' ' + str(da_compare_long_name) + ' at time: ' + str(time[i]) + ': ' + str(da_compare[i]))
-                        else:
-                            print('Histogram Check: Failed on line' + str(i) +'. Run with -v for verbose mode.')
-        if verbose == True:
-            print('Done with histogram checking: ' + str(da_compare_long_name))
-            print('****************************************')
-        else:
-            pass
-
+        index = 0
+        if index == 0:
+            try:
+                self.histoVarSetup(ds, index, self.histo_count_list, self.histo_count_list2, self.histo_conc_list, self.histo_conc_list2)
+            except Exception as e:
+                print(e)
+            try:
+                self.histoLoop(args, self.da_counts, self.da_compare_counts, self.da_compare_long_name_counts, self.da_conc, self.da_compare_conc, self.da_compare_long_name_conc, self.da_long_name_counts, self.da_long_name_conc)
+            except Exception as e:
+                print(e)
+            index = index +1
+        if index == 1:
+            try:
+                self.histoVarSetup(ds, index, self.histo_count_list, self.histo_count_list2, self.histo_conc_list, self.histo_conc_list2)
+            except Exception as e:
+                print(e)
+            try:
+                self.histoLoop(args, self.da_counts, self.da_compare_counts, self.da_compare_long_name_counts, self.da_conc, self.da_compare_conc, self.da_compare_long_name_conc, self.da_long_name_counts, self.da_long_name_conc)
+            except Exception as e:
+                print(e)
 if __name__ == "__main__":
     main()
