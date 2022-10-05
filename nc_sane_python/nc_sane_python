@@ -285,7 +285,9 @@ class ncSane():
                             if verbose == True:
                                 print('Error on line: ' + str(i) + ' Calculated total not equal to reported total')
                             else:
-                                print('Histogram Check: Failed Run with -v for verbose mode.')
+                                failed = True
+            if failed == True:
+                print('Histogram Check: Fail. Run in verbose mode (-v) for more info.')
             if verbose == True:
                 print('Done with histogram checking: ' + str(da_compare_long_name_conc))
                 print('****************************************')
