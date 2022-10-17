@@ -231,6 +231,7 @@ class ncSane():
                   da_compare_long_name_conc, da_long_name_counts,
                   da_long_name_conc):
             verbose = self.args.verbose
+            failed = False
             if verbose == True:
                 print('Starting histogram checking: ' +
                 str(da_compare_long_name_counts))
@@ -257,18 +258,9 @@ class ncSane():
                         # report failure
                         else:
                             if verbose == True:
-                                print('Error on line: ' + str(i) +
-                                ' Calculated total for ' +
-                                str(da_compare_long_name_counts) + ' at time: '
-                                 + str(time[i]) + ': ' +
-                                str(np.sum(da_counts[i])) +
-                                ' Reported total for ' + ' ' +
-                                str(da_compare_long_name_counts) + ' at time: '
-                                 + str(time[i]) + ': ' +
-                                str(da_compare_counts[i]))
+                                print('Error on line: ' + str(i))
                             else:
-                                print('Histogram Check: Failed on line' + str(i)
-                                 +'. Run with -v for verbose mode.')
+                                print('Histogram Check: Failed on line ' + str(i) + '. Run with -v for verbose mode.')
             if verbose == True:
                 print('Done with histogram checking: ' +
                 str(da_compare_long_name_counts))
@@ -299,8 +291,8 @@ class ncSane():
                         # report failure
                         else:
                             if verbose == True:
-                                print('Error on line: ' + str(i) + ' Calculated\
-                                 total not equal to reported total')
+                                print("Error")
+                                #print('Error on line: ' + str(i) + ' Calculated total not equal to reported total')
                             else:
                                 failed = True
             if failed == True:
