@@ -1,0 +1,6 @@
+# -*- python -*-
+
+tools = ['default', 'prefixoptions']
+env = Environment(tools=tools)
+
+env.Install("$INSTALL_PREFIX/bin", 'nc_sane')
