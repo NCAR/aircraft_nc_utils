@@ -704,7 +704,7 @@ class gui(QMainWindow):
             # read in the input file
             nc = netCDF4.Dataset(self.input_file, mode='r')
             # create an empty pandas series to hold variables
-            self.variables_extract = pd.Series().astype(str)#[], dtype="string")
+            self.variables_extract = pd.Series(dtype=str)
             # create empty dicts
             self.asc = {}
             self.units = {}
@@ -761,7 +761,6 @@ class gui(QMainWindow):
                     pass
             # concatenate
             self.asc=pd.concat(self.asc, axis=1, ignore_index=False)
-            print(self.asc)
             # create an object to store the NetCDF variable time
             self.dtime=nc.variables['Time']
             # use num2date to setup dtime object
