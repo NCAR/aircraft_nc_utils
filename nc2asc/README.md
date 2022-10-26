@@ -1,16 +1,16 @@
 ## Overview
-nc2asc_python is a python 3 based program that is intended for users of NSF/NCAR RAF NetCDF datasets who would like to convert the NetCDF data to ASCII.
+nc2asc_python is a python 3 based program that is intended for users of NSF/NCAR RAF NetCDF datasets who would like to convert the netCDF data to ASCII.
 
 The program is under revision control under the repo `NCAR/aircraft_nc_utils/nc2asc_python/src`. Template header files for ICARTT (https://www-air.larc.nasa.gov/missions/etc/IcarttDataFormat.htm) and AMES (https://espoarchive.nasa.gov/content/Ames_Format_Specification_v20) formats are contained in `NCAR/aircraft_nc_utils/nc2asc_python/lib`. The program will modify and write from these templates depending on the user preference. 
 
-On EOL servers barolo and tikal, a user can execute `nc2asc` from the command line and the GUI will launch. `aircraft_nc_utils/nc2asc_python/src` is also installed on the EOL RAF Ground Station computer, where it us called in command line mode by the ground processing scripts to generate an ICARTT V2 (https://cdn.earthdata.nasa.gov/conduit/upload/6158/ESDS-RFC-029v2.pdf) file after a flight. Note that to access the command line, a user can execute nc2asc_cl.py with or without arguments. Executing this command without arguments will display a help message for proper formatting of command line arguments, which is also described below in the Command Line Mode section. 
+On EOL servers barolo and tikal, a user can execute `nc2asc` from the command line and the GUI will launch. `aircraft_nc_utils/nc2asc/src` is also installed on the EOL RAF Ground Station computer, where it us called in command line mode by the ground processing scripts to generate an ICARTT V2 (https://cdn.earthdata.nasa.gov/conduit/upload/6158/ESDS-RFC-029v2.pdf) file after a flight, if configured to do so.
 
 ## GUI Mode
-The program can be run in two modes: the first is a graphical user interface that allows a user to import a NetCDF file, choose an output directory and filename, as well as output format options for date, time, delimiter, fill value, and header.
+The program can be run in two modes: the first is a graphical user interface that allows a user to import a netCDF file, choose an output directory and filename, as well as output format options for date, time, delimiter, fill value, and header.
 
 The user can also select the file by start and end time, and provide an averaging window.
 
-The user can select all variables from the imported NetCDF file or a subset based on variable name. A table is displayed on the right side of the window that allows a user to click on variable names. 
+The user can select all variables from the imported netCDF file or a subset based on variable name. A table is displayed on the right side of the window that allows a user to click on variable names. 
 
 Once a user has selected their preferred options and variables, the output preview field located at the bottom of the window dynamically updates to reflect the selections. 
 
@@ -23,7 +23,7 @@ Once a user has selected their input file, output directory, output file, output
 If a user has already created a batch file, they can read the contents into the program and the corresponding fields will populate based on the content. The format of the batch file should match the following, regardless of whether a user is operating with the graphical user interface or on the command line. 
 
 ## Command Line Mode
-The expected arguments for use with the command line mode of nc2asc_cl are as follows:
+The expected arguments for use with the command line mode of nc2asc are as follows:
 
 `(-i) Input File (optional: if not provided on the command line, will be read from the batch file line ‘if=’)`
 
@@ -33,12 +33,12 @@ The expected arguments for use with the command line mode of nc2asc_cl are as fo
 
 ### Example Command Line Execution:
 
-`nc2asc_cl -i /scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc -o /scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt -b /scr/raf_data/ASPIRE-TEST/batchfile`
+`nc2asc -i /scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc -o /scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt -b /scr/raf_data/ASPIRE-TEST/batchfile`
 
 ### Command Line Help:
 
 ```
-usage: nc2asc_cl [-h] [-i INPUT_FILE] [-o OUTPUT_FILE_CL] [-b BATCH_FILE]
+usage: nc2asc [-h] [-i INPUT_FILE] [-o OUTPUT_FILE_CL] [-b BATCH_FILE]
 
 Provide (Optional) (-i) Input File (Optional) (-o) Output File and (-b) Batch
 File
@@ -148,7 +148,7 @@ Vars=ALT_A
 
 ```
 ### Note on Multidimensional data handling
-For a given variable that has a bin size dimension, the data for each bin size is represented as an individual column in the two dimensional data array. The first header row is the variable name. This header row is present in the preview and output regardless of the header (Plain, ICARTT, AMES) format selected. The second header row is the bin number (0th bin included as a legacy placeholder). The third header row is either the dimension count (number of histogram bin) or the `CellSizes` attribute, if `CellSizes` attribute is present for the selected variable. 
+For a given variable that has a bin size dimension, the data for each bin size is represented as an individual column in the two dimensional data array. The first header row is the variable name. This header row is present in the preview and output regardless of the header (Plain, ICARTT, AMES) format selected. The second header row is the bin number (0th bin included as a legacy placeholder, when applicable based on processing). The third header row is either the dimension count (number of histogram bin) or the `CellSizes` attribute, if `CellSizes` attribute is present for the selected variable. 
 
 An example is shown below from SPICULE variable `A1DC_RWOO`
 ```
