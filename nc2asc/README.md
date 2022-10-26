@@ -1,7 +1,7 @@
 ## Overview
 nc2asc_python is a python 3 based program that is intended for users of NSF/NCAR RAF NetCDF datasets who would like to convert the netCDF data to ASCII.
 
-The program is under revision control under the repo `NCAR/aircraft_nc_utils/nc2asc_python/src`. Template header files for ICARTT (https://www-air.larc.nasa.gov/missions/etc/IcarttDataFormat.htm) and AMES (https://espoarchive.nasa.gov/content/Ames_Format_Specification_v20) formats are contained in `NCAR/aircraft_nc_utils/nc2asc_python/lib`. The program will modify and write from these templates depending on the user preference. 
+The program is under revision control under the repo `NCAR/aircraft_nc_utils/nc2asc/src`. Template header files for ICARTT (https://www-air.larc.nasa.gov/missions/etc/IcarttDataFormat.htm) and AMES (https://espoarchive.nasa.gov/content/Ames_Format_Specification_v20) formats are contained in `NCAR/aircraft_nc_utils/nc2asc/lib`. The program will modify and write from these templates depending on the user preference. 
 
 On EOL servers barolo and tikal, a user can execute `nc2asc` from the command line and the GUI will launch. `aircraft_nc_utils/nc2asc/src` is also installed on the EOL RAF Ground Station computer, where it us called in command line mode by the ground processing scripts to generate an ICARTT V2 (https://cdn.earthdata.nasa.gov/conduit/upload/6158/ESDS-RFC-029v2.pdf) file after a flight, if configured to do so.
 
