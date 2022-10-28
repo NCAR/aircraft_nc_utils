@@ -1,5 +1,5 @@
 ## Overview
-nc2asc_python is a python 3 based program that is intended for users of NSF/NCAR RAF NetCDF datasets who would like to convert the netCDF data to ASCII.
+nc2asc is a python 3 based program that is intended for users of NSF/NCAR RAF netCDF datasets who would like to convert the netCDF data to ASCII.
 
 The program is under revision control under the repo `NCAR/aircraft_nc_utils/nc2asc/src`. Template header files for ICARTT (https://www-air.larc.nasa.gov/missions/etc/IcarttDataFormat.htm) and AMES (https://espoarchive.nasa.gov/content/Ames_Format_Specification_v20) formats are contained in `NCAR/aircraft_nc_utils/nc2asc/lib`. The program will modify and write from these templates depending on the user preference. 
 
@@ -125,27 +125,18 @@ The desired vars should be inclueded with each Var listed on a separate line.
 
 ```
 if=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc
-
 of=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt
 
 hd=Plain
-
 avg=1
-
 dt=yyyy-mm-dd
-
 tm=hh:mm:ss
-
 sp=comma
-
 fv=-32767
 
 Vars=Time
-
 Vars=ALT
-
 Vars=ALT_A
-
 ```
 ### Note on Multidimensional data handling
 For a given variable that has a bin size dimension, the data for each bin size is represented as an individual column in the two dimensional data array. The first header row is the variable name. This header row is present in the preview and output regardless of the header (Plain, ICARTT, AMES) format selected. The second header row is the bin number (0th bin included as a legacy placeholder, when applicable based on processing). The third header row is either the dimension count (number of histogram bin) or the `CellSizes` attribute, if `CellSizes` attribute is present for the selected variable. 
