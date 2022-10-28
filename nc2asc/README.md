@@ -38,20 +38,18 @@ The expected arguments for use with the command line mode of nc2asc are as follo
 ### Command Line Help:
 
 ```
-usage: nc2asc [-h] [-i INPUT_FILE] [-o OUTPUT_FILE_CL] [-b BATCH_FILE]
+(base) 2992% nc2asc -h
+usage: nc2asc [-h] [-i I] [-o O] [-b B]
 
 Provide (Optional) (-i) Input File (Optional) (-o) Output File and (-b) Batch
 File
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -i INPUT_FILE, --input_file INPUT_FILE
-                        (Optional) Input file to converte.g.
-                        /scr/raf_data/<PROJECT>/PROJECTrf01.nc
-  -o OUTPUT_FILE_CL, --output_file_cl OUTPUT_FILE_CL
-                        (Optional) Output file
-  -b BATCH_FILE, --batch_file BATCH_FILE
-                        Batch file
+  -h, --help  show this help message and exit
+  -i I        (Optional) Input file to converte.g.
+              /scr/raf_data/<PROJECT>/PROJECTrf01.nc
+  -o O        (Optional) Output file
+  -b B        Batch file
 ```                        
   
 ### Options
