@@ -57,7 +57,7 @@ optional arguments:
 #### Date Format Options
 Date format options include `yyyy:mm:dd`, `yyyy mm dd`, or `NoDate`. The format of these selections should match the following when using a batch file:
 
-`dt=yyyy:mm:dd`
+`dt=yyyy-mm-dd`
 
 `dt=yyyy mm dd`
 
@@ -67,9 +67,9 @@ Date format options include `yyyy:mm:dd`, `yyyy mm dd`, or `NoDate`. The format 
 #### Time Format Options
 Time format options include `hhhh:mm:ss`, `hhhh mm ss`, or `SecOfDay`. The format of these selections should match the following when using a batch file:
 
-`tm=hhhh:mm:ss`
+`tm=hh:mm:ss`
 
-`tm=hhhh mm ss`
+`tm=hh mm ss`
 
 `tm=SecOfDay`
 
