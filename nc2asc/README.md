@@ -168,3 +168,18 @@ Date,Time,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DC
 2021-05-29,15:30:08,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
 
 ```
+
+### Note on High Rate and Sample Rate data file conversions
+
+Users can convert high rate or sample rate netCDF files to CSV files using the following command line options:
+
+```-r``` Accepts HRT, hrt, H, h for high rate files. Accepts SRT srt, S, s for sample rate files.
+
+```-v``` If the -v flag is provided, a list of variables (space separated) should follow. 
+
+
+Example for high rate conversion:
+```nc2asc -i <input_file> -o <output_file> -r HRT -v <Var1> <Var2> <Var3>```
+
+Example for sample rate conversion:
+```nc2asc -i <input_file> -o <output_file> -r SRT -v <Var1> <Var2> <Var3>```
