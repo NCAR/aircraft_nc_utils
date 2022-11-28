@@ -24,6 +24,8 @@ import netCDF4
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from warnings import simplefilter
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
@@ -394,7 +396,7 @@ class gui(QMainWindow):
             else:
                 pass
             if buttonReply == QMessageBox.No:
-                print('No clicked.')
+                print('No clicked.')            
             else:
                 print('Continuing...')
 
@@ -1988,6 +1990,8 @@ class nc2asc_CL():
         parser.add_argument('-i', type=str, help='(Optional) Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
         parser.add_argument('-o', type=str, help='(Optional) Output file')
         parser.add_argument('-b', type=str, help='Batch file')
+        parser.add_argument('-r', type=str, help='(Optional) Rate flag for high rate (HRT) or sample rate (SRT) conversion')
+        parser.add_argument('-v', type=str, nargs='+', help='(Optional) Variables to convert with HRT or SRT conversion. Defaults to all.')
         args = parser.parse_args()
         return(args)
 
@@ -2000,16 +2004,263 @@ class nc2asc_CL():
         self.output_file = args.o
         self.inputbatch_file = args.b
         try:
+            self.rate = args.r
+        except Exception as e:
+            print(e)
+            self.rate = LRT
+        try:
+            self.vars = args.v
+        except Exception as e:
+            print(e)
+        try:
             print('****Storing Command Line Arguments****')
             print('INPUT FILE:'+self.input_file)
             print('OUTPUT_FILE:'+self.output_file)
             print('BATCH_FILE:'+self.inputbatch_file)
-        except:
-            print('Error getting command line arguments.')
+        except Exception as e:
+            print(e)
 
-        try:
-            # read in the input file
-            nc = netCDF4.Dataset(self.input_file, mode='r')
+
+        # read in the input file
+        nc = netCDF4.Dataset(self.input_file, mode='r')
+
+        if self.rate == 'hrt' or self.rate == 'HRT' or self.rate == 'h' or self.rate == 'H':
+            asc_lrt = {}
+            asc_sps25 = {}
+            try:
+                for i in args.v:
+                    output=nc[i][1:]
+                    output = output.flatten()
+                    dims = str(nc.variables[i].dimensions)
+                    if dims == "('Time',)":
+                        asc_lrt[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps25')":
+                        asc_sps25[i]=pd.DataFrame(output)
+            except:
+                for i in nc.variables.keys():
+                    output=nc[i][1:]
+                    output = output.flatten()
+                    dims = str(nc.variables[i].dimensions)
+                    if dims == "('Time',)":
+                        asc_lrt[i]=pd.DataFrame(output)
+                    elif dims == "('Time', 'sps25')":
+                        asc_sps25[i]=pd.DataFrame(output)
+
+            asc_lrt=pd.concat(asc_lrt, axis=1, ignore_index=False)
+            n = 24
+            hrt_index = pd.RangeIndex(len(asc_lrt)*(n+1))
+            reshape_asc = pd.DataFrame(np.nan, index=hrt_index, columns=asc_lrt.columns)
+            ids = np.arange(len(asc_lrt))*(n+1)
+            reshape_asc.loc[ids] = asc_lrt.values
+            asc_lrt = pd.DataFrame(reshape_asc)
+            asc_sps25=pd.concat(asc_sps25, axis=1, ignore_index=False)
+            asc_sps25_combined=pd.concat([asc_lrt, asc_sps25], axis=1, ignore_index=False)
+            asc_sps25_combined.columns = asc_sps25_combined.columns.droplevel(1)
+            asc_sps25_combined.to_csv(self.output_file, index=False)
+
+        elif self.rate == 'srt' or self.rate == 'SRT' or self.rate == 's' or self.rate == 'S':
+
+            asc_lrt = {}
+            asc_sps100 = {}
+            asc_sps50 = {}
+            asc_sps25 = {}
+            asc_sps20 = {}
+            asc_sps16 = {}
+            asc_sps13 = {}
+            asc_sps10 = {}
+            asc_sps8 = {}
+            asc_sps2 = {}
+            asc_srt_combined = pd.DataFrame()
+
+            try:
+                for i in args.v:
+
+                    output=nc[i][:]
+                    output = output.flatten()
+                    dims = str(nc.variables[i].dimensions)
+                    if dims == "('Time',)":
+                        asc_lrt[i]=pd.DataFrame(output)
+                    elif dims == "('Time', 'sps100')":
+                        asc_sps100[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps50')":
+                        asc_sps50[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps25')":
+                        asc_sps25[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps20')":
+                        asc_sps20[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps16')":
+                        asc_sps16[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps13')":
+                        asc_sps13[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps10')":
+                        asc_sps10[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps8')":
+                        asc_sps8[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps2')":
+                        asc_sps2[i]=pd.DataFrame(output)
+            except:
+                for i in nc.variables.keys():
+                    output=nc[i][:]
+                    output = output.flatten()
+                    dims = str(nc.variables[i].dimensions)
+                    if dims == "('Time')":
+                        asc_lrt[i]=pd.DataFrame(output)
+                    elif dims == "('Time', 'sps100')":
+                        asc_sps100[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps50')":
+                        asc_sps50[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps25')":
+                        asc_sps25[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps20')":
+                        asc_sps20[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps16')":
+                        asc_sps16[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps13')":
+                        asc_sps13[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps10')":
+                        asc_sps10[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps8')":
+                        asc_sps8[i]=pd.DataFrame(output)
+
+                    elif dims == "('Time', 'sps2')":
+                        asc_sps2[i]=pd.DataFrame(output)
+
+            try:
+                asc_lrt=pd.concat(asc_lrt, axis=1, ignore_index=False)
+                n = 99
+                srt_index = pd.RangeIndex(len(asc_lrt)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_lrt.columns)
+                ids = np.arange(len(asc_lrt))*(n+1)
+                reshape_asc.loc[ids] = asc_lrt.values
+                asc_lrt = pd.DataFrame(reshape_asc)
+                print(asc_lrt)
+            except Exception as e:
+                asc_lrt = pd.DataFrame(asc_lrt)
+
+            try:
+                asc_sps50=pd.concat(asc_sps50, axis=1, ignore_index=False)
+                n = 49
+                srt_index = pd.RangeIndex(len(asc_sps50)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps50.columns)
+                ids = np.arange(len(asc_sps50))*(n+1)
+                reshape_asc.loc[ids] = asc_sps50.values
+                asc_sps50 = pd.DataFrame(reshape_asc)
+                print(asc_sps50)
+            except Exception as e:
+                asc_sps50 = pd.DataFrame(asc_sps50)
+
+            try:
+                asc_sps25=pd.concat(asc_sps25, axis=1, ignore_index=False)
+                n = 74
+                srt_index = pd.RangeIndex(len(asc_sps25)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps25.columns)
+                ids = np.arange(len(asc_sps25))*(n+1)
+                reshape_asc.loc[ids] = asc_sps25.values
+                asc_sps25 = pd.DataFrame(reshape_asc)
+                print(asc_sps25)
+            except Exception as e:
+                asc_sps25 = pd.DataFrame(asc_sps25)
+
+            try:
+
+                asc_sps20=pd.concat(asc_sps20, axis=1, ignore_index=False)
+                n = 79
+                srt_index = pd.RangeIndex(len(asc_sps20)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps20.columns)
+                ids = np.arange(len(asc_sps20))*(n+1)
+                reshape_asc.loc[ids] = asc_sps20.values
+                asc_sps20 = pd.DataFrame(reshape_asc)
+                print(asc_sps20)
+            except Exception as e:
+                asc_sps20 = pd.DataFrame(asc_sps20)
+
+            try:
+                asc_sps16=pd.concat(asc_sps16, axis=1, ignore_index=False)
+                n = 83
+                srt_index = pd.RangeIndex(len(asc_sps16)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps16.columns)
+                ids = np.arange(len(asc_sps16))*(n+1)
+                reshape_asc.loc[ids] = asc_sps16.values
+                asc_sps16 = pd.DataFrame(reshape_asc)
+                print(asc_sps16)
+            except Exception as e:
+                asc_sps16 = pd.DataFrame(asc_sps16)
+
+            try:
+                asc_sps13=pd.concat(asc_sps13, axis=1, ignore_index=False)
+                n = 86
+                srt_index = pd.RangeIndex(len(asc_sps13)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps13.columns)
+                ids = np.arange(len(asc_sps13))*(n+1)
+                reshape_asc.loc[ids] = asc_sps13.values
+                asc_sps13 = pd.DataFrame(reshape_asc)
+                print(asc_sps13)
+            except Exception as e:
+                asc_sps13 = pd.DataFrame(asc_sps13)
+            try:
+                asc_sps10=pd.concat(asc_sps10, axis=1, ignore_index=False)
+                n = 89
+                srt_index = pd.RangeIndex(len(asc_sps10)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps10.columns)
+                ids = np.arange(len(asc_sps10))*(n+1)
+                reshape_asc.loc[ids] = asc_sps10.values
+                asc_sps10 = pd.DataFrame(reshape_asc)
+                print(asc_sps10)
+            except Exception as e:
+                asc_sps10 = pd.DataFrame(asc_sps10)
+            try:
+                asc_sps8=pd.concat(asc_sps8, axis=1, ignore_index=False)
+                n = 91
+                srt_index = pd.RangeIndex(len(asc_sps8)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps8.columns)
+                ids = np.arange(len(asc_sps8))*(n+1)
+                reshape_asc.loc[ids] = asc_sps8.values
+                asc_sps8 = pd.DataFrame(reshape_asc)
+                print(asc_sps8)
+            except Exception as e:
+                asc_sps8 = pd.DataFrame(asc_sps8)
+            try:
+                asc_sps2=pd.concat(asc_sps2, axis=1, ignore_index=False)
+                n = 97
+                srt_index = pd.RangeIndex(len(asc_sps2)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps2.columns)
+                ids = np.arange(len(asc_sps2))*(n+1)
+                reshape_asc.loc[ids] = asc_sps2.values
+                asc_sps2 = pd.DataFrame(reshape_asc)
+                print(asc_sps2)
+            except Exception as e:
+                asc_sps2 = pd.DataFrame(asc_sps2)
+
+            try:
+                asc_sps100=pd.concat(asc_sps100, axis=1, ignore_index=False)
+                print(asc_sps100)
+            except Exception as e:
+                asc_sps100 = pd.DataFrame(asc_sps100)
+            try:
+                asc_srt_combined=pd.concat([asc_lrt, asc_sps50, asc_sps25, asc_sps20, asc_sps16, asc_sps13, asc_sps10, asc_sps8, asc_sps2, asc_sps100], axis=1, ignore_index=False)
+                asc_srt_combined.columns = asc_srt_combined.columns.droplevel(1)
+                print(asc_srt_combined)
+            except Exception as e:
+                print(e)
+            asc_srt_combined.to_csv(self.output_file, index=False)
+
+        else:
             # create an empty pandas series to hold variables
             self.variables_extract = pd.Series().astype(str)#[], dtype="string")
             # create empty dicts
@@ -2089,153 +2340,142 @@ class nc2asc_CL():
             self.start_time = self.dtime.iloc[0]
             self.end_time = self.dtime.iloc[-1]
             self.dtime=nc.variables['Time']
-        except Exception as e:
-            print(e)
-            print('Error in extracting variable in '+str(self.inputbatch_file))
 
-        try:
-            with open(self.inputbatch_file, 'r') as fil:
-                # create empty placeholders
-                self.variables_extract_batch = []
-                self.asc_new_batch = pd.DataFrame()
-                for ln in fil:
-                    if ln.startswith('if='):
-                        ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                        if ip == 'Y' or ip == 'y':
-                            self.input_file = []
-                            self.input_file = str(ln[2:])
-                            self.input_file = self.input_file.replace('=', '')
-                            self.input_file = self.input_file.replace("'", '')
-                            self.input_file = self.input_file.replace('\n', '')
-                            print('Using input file from the batch file: '+self.input_file)
-                        else:
-                            pass
+            try:
+                with open(self.inputbatch_file, 'r') as fil:
+                    # create empty placeholders
+                    self.variables_extract_batch = []
+                    self.asc_new_batch = pd.DataFrame()
+                    for ln in fil:
+                        if ln.startswith('if='):
+                            ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                            if ip == 'Y' or ip == 'y':
+                                self.input_file = []
+                                self.input_file = str(ln[2:])
+                                self.input_file = self.input_file.replace('=', '')
+                                self.input_file = self.input_file.replace("'", '')
+                                self.input_file = self.input_file.replace('\n', '')
+                                print('Using input file from the batch file: '+self.input_file)
+                            else:
+                                pass
 
-                    elif ln.startswith('of='):
-                        of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                        if of == 'Y' or of == 'y':
-                            self.output_file = []
-                            self.output_file = str(ln[2:])
-                            self.output_file = self.output_file.replace('=', '')
-                            self.output_file = self.output_file.replace("'", '')
-                            self.output_file = self.output_file.replace('\n', '')
-                            print('Using output file from the batch file: '+self.output_file)
-                        else:
-                            self.output_file = self.output_file
+                        elif ln.startswith('of='):
+                            of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                            if of == 'Y' or of == 'y':
+                                self.output_file = []
+                                self.output_file = str(ln[2:])
+                                self.output_file = self.output_file.replace('=', '')
+                                self.output_file = self.output_file.replace("'", '')
+                                self.output_file = self.output_file.replace('\n', '')
+                                print('Using output file from the batch file: '+self.output_file)
+                            else:
+                                self.output_file = self.output_file
 
-                    # get the header format from the batch file
-                    if ln.startswith('hd=Plain'):
-                        try:
-                            self.header1.setChecked(True)
-                        except:
-                            self.header = 'Plain'
-                    elif ln.startswith('hd=ICARTT'):
-                        try:
-                            self.header2.setChecked(True)
-                        except:
-                            self.header = 'ICARTT'
-                    elif ln.startswith('hd=AMES'):
-                        try:
-                            self.header3.setChecked(True)
-                        except:
-                            self.header = 'AMES'
-                    elif ln.startswith('dt=yyyy-mm-dd'):
-                        try:
-                            self.date1.setChecked(True)
-                        except:
-                            self.date = 'yyyy-mm-dd'
-                    elif ln.startswith('dt=yyyy mm dd'):
-                        try:
-                            self.date2.setChecked(True)
-                        except:
-                            self.date = 'yyyy mm dd'
-                    elif ln.startswith('dt=NoDate'):
-                        try:
-                            self.date3.setChecked(True)
-                        except:
-                            self.date = 'NoDate'
-                    elif ln.startswith('tm=hh:mm:ss'):
-                        try:
-                            self.time1.setChecked(True)
-                        except:
-                            self.time = 'hh:mm:ss'
-                    elif ln.startswith('tm=hh mm ss'):
-                        try:
-                            self.time2.setChecked(True)
-                        except:
-                            self.time = 'hh mm ss'
-                    elif ln.startswith('tm=SecOfDay'):
-                        try:
-                            self.time3.setChecked(True)
-                        except:
-                            self.time = 'SecOfDay'
-                    elif ln.startswith('sp=comma'):
-                        try:
-                            self.comma.setChecked(True)
-                        except:
-                            self.delimiter = 'comma'
-                    elif ln.startswith('sp=space'):
-                        try:
-                            self.space.setChecked(True)
-                        except:
-                            self.delimiter = 'space'
-                    elif ln.startswith('fv=-32767'):
-                        try:
-                            self.fillvalue1.setChecked(True)
-                        except:
-                            self.fillvalue = '-32767'
-                    elif ln.startswith('fv=blank'):
-                        try:
-                            self.fillvalue2.setChecked(True)
-                        except:
-                            self.fillvalue = 'blank'
-                    elif ln.startswith('fv=replicate'):
-                        try:
-                            self.fillvalue3.setChecked(True)
-                        except:
-                            self.fillvalue = 'replicate'
+                        # get the header format from the batch file
+                        if ln.startswith('hd=Plain'):
+                            try:
+                                self.header1.setChecked(True)
+                            except:
+                                self.header = 'Plain'
+                        elif ln.startswith('hd=ICARTT'):
+                            try:
+                                self.header2.setChecked(True)
+                            except:
+                                self.header = 'ICARTT'
+                        elif ln.startswith('hd=AMES'):
+                            try:
+                                self.header3.setChecked(True)
+                            except:
+                                self.header = 'AMES'
+                        elif ln.startswith('dt=yyyy-mm-dd'):
+                            try:
+                                self.date1.setChecked(True)
+                            except:
+                                self.date = 'yyyy-mm-dd'
+                        elif ln.startswith('dt=yyyy mm dd'):
+                            try:
+                                self.date2.setChecked(True)
+                            except:
+                                self.date = 'yyyy mm dd'
+                        elif ln.startswith('dt=NoDate'):
+                            try:
+                                self.date3.setChecked(True)
+                            except:
+                                self.date = 'NoDate'
+                        elif ln.startswith('tm=hh:mm:ss'):
+                            try:
+                                self.time1.setChecked(True)
+                            except:
+                                self.time = 'hh:mm:ss'
+                        elif ln.startswith('tm=hh mm ss'):
+                            try:
+                                self.time2.setChecked(True)
+                            except:
+                                self.time = 'hh mm ss'
+                        elif ln.startswith('tm=SecOfDay'):
+                            try:
+                                self.time3.setChecked(True)
+                            except:
+                                self.time = 'SecOfDay'
+                        elif ln.startswith('sp=comma'):
+                            try:
+                                self.comma.setChecked(True)
+                            except:
+                                self.delimiter = 'comma'
+                        elif ln.startswith('sp=space'):
+                            try:
+                                self.space.setChecked(True)
+                            except:
+                                self.delimiter = 'space'
+                        elif ln.startswith('fv=-32767'):
+                            try:
+                                self.fillvalue1.setChecked(True)
+                            except:
+                                self.fillvalue = '-32767'
+                        elif ln.startswith('fv=blank'):
+                            try:
+                                self.fillvalue2.setChecked(True)
+                            except:
+                                self.fillvalue = 'blank'
+                        elif ln.startswith('fv=replicate'):
+                            try:
+                                self.fillvalue3.setChecked(True)
+                            except:
+                                self.fillvalue = 'replicate'
 
-                    # get the version information from file for appending
-                    elif ln.startswith('version='):
-                        self.version = str(ln).replace('version=', '').replace('\n', '')
-                    # get the time interval from the batch file
-                    elif ln.startswith('ti='):
-                        self.ti = ln[2:]
-                    # get the average value (if provided) from the bath file
-                    elif ln.startswith('avg='):
-                        self.avg = ln[2:]
-                    elif ln.startswith('Vars='):
-                        var_batchfile = str(ln)
-                        if var_batchfile not in self.variables_extract_batch:
-                            self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
-                # format averaging
-                self.avg = self.avg.replace('[', '')
-                self.avg = self.avg.replace("'", '')
-                self.avg = self.avg.replace('=', '')
-                self.avg = self.avg.replace(']', '')
-                self.avg = self.avg.replace('g', '')
-                self.avg = self.avg[:-1]
-            for x in range(len(self.variables_extract_batch)):
-                self.asc_new_batch = pd.concat([self.asc_new_batch, self.asc[self.variables_extract_batch[x]]], axis=1, ignore_index=False)
-            self.asc_new_batch.columns = [self.variables_extract_batch]
-        except Exception as e:
-            print(e)
-        try:
-            for i in self.variables_extract_batch:
-                if i not in nc.variables.keys():
-                    print('***WARNING****Var '+str(i)+' not in netCDF file!!! Continuing with conversion****')
-                else:
-                    pass
-        except Exception as e:
-            print(e)
-        try:
-            print('****Formatting data from input file. If CL argument provided, using by default.****')
-            print('Data formatted successfully.')
-        except Exception as e:
-            print(e)
-            print('Error formatting data.')
-        try:
-            print('****Writing Data to Output File****')
+                        # get the version information from file for appending
+                        elif ln.startswith('version='):
+                            self.version = str(ln).replace('version=', '').replace('\n', '')
+                        # get the time interval from the batch file
+                        elif ln.startswith('ti='):
+                            self.ti = ln[2:]
+                        # get the average value (if provided) from the bath file
+                        elif ln.startswith('avg='):
+                            self.avg = ln[2:]
+                        elif ln.startswith('Vars='):
+                            var_batchfile = str(ln)
+                            if var_batchfile not in self.variables_extract_batch:
+                                self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
+                    # format averaging
+                    self.avg = self.avg.replace('[', '')
+                    self.avg = self.avg.replace("'", '')
+                    self.avg = self.avg.replace('=', '')
+                    self.avg = self.avg.replace(']', '')
+                    self.avg = self.avg.replace('g', '')
+                    self.avg = self.avg[:-1]
+                for x in range(len(self.variables_extract_batch)):
+                    self.asc_new_batch = pd.concat([self.asc_new_batch, self.asc[self.variables_extract_batch[x]]], axis=1, ignore_index=False)
+                self.asc_new_batch.columns = [self.variables_extract_batch]
+            except Exception as e:
+                print(e)
+            try:
+                for i in self.variables_extract_batch:
+                    if i not in nc.variables.keys():
+                        print('***WARNING****Var '+str(i)+' not in netCDF file!!! Continuing with conversion****')
+                    else:
+                        pass
+            except Exception as e:
+                print(e)
             try:
                 os.system('rm '+args.output_file_cl)
             except Exception as e:
@@ -2246,8 +2486,6 @@ class nc2asc_CL():
             except Exception as e:
                 print(e)
             return self.asc, self.input_file, self.output_file, self.dtime_date, self.dtime_time, self.dtime
-        except:
-            print('****Error writing to output file.****')
 #############################################################################
 # Define main function to determine mode
 # Program can execute to render GUI or can process via command line
