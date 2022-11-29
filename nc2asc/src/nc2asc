@@ -2016,7 +2016,6 @@ class nc2asc_CL():
             print('****Storing Command Line Arguments****')
             print('INPUT FILE:'+self.input_file)
             print('OUTPUT_FILE:'+self.output_file)
-            print('BATCH_FILE:'+self.inputbatch_file)
         except Exception as e:
             print(e)
 
@@ -2047,16 +2046,27 @@ class nc2asc_CL():
                     elif dims == "('Time', 'sps25')":
                         asc_sps25[i]=pd.DataFrame(output)
 
-            asc_lrt=pd.concat(asc_lrt, axis=1, ignore_index=False)
-            n = 24
-            hrt_index = pd.RangeIndex(len(asc_lrt)*(n+1))
-            reshape_asc = pd.DataFrame(np.nan, index=hrt_index, columns=asc_lrt.columns)
-            ids = np.arange(len(asc_lrt))*(n+1)
-            reshape_asc.loc[ids] = asc_lrt.values
-            asc_lrt = pd.DataFrame(reshape_asc)
-            asc_sps25=pd.concat(asc_sps25, axis=1, ignore_index=False)
+            try:
+                asc_lrt=pd.concat(asc_lrt, axis=1, ignore_index=False)
+                n = 24
+                hrt_index = pd.RangeIndex(len(asc_lrt)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=hrt_index, columns=asc_lrt.columns)
+                ids = np.arange(len(asc_lrt))*(n+1)
+                reshape_asc.loc[ids] = asc_lrt.values
+                asc_lrt = pd.DataFrame(reshape_asc)
+                print(asc_lrt)
+            except:
+                asc_lrt = pd.DataFrame(asc_lrt)
+
+            try:
+                asc_sps25=pd.concat(asc_sps25, axis=1, ignore_index=False)
+                print(asc_sps25)
+            except:
+                asc_sps25 = pd.DataFrame(asc_sps25)
+
             asc_sps25_combined=pd.concat([asc_lrt, asc_sps25], axis=1, ignore_index=False)
             asc_sps25_combined.columns = asc_sps25_combined.columns.droplevel(1)
+
             asc_sps25_combined.to_csv(self.output_file, index=False)
 
         elif self.rate == 'srt' or self.rate == 'SRT' or self.rate == 's' or self.rate == 'S':
