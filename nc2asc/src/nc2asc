@@ -371,7 +371,7 @@ class gui(QMainWindow):
 #############################################################################
 
     def openhelp(self):
-        url = QtCore.QUrl('https://github.com/NCAR/aircraft_nc_utils/blob/master/nc2asc_python/README.md')
+        url = QtCore.QUrl('https://github.com/NCAR/aircraft_nc_utils/blob/master/nc2asc/README.md')
         if not QtGui.QDesktopServices.openUrl(url):
             QtGui.QMessageBox.warning(self, 'readme', 'Could not open url')
 
