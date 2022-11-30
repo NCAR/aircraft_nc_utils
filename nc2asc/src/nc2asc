@@ -1990,7 +1990,7 @@ class nc2asc_CL():
         parser.add_argument('-i', type=str, help='(Optional) Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
         parser.add_argument('-o', type=str, help='(Optional) Output file')
         parser.add_argument('-b', type=str, help='Batch file')
-        parser.add_argument('-r', type=str, help='(Optional) Rate flag for high rate (HRT) or sample rate (SRT) conversion')
+        parser.add_argument('-mixed_rate', action='store_true')
         parser.add_argument('-v', type=str, nargs='+', help='(Optional) Variables to convert with HRT or SRT conversion. Defaults to all.')
         args = parser.parse_args()
         return(args)
@@ -2004,10 +2004,10 @@ class nc2asc_CL():
         self.output_file = args.o
         self.inputbatch_file = args.b
         try:
-            self.rate = args.r
+            self.rate = args.mixed_rate
         except Exception as e:
             print(e)
-            self.rate = LRT
+            self.rate = False
         try:
             self.vars = args.v
         except Exception as e:
@@ -2023,252 +2023,53 @@ class nc2asc_CL():
         # read in the input file
         nc = netCDF4.Dataset(self.input_file, mode='r')
 
-        if self.rate == 'hrt' or self.rate == 'HRT' or self.rate == 'h' or self.rate == 'H':
-            asc_lrt = {}
-            asc_sps25 = {}
-            try:
-                for i in args.v:
-                    output=nc[i][1:]
-                    output = output.flatten()
-                    dims = str(nc.variables[i].dimensions)
-                    if dims == "('Time',)":
-                        asc_lrt[i]=pd.DataFrame(output)
+        # keep mixed_rate bool arg, to enter this as opposed to the full conversion.
+        if args.mixed_rate:
 
-                    elif dims == "('Time', 'sps25')":
-                        asc_sps25[i]=pd.DataFrame(output)
-            except:
-                for i in nc.variables.keys():
-                    output=nc[i][1:]
-                    output = output.flatten()
-                    dims = str(nc.variables[i].dimensions)
-                    if dims == "('Time',)":
-                        asc_lrt[i]=pd.DataFrame(output)
-                    elif dims == "('Time', 'sps25')":
-                        asc_sps25[i]=pd.DataFrame(output)
+            # create placeholder dictionaries for dimensions and rate deltas
+            variable_dimension_dict = {}
+            rate_delta_dict = {}
+            asc = pd.DataFrame()
+            temp_df = pd.DataFrame()
 
-            try:
-                asc_lrt=pd.concat(asc_lrt, axis=1, ignore_index=False)
-                n = 24
-                hrt_index = pd.RangeIndex(len(asc_lrt)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=hrt_index, columns=asc_lrt.columns)
-                ids = np.arange(len(asc_lrt))*(n+1)
-                reshape_asc.loc[ids] = asc_lrt.values
-                asc_lrt = pd.DataFrame(reshape_asc)
-                print(asc_lrt)
-            except:
-                asc_lrt = pd.DataFrame(asc_lrt)
+            # check to see if variables were included on command line
+            if args.v is None:
+                vars = nc.variables.keys()
+            else:
+                vars = args.v
 
-            try:
-                asc_sps25=pd.concat(asc_sps25, axis=1, ignore_index=False)
-                print(asc_sps25)
-            except:
-                asc_sps25 = pd.DataFrame(asc_sps25)
+            #iterate over vars
+            for i in vars:
 
-            asc_sps25_combined=pd.concat([asc_lrt, asc_sps25], axis=1, ignore_index=False)
-            asc_sps25_combined.columns = asc_sps25_combined.columns.droplevel(1)
+                # extract rates and append to dictionary
+                dim = str(nc.variables[i].dimensions).replace("('Time',)",
+                str(1)).replace("('Time', 'sps", '').replace("')", '')
+                variable_dimension_dict[i] = dim
+                # find maximum rate
+                value_list = variable_dimension_dict.values()
+                maximum = max(value_list)
 
-            asc_sps25_combined.to_csv(self.output_file, index=False)
+            #find the rate delta for each variable based on var dim and max dim
+            for key, value in variable_dimension_dict.items():
+                rate_delta_dict[key] = int(maximum) - int(value)
+                print(value)
 
-        elif self.rate == 'srt' or self.rate == 'SRT' or self.rate == 's' or self.rate == 'S':
-
-            asc_lrt = {}
-            asc_sps100 = {}
-            asc_sps50 = {}
-            asc_sps25 = {}
-            asc_sps20 = {}
-            asc_sps16 = {}
-            asc_sps13 = {}
-            asc_sps10 = {}
-            asc_sps8 = {}
-            asc_sps2 = {}
-            asc_srt_combined = pd.DataFrame()
-
-            try:
-                for i in args.v:
-
-                    output=nc[i][:]
-                    output = output.flatten()
-                    dims = str(nc.variables[i].dimensions)
-                    if dims == "('Time',)":
-                        asc_lrt[i]=pd.DataFrame(output)
-                    elif dims == "('Time', 'sps100')":
-                        asc_sps100[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps50')":
-                        asc_sps50[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps25')":
-                        asc_sps25[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps20')":
-                        asc_sps20[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps16')":
-                        asc_sps16[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps13')":
-                        asc_sps13[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps10')":
-                        asc_sps10[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps8')":
-                        asc_sps8[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps2')":
-                        asc_sps2[i]=pd.DataFrame(output)
-            except:
-                for i in nc.variables.keys():
-                    output=nc[i][:]
-                    output = output.flatten()
-                    dims = str(nc.variables[i].dimensions)
-                    if dims == "('Time')":
-                        asc_lrt[i]=pd.DataFrame(output)
-                    elif dims == "('Time', 'sps100')":
-                        asc_sps100[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps50')":
-                        asc_sps50[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps25')":
-                        asc_sps25[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps20')":
-                        asc_sps20[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps16')":
-                        asc_sps16[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps13')":
-                        asc_sps13[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps10')":
-                        asc_sps10[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps8')":
-                        asc_sps8[i]=pd.DataFrame(output)
-
-                    elif dims == "('Time', 'sps2')":
-                        asc_sps2[i]=pd.DataFrame(output)
-
-            try:
-                asc_lrt=pd.concat(asc_lrt, axis=1, ignore_index=False)
-                n = 99
-                srt_index = pd.RangeIndex(len(asc_lrt)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_lrt.columns)
-                ids = np.arange(len(asc_lrt))*(n+1)
-                reshape_asc.loc[ids] = asc_lrt.values
-                asc_lrt = pd.DataFrame(reshape_asc)
-                print(asc_lrt)
-            except Exception as e:
-                asc_lrt = pd.DataFrame(asc_lrt)
-
-            try:
-                asc_sps50=pd.concat(asc_sps50, axis=1, ignore_index=False)
-                n = 49
-                srt_index = pd.RangeIndex(len(asc_sps50)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps50.columns)
-                ids = np.arange(len(asc_sps50))*(n+1)
-                reshape_asc.loc[ids] = asc_sps50.values
-                asc_sps50 = pd.DataFrame(reshape_asc)
-                print(asc_sps50)
-            except Exception as e:
-                asc_sps50 = pd.DataFrame(asc_sps50)
-
-            try:
-                asc_sps25=pd.concat(asc_sps25, axis=1, ignore_index=False)
-                n = 74
-                srt_index = pd.RangeIndex(len(asc_sps25)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps25.columns)
-                ids = np.arange(len(asc_sps25))*(n+1)
-                reshape_asc.loc[ids] = asc_sps25.values
-                asc_sps25 = pd.DataFrame(reshape_asc)
-                print(asc_sps25)
-            except Exception as e:
-                asc_sps25 = pd.DataFrame(asc_sps25)
-
-            try:
-
-                asc_sps20=pd.concat(asc_sps20, axis=1, ignore_index=False)
-                n = 79
-                srt_index = pd.RangeIndex(len(asc_sps20)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps20.columns)
-                ids = np.arange(len(asc_sps20))*(n+1)
-                reshape_asc.loc[ids] = asc_sps20.values
-                asc_sps20 = pd.DataFrame(reshape_asc)
-                print(asc_sps20)
-            except Exception as e:
-                asc_sps20 = pd.DataFrame(asc_sps20)
-
-            try:
-                asc_sps16=pd.concat(asc_sps16, axis=1, ignore_index=False)
-                n = 83
-                srt_index = pd.RangeIndex(len(asc_sps16)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps16.columns)
-                ids = np.arange(len(asc_sps16))*(n+1)
-                reshape_asc.loc[ids] = asc_sps16.values
-                asc_sps16 = pd.DataFrame(reshape_asc)
-                print(asc_sps16)
-            except Exception as e:
-                asc_sps16 = pd.DataFrame(asc_sps16)
-
-            try:
-                asc_sps13=pd.concat(asc_sps13, axis=1, ignore_index=False)
-                n = 86
-                srt_index = pd.RangeIndex(len(asc_sps13)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps13.columns)
-                ids = np.arange(len(asc_sps13))*(n+1)
-                reshape_asc.loc[ids] = asc_sps13.values
-                asc_sps13 = pd.DataFrame(reshape_asc)
-                print(asc_sps13)
-            except Exception as e:
-                asc_sps13 = pd.DataFrame(asc_sps13)
-            try:
-                asc_sps10=pd.concat(asc_sps10, axis=1, ignore_index=False)
-                n = 89
-                srt_index = pd.RangeIndex(len(asc_sps10)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps10.columns)
-                ids = np.arange(len(asc_sps10))*(n+1)
-                reshape_asc.loc[ids] = asc_sps10.values
-                asc_sps10 = pd.DataFrame(reshape_asc)
-                print(asc_sps10)
-            except Exception as e:
-                asc_sps10 = pd.DataFrame(asc_sps10)
-            try:
-                asc_sps8=pd.concat(asc_sps8, axis=1, ignore_index=False)
-                n = 91
-                srt_index = pd.RangeIndex(len(asc_sps8)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps8.columns)
-                ids = np.arange(len(asc_sps8))*(n+1)
-                reshape_asc.loc[ids] = asc_sps8.values
-                asc_sps8 = pd.DataFrame(reshape_asc)
-                print(asc_sps8)
-            except Exception as e:
-                asc_sps8 = pd.DataFrame(asc_sps8)
-            try:
-                asc_sps2=pd.concat(asc_sps2, axis=1, ignore_index=False)
-                n = 97
-                srt_index = pd.RangeIndex(len(asc_sps2)*(n+1))
-                reshape_asc = pd.DataFrame(np.nan, index=srt_index, columns=asc_sps2.columns)
-                ids = np.arange(len(asc_sps2))*(n+1)
-                reshape_asc.loc[ids] = asc_sps2.values
-                asc_sps2 = pd.DataFrame(reshape_asc)
-                print(asc_sps2)
-            except Exception as e:
-                asc_sps2 = pd.DataFrame(asc_sps2)
-
-            try:
-                asc_sps100=pd.concat(asc_sps100, axis=1, ignore_index=False)
-                print(asc_sps100)
-            except Exception as e:
-                asc_sps100 = pd.DataFrame(asc_sps100)
-            try:
-                asc_srt_combined=pd.concat([asc_lrt, asc_sps50, asc_sps25, asc_sps20, asc_sps16, asc_sps13, asc_sps10, asc_sps8, asc_sps2, asc_sps100], axis=1, ignore_index=False)
-                asc_srt_combined.columns = asc_srt_combined.columns.droplevel(1)
-                print(asc_srt_combined)
-            except Exception as e:
-                print(e)
-            asc_srt_combined.to_csv(self.output_file, index=False)
+            # build the mixed rate dataframe
+            for i in vars:
+                variable_output=nc[i][:]
+                temp_df = pd.DataFrame(variable_output.flatten())
+                n = rate_delta_dict[i]
+                mixed_rate_index = pd.RangeIndex(len(temp_df)*(n+1))
+                reshape_asc = pd.DataFrame(np.nan, index=mixed_rate_index, columns=temp_df.columns)
+                ids = np.arange(len(temp_df))*(n+1)
+                reshape_asc.loc[ids] = temp_df.values
+                asc = pd.concat([asc, reshape_asc], axis = 1)
+            asc.columns = [vars]
+            #interpolate time in milliseconds for 100 Hz data if its there
+            asc['Time'] = asc['Time'].interpolate()
+            # forward fill mixed rate data
+            asc = asc.ffill()
+            asc.to_csv(args.o, index=False)
 
         else:
             # create an empty pandas series to hold variables
