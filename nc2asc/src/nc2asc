@@ -2036,7 +2036,11 @@ class nc2asc_CL():
             if args.v is None:
                 vars = nc.variables.keys()
             else:
-                vars = args.v
+                if 'Time' in args.v:
+                    vars = args.v
+                else:
+                    args.v.insert(0, 'Time')
+                    vars = args.v
 
             #iterate over vars
             for i in vars:
