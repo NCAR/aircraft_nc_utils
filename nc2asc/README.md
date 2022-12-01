@@ -173,13 +173,9 @@ Date,Time,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DCR_RWOO,C2DC
 
 Users can convert high rate or sample rate netCDF files to CSV files using the following command line options:
 
-```-r``` Accepts HRT, hrt, H, h for high rate files. Accepts SRT srt, S, s for sample rate files.
+```-mixed_rate``` sets flag for entering the mixed rate csv file creation block
 
-```-v``` If the -v flag is provided, a list of variables (space separated) should follow. 
+```-v``` If the -v flag is provided, a list of variables (space separated) should follow. If no ```-v``` flag is provided then all vars are used. 
 
-
-Example for high rate conversion:
-```nc2asc -i <input_file> -o <output_file> -r HRT -v <Var1> <Var2> <Var3>```
-
-Example for sample rate conversion:
-```nc2asc -i <input_file> -o <output_file> -r SRT -v <Var1> <Var2> <Var3>```
+Example for mixed rate (HRT or SRT) conversion:
+```nc2asc -i <input_file> -o <output_file> -mixed_rate -v <Var1> <Var2> <Var3>```
