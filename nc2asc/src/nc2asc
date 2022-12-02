@@ -23,9 +23,11 @@ import argparse
 import netCDF4
 import pandas as pd
 import numpy as np
+import math
 from datetime import datetime
-from warnings import simplefilter
+from warnings import simplefilter, filterwarnings
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+filterwarnings(action='ignore', category=DeprecationWarning, message='`np.bool` is a deprecated alias')
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
@@ -2024,13 +2026,15 @@ class nc2asc_CL():
         nc = netCDF4.Dataset(self.input_file, mode='r')
 
         # keep mixed_rate bool arg, to enter this as opposed to the full conversion.
-        if args.mixed_rate:
+        if args.mixed_rate == True:
 
             # create placeholder dictionaries for dimensions and rate deltas
-            variable_dimension_dict = {}
+
+            variable_output = {}
             rate_delta_dict = {}
             asc = pd.DataFrame()
             temp_df = pd.DataFrame()
+            variable_dimension_dict = {}
 
             # check to see if variables were included on command line
             if args.v is None:
@@ -2042,39 +2046,52 @@ class nc2asc_CL():
                 else:
                     args.v.insert(0, 'Time')
                     vars = args.v
-                    print(vars)
-
+                    print('Variable List: ' + str(vars))
             #iterate over vars
             for i in vars:
-                print(i)
+
                 # extract rates and append to dictionary
                 dim = str(nc.variables[i].dimensions).replace("('Time',)",
                 str(1)).replace("('Time', 'sps", '').replace("')", '')
                 variable_dimension_dict[i] = dim
                 # find maximum rate
                 value_list = variable_dimension_dict.values()
-                maximum = max(value_list)
 
-            #find the rate delta for each variable based on var dim and max dim
+                # determine least common multiple for maximum rate, so no vals are lost
+                lcm = list(value_list)[0]
+                for i in range(1,len(value_list)):
+                    lcm = int(lcm)*int(list(value_list)[i])//math.gcd(int(lcm), int(list(value_list)[i]))
+
+            #find the rate delta for each variable based on var dim and lcm dim
             for key, value in variable_dimension_dict.items():
-                rate_delta_dict[key] = int(maximum) - int(value)
-                print(value)
-
+                rate_delta_dict[key] = int(lcm) // int(value)
+                print(str(key) + ' Rate: ' + str(value))
             # build the mixed rate dataframe
             for i in vars:
                 variable_output=nc[i][:]
                 temp_df = pd.DataFrame(variable_output.flatten())
                 n = rate_delta_dict[i]
-                mixed_rate_index = pd.RangeIndex(len(temp_df)*(n+1))
+                mixed_rate_index = pd.RangeIndex(len(temp_df)*(n))
                 reshape_asc = pd.DataFrame(np.nan, index=mixed_rate_index, columns=temp_df.columns)
-                ids = np.arange(len(temp_df))*(n+1)
+                ids = np.arange(len(temp_df))*(n)
                 reshape_asc.loc[ids] = temp_df.values
                 asc = pd.concat([asc, reshape_asc], axis = 1)
             asc.columns = [vars]
-            #interpolate time in milliseconds for 100 Hz data if its there
+            # interpolate time in milliseconds for 100 Hz data if its there
             asc['Time'] = asc['Time'].interpolate()
             # forward fill mixed rate data
             asc = asc.ffill()
+            # round to 5 significant digits
+            asc = round(asc, 5)
+            # keep trailing zeros for milliesconds in Time column
+            time = np.array(asc['Time'])
+            temp_time = []
+            for i in time:
+                i = "{:.3f}".format(float(i))
+                temp_time.append(i)
+            time = pd.DataFrame(temp_time, columns = ['Time'])
+            asc['Time'] = time['Time']
+            # write to output file
             asc.to_csv(args.o, index=False)
 
         else:
