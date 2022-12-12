@@ -45,6 +45,7 @@ class ncSane():
         for i in args.file_pattern:
             # use xarray to read netcdf file
             self.ds = xr.open_dataset(i)
+
             # store TimeInterval attribute for analysis
             self.ti = self.ds.attrs['TimeInterval']
             self.ti = self.ti.split("-")
@@ -80,7 +81,10 @@ class ncSane():
             counts_pattern2 = ['TCNTD', 'TCNTU']
             conc_pattern1 = ['CCDP', 'CUHSAS']
             conc_pattern2 = ['CONCD', 'CONCU']
+            liquid_water_pattern = ['PLWCD']
+            self.plwc = 'NaN'
             for i in var_list:
+
                 for j in counts_pattern1:
                     if i.startswith(j):
                         self.histo_count_list.append(i)
@@ -93,8 +97,13 @@ class ncSane():
                 for m in conc_pattern2:
                     if i.startswith(m):
                         self.histo_conc_list2.append(i)
-
-            return(self.histo_count_list, self.histo_count_list2,
+                for n in liquid_water_pattern:
+                    if i.startswith(n):
+                        try:
+                            self.plwc = str(i)
+                        except:
+                            pass
+            return(self.plwc, self.histo_count_list, self.histo_count_list2,
             self.histo_conc_list, self.histo_conc_list2, self.ds, self.ti,
             self.timeformat, self.time,
                    self.diff, self.d, self.start, self.end)
@@ -159,6 +168,7 @@ class ncSane():
                 print('Reported and calculated time interval do NOT match!')
             else:
                 print('Time Interval Check: Fail')
+
     def checkBasetime(self, args, timeformat):
         """
         check basetime is correct
@@ -177,6 +187,7 @@ class ncSane():
                 print('****************************************')
             else:
                 print('Base Time Check: Fail')
+
     def parseArgs(self):
         """
         Set up argument parsing
@@ -196,7 +207,10 @@ class ncSane():
         self.args = parser.parse_args()
         return(self.args)
 
-    def histoVarSetup(self, ds, index, histo1, histo2, histo3, histo4):
+    def histoVarSetup(self, ds, index, histo1, histo2, histo3, histo4i, liquid_water):
+        """
+        Create the objects to store the histogram data including liquid water comparison
+        """
         try:
             self.da_counts = ds[histo1[index]]
             self.da_long_name_counts = self.da_counts.long_name
@@ -212,9 +226,9 @@ class ncSane():
             self.da_compare_counts = None
             self.da_compare_long_name_counts = None
         try:
-            self.da_conc = ds[histo3[index]]
-            self.da_long_name_conc = self.da_conc.long_name
-            self.da_conc = self.da_conc.values
+            self.da_conc_name = ds[histo3[index]]
+            self.da_long_name_conc = self.da_conc_name.long_name
+            self.da_conc = self.da_conc_name.values
         except:
             self.da_conc = None
             self.da_long_name_conc = None
@@ -225,16 +239,27 @@ class ncSane():
         except:
             self.da_compare_conc = None
             self.da_compare_long_name_conc = None
+        try:
+            self.plwc_data = ds[self.plwc].values
+        except:
+            self.plwc_data = None
 
-        return(self.da_counts, self.da_long_name_counts, self.da_compare_counts,
+        return(self.plwc_data, self.da_counts, self.da_long_name_counts, self.da_compare_counts,
                self.da_compare_long_name_counts, self.da_conc,
                self.da_long_name_conc, self.da_compare_conc,
-               self.da_compare_long_name_conc)
+               self.da_compare_long_name_conc, self.da_conc_name)
 
     def histoLoop(self, args, da_counts, da_compare_counts,
                   da_compare_long_name_counts, da_conc, da_compare_conc,
                   da_compare_long_name_conc, da_long_name_counts,
                   da_long_name_conc):
+
+            """
+            Function containing the loop over all histogram vars matching the
+            provided pattern. Function makes the comparison between the
+            reported values and calculated values. Reports pass / fail
+            to user and other info, depending on whether in verbose mode
+            """
             verbose = self.args.verbose
             failed = False
             if verbose == True:
@@ -287,6 +312,7 @@ class ncSane():
                 for i in range(0, len(da_conc)):
                     # calculate sum from histo var and check if matches reported
                     if np.sum(da_conc[i]) == da_compare_conc[i]:
+                        print(passiing)
                         pass
                     # handle cases where there are missing or nan values
                     else:
@@ -307,17 +333,71 @@ class ncSane():
                                     print("Error")
                                 else:
                                     failed = True
+            except Exception as e:
+                print(e)
+
+            try:
+                # PLWC check
+                if self.da_conc_name.name.startswith('CCDP_'):
+                    lzb = False
+                    firstbin = self.ds[self.da_conc_name.name].attrs['FirstBin']
+                    lastbin = self.ds[self.da_conc_name.name].attrs['LastBin']
+                    diameter = self.ds[self.da_conc_name.name].attrs['CellSizes']
+                    if firstbin == 0:
+                        lzb = True
+                    if lzb == True:
+                        diameter_1 = [(diameter[0]+diameter[1])/2, (diameter[1]+diameter[2])/2, (diameter[2]+diameter[3])/2, (diameter[3]+diameter[4])/2, (diameter[4]+diameter[5])/2, (diameter[5]+diameter[6])/2, (diameter[6]+diameter[7])/2, (diameter[7]+diameter[8])/2, (diameter[8]+diameter[9])/2, (diameter[9]+diameter[10])/2, (diameter[10]+diameter[11])/2, (diameter[11]+diameter[12])/2, (diameter[12]+diameter[13])/2, (diameter[13]+diameter[14])/2, (diameter[14]+diameter[15])/2, (diameter[15]+diameter[16])/2, (diameter[16]+diameter[17])/2, (diameter[17]+diameter[18])/2, (diameter[18]+diameter[19])/2, (diameter[19]+diameter[20])/2, (diameter[20]+diameter[21])/2, (diameter[21]+diameter[22])/2, (diameter[22]+diameter[23])/2, (diameter[23]+diameter[24])/2, (diameter[24]+diameter[25])/2, (diameter[25]+diameter[26])/2, (diameter[26]+diameter[27])/2, (diameter[27]+diameter[28])/2, (diameter[28]+diameter[29])/2, (diameter[29]+diameter[30])/2]
+                        diameter_1 = np.array(diameter_1)
+                        diameter_1.shape = (firstbin+1, lastbin+1)
+                    else:
+                        diameter_1 = [(diameter[1]+diameter[2])/2, (diameter[2]+diameter[3])/2, (diameter[3]+diameter[4])/2, (diameter[4]+diameter[5])/2, (diameter[5]+diameter[6])/2, (diameter[6]+diameter[7])/2, (diameter[7]+diameter[8])/2, (diameter[8]+diameter[9])/2, (diameter[9]+diameter[10])/2, (diameter[10]+diameter[11])/2, (diameter[11]+diameter[12])/2, (diameter[12]+diameter[13])/2, (diameter[13]+diameter[14])/2, (diameter[14]+diameter[15])/2, (diameter[15]+diameter[16])/2, (diameter[16]+diameter[17])/2, (diameter[17]+diameter[18])/2, (diameter[18]+diameter[19])/2, (diameter[19]+diameter[20])/2, (diameter[20]+diameter[21])/2, (diameter[21]+diameter[22])/2, (diameter[22]+diameter[23])/2, (diameter[23]+diameter[24])/2, (diameter[24]+diameter[25])/2, (diameter[25]+diameter[26])/2, (diameter[26]+diameter[27])/2, (diameter[27]+diameter[28])/2, (diameter[28]+diameter[29])/2, (diameter[29]+diameter[30])/2, diameter[30]]
+
+                        diameter_1 = np.array(diameter_1)
+                        diameter_1.shape = (firstbin, lastbin)
+                    plwc = 0.0
+                    plwc_calc = []
+                    for row in range(0, len(da_conc)):
+                        plwc = np.sum(np.multiply((diameter_1**3), da_conc[row]))
+                        plwc_calc.append(plwc * ((3.14 / 6.0) * 1.0 * (0.000001)))
+                        try:
+                            if plwc_calc[row] == self.plwc_data[row]:
+                                if verbose == True:
+                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                    print("PLWCD_ Matches!")
+                                else:
+                                    pass
+                            elif plwc_calc[row] > (self.plwc_data[row]*.95) and plwc_calc[row] < (self.plwc_data[row]*1.05):
+                                if verbose == True:
+                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                    print("PLWCD_ Matches!")
+                                else:
+                                    pass
+                            else:
+                                if verbose == True:
+                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                    print('PLWCD_ does not match!')
+                                    failed = True
+                                else:
+                                    failed = True
+                        except Exception as e:
+                            print(e)
+
                 if failed == True:
                     print('Histogram Check: Fail. Run in verbose mode (-v) for \
                     more info.')
                 if verbose == True:
-                    print('Done with histogram checking: ' +
-                    str(da_compare_long_name_conc))
-                    print('****************************************')
+                    print('Done with histogram checking')
                 else:
                     pass
-            except:
-                pass
+            except Exception as e:
+                print(e)
+
     def histoCheck(self, args, ds, histo1, histo2, histo3, histo4):
         """
         Function that reads input file, histogram variable, total variable
@@ -337,7 +417,7 @@ class ncSane():
             try:
                 self.histoVarSetup(ds, index, self.histo_count_list,
                                    self.histo_count_list2, self.histo_conc_list,
-                                   self.histo_conc_list2)
+                                   self.histo_conc_list2, self.plwc)
             except Exception as e:
                 print(e)
             try:
@@ -351,6 +431,5 @@ class ncSane():
             index = index + 1
 
 if __name__ == "__main__":
-
 
     main()
