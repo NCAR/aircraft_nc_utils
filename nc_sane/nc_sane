@@ -289,9 +289,9 @@ class ncSane():
                             # report failure
                             else:
                                 if verbose == True:
-                                    print('Error on line: ' + str(i))
+                                    print('Failed on line: ' + str(i))
                                 else:
-                                    print('Histogram Check: Failed on line ' + str(i) + '. Run with -v for verbose mode.')
+                                    print('Failed on line ' + str(i))
             except:
                 pass
             try:
@@ -337,23 +337,95 @@ class ncSane():
                 print(e)
 
             try:
-                # PLWC check
+                # if a concentration vector variable starts with CCDP
+                # perform a comparison of a calculated liquid water content
+                # with the reported liquid water content in var PLWCD
                 if self.da_conc_name.name.startswith('CCDP_'):
+                    # start with boolean lzb set to false
+                    # lzb represents a flag to recognize legacy zero bin data
                     lzb = False
+                    # extract firstbin, lastbin, and CellSizes attributes
                     firstbin = self.ds[self.da_conc_name.name].attrs['FirstBin']
+                    print(firstbin)
                     lastbin = self.ds[self.da_conc_name.name].attrs['LastBin']
+                    print(lastbin)
                     diameter = self.ds[self.da_conc_name.name].attrs['CellSizes']
+                    print(diameter)
+                    # check to see if firstbin is 0
+                    # if it is enter legacy zero bin check
                     if firstbin == 0:
                         lzb = True
                     if lzb == True:
-                        diameter_1 = [(diameter[0]+diameter[1])/2, (diameter[1]+diameter[2])/2, (diameter[2]+diameter[3])/2, (diameter[3]+diameter[4])/2, (diameter[4]+diameter[5])/2, (diameter[5]+diameter[6])/2, (diameter[6]+diameter[7])/2, (diameter[7]+diameter[8])/2, (diameter[8]+diameter[9])/2, (diameter[9]+diameter[10])/2, (diameter[10]+diameter[11])/2, (diameter[11]+diameter[12])/2, (diameter[12]+diameter[13])/2, (diameter[13]+diameter[14])/2, (diameter[14]+diameter[15])/2, (diameter[15]+diameter[16])/2, (diameter[16]+diameter[17])/2, (diameter[17]+diameter[18])/2, (diameter[18]+diameter[19])/2, (diameter[19]+diameter[20])/2, (diameter[20]+diameter[21])/2, (diameter[21]+diameter[22])/2, (diameter[22]+diameter[23])/2, (diameter[23]+diameter[24])/2, (diameter[24]+diameter[25])/2, (diameter[25]+diameter[26])/2, (diameter[26]+diameter[27])/2, (diameter[27]+diameter[28])/2, (diameter[28]+diameter[29])/2, (diameter[29]+diameter[30])/2]
+                        # create list of bin midpoints based on CellSizes attribute
+                        # lzb midpoints
+                        diameter_1 = [(diameter[0] + diameter[1]) / 2, 
+                                      (diameter[1] + diameter[2]) / 2, 
+                                      (diameter[2] + diameter[3]) / 2, 
+                                      (diameter[3] + diameter[4]) / 2, 
+                                      (diameter[4] + diameter[5]) / 2,
+                                      (diameter[5] + diameter[6]) / 2,
+                                      (diameter[6] + diameter[7]) / 2, 
+                                      (diameter[7] + diameter[8]) / 2,
+                                      (diameter[8] + diameter[9]) / 2, 
+                                      (diameter[9] + diameter[10]) / 2, 
+                                      (diameter[10] + diameter[11]) / 2,
+                                      (diameter[11] + diameter[12]) / 2,
+                                      (diameter[12] + diameter[13]) / 2,
+                                      (diameter[13] + diameter[14]) / 2,
+                                      (diameter[14] + diameter[15]) / 2,
+                                      (diameter[15] + diameter[16]) / 2,
+                                      (diameter[16] + diameter[17]) / 2,
+                                      (diameter[17] + diameter[18]) / 2,
+                                      (diameter[18] + diameter[19]) / 2,
+                                      (diameter[19] + diameter[20]) / 2,
+                                      (diameter[20] + diameter[21]) / 2,
+                                      (diameter[21] + diameter[22]) / 2,
+                                      (diameter[22] + diameter[23]) / 2,
+                                      (diameter[23] + diameter[24]) / 2, 
+                                      (diameter[24] + diameter[25]) / 2,
+                                      (diameter[25] + diameter[26]) / 2,
+                                      (diameter[26] + diameter[27]) / 2,
+                                      (diameter[27] + diameter[28]) / 2,
+                                      (diameter[28] + diameter[29]) / 2,
+                                      (diameter[29] + diameter[30]) / 2]
+                        # create numpy array and define shape of array
                         diameter_1 = np.array(diameter_1)
-                        diameter_1.shape = (firstbin+1, lastbin+1)
+                        diameter_1.shape = (1, 30)
                     else:
-                        diameter_1 = [(diameter[1]+diameter[2])/2, (diameter[2]+diameter[3])/2, (diameter[3]+diameter[4])/2, (diameter[4]+diameter[5])/2, (diameter[5]+diameter[6])/2, (diameter[6]+diameter[7])/2, (diameter[7]+diameter[8])/2, (diameter[8]+diameter[9])/2, (diameter[9]+diameter[10])/2, (diameter[10]+diameter[11])/2, (diameter[11]+diameter[12])/2, (diameter[12]+diameter[13])/2, (diameter[13]+diameter[14])/2, (diameter[14]+diameter[15])/2, (diameter[15]+diameter[16])/2, (diameter[16]+diameter[17])/2, (diameter[17]+diameter[18])/2, (diameter[18]+diameter[19])/2, (diameter[19]+diameter[20])/2, (diameter[20]+diameter[21])/2, (diameter[21]+diameter[22])/2, (diameter[22]+diameter[23])/2, (diameter[23]+diameter[24])/2, (diameter[24]+diameter[25])/2, (diameter[25]+diameter[26])/2, (diameter[26]+diameter[27])/2, (diameter[27]+diameter[28])/2, (diameter[28]+diameter[29])/2, (diameter[29]+diameter[30])/2, diameter[30]]
-
+                        diameter_1 = [(0 + diameter[0]) / 2,
+                                      (diameter[0] + diameter[1]) / 2,
+                                      (diameter[1] + diameter[2]) / 2,
+                                      (diameter[2] + diameter[3]) / 2,
+                                      (diameter[3] + diameter[4]) / 2,
+                                      (diameter[4] + diameter[5]) / 2,
+                                      (diameter[5] + diameter[6]) / 2,
+                                      (diameter[6] + diameter[7]) / 2,
+                                      (diameter[7] + diameter[8]) / 2,
+                                      (diameter[8] + diameter[9]) / 2,
+                                      (diameter[9] + diameter[10]) / 2,
+                                      (diameter[10] + diameter[11]) / 2,
+                                      (diameter[11] + diameter[12]) / 2,
+                                      (diameter[12] + diameter[13]) / 2,
+                                      (diameter[13] + diameter[14]) / 2,
+                                      (diameter[14] + diameter[15]) / 2,
+                                      (diameter[15] + diameter[16]) / 2,
+                                      (diameter[16] + diameter[17]) / 2,
+                                      (diameter[17] + diameter[18]) / 2,
+                                      (diameter[18] + diameter[19]) / 2,
+                                      (diameter[19] + diameter[20]) / 2,
+                                      (diameter[20] + diameter[21]) / 2,
+                                      (diameter[21] + diameter[22]) / 2,
+                                      (diameter[22] + diameter[23]) / 2,
+                                      (diameter[23] + diameter[24]) / 2,
+                                      (diameter[24] + diameter[25]) / 2,
+                                      (diameter[25] + diameter[26]) / 2,
+                                      (diameter[26] + diameter[27]) / 2,
+                                      (diameter[27] + diameter[28]) / 2,
+                                      (diameter[28] + diameter[29]) / 2,
+                                      (diameter[29] + diameter[30]) / 2]
+                        # create numpy array and define shape of array
                         diameter_1 = np.array(diameter_1)
-                        diameter_1.shape = (firstbin, lastbin)
+                        diameter_1.shape = (1, 31)
                     plwc = 0.0
                     plwc_calc = []
                     for row in range(0, len(da_conc)):
@@ -376,6 +448,14 @@ class ncSane():
                                     print("PLWCD_ Matches!")
                                 else:
                                     pass
+                            elif plwc_calc[row] == 'nan' and self.plwc_data[row] == 'nan':
+                                if verbose == True:
+                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                    print("PLWCD_ Matches!")
+                                else:
+                                    pass  
                             else:
                                 if verbose == True:
                                     print('Calculating liquid water and comparing to reported value for row: ' + str(row))
@@ -384,13 +464,13 @@ class ncSane():
                                     print('PLWCD_ does not match!')
                                     failed = True
                                 else:
+                                    print('PLWCD_ does not match on row: ' + str(row) + ' Run in verbose mode -v for more info')
                                     failed = True
                         except Exception as e:
                             print(e)
 
                 if failed == True:
-                    print('Histogram Check: Fail. Run in verbose mode (-v) for \
-                    more info.')
+                    print('Histogram Check: Fail.')
                 if verbose == True:
                     print('Done with histogram checking')
                 else:
