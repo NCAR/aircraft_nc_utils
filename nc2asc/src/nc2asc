@@ -409,7 +409,7 @@ class gui(QMainWindow):
 
                     # get the output directory and filename from the gui
                     self.batchfile.write('if=' + self.input_file + '\n')
-                    self.batchfile.write('of='i + str(self.outputdirbox.text()) + '/' + str(self.outputfilebox.text()) + '\n\n'))
+                    self.batchfile.write('of=' + str(self.outputdirbox.text()) + '/' + str(self.outputfilebox.text()) + '\n\n')
 
                     # determine the settings from the gui to inlude in the batch file
                     # check which header to include in the batch file
@@ -653,12 +653,13 @@ class gui(QMainWindow):
                 self.input_file = self.inputfilebox.text()
             except Exception:
                 self.input_file = self.input_file
+            self.batchfile_read = True
             print('SELF VARS EXTRACT BATCH ' + str(self.variables_extract_batch))
             try:
                 self.formatData()
                 self.asc_new_batch = self.asc[self.variables_extract_batch]
                 print('SELF ASC NEW BATCH ' + self.asc_new_batch)
-                return self.input_file, self.asc_new_batch, self.output_file, self.version, self.ti, self.avg, self.start_time, self.end_time
+                return self.batchfile_read, self.input_file, self.asc_new_batch, self.output_file, self.version, self.ti, self.avg, self.start_time, self.end_time
                 self.formatData()
             except Exception:
                 pass
@@ -666,6 +667,18 @@ class gui(QMainWindow):
                 self.loadVars_GUI()
             except Exception:
                 pass
+
+            try:
+                for i in range(0, self.row_count):
+                    for j in self.asc_new_batch:
+                        if j[0] == self.var.item(i, 0).text():
+                            print('success')
+                            self.var.item(i, 0).text()
+                            self.var.item(i, 0).setBackground(QtGui.QColor(255, 0, 255))
+                        else:
+                            pass
+            except Exception as e:
+                print(e)
             try:
                 self.previewData_GUI()
             except Exception:
@@ -854,6 +867,14 @@ class gui(QMainWindow):
             del(self.variables_extract_batch)
         except Exception as e:
             print(e)
+        if self.batchfile_read:
+            batchread = QMessageBox()
+            batchread.setWindowTitle("Warning")
+            batchread.setText("You are selecting vars after loading a batchfile! Please select vars in red if desired!")
+            x = batchread.exec_()
+        else:
+            pass
+
         try:
             self.output = pd.Series(self.var.item(self.var.currentRow(), 0).text())
             self.variables_extract = self.variables_extract.append(self.output)
@@ -872,7 +893,8 @@ class gui(QMainWindow):
             self.var_selected = self.var_selected.replace('[', '')
             self.var_selected = self.var_selected.replace(']', '')
             self.previewData_GUI()
-            return self.asc_new, self.variables_extract, self.var_selected
+            self.batchfile_read = False
+            return self.batchfile_read, self.asc_new, self.variables_extract, self.var_selected
         except Exception:
             print("error in getting values from table")
 
