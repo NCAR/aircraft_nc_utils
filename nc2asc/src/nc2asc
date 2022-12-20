@@ -867,12 +867,15 @@ class gui(QMainWindow):
             del(self.variables_extract_batch)
         except Exception as e:
             print(e)
-        if self.batchfile_read:
-            batchread = QMessageBox()
-            batchread.setWindowTitle("Warning")
-            batchread.setText("You are selecting vars after loading a batchfile! Please select vars in red if desired!")
-            x = batchread.exec_()
-        else:
+        try:
+            if self.batchfile_read:
+                batchread = QMessageBox()
+                batchread.setWindowTitle("Warning")
+                batchread.setText("You are selecting vars after loading a batchfile! Please select vars in red if desired!")
+                x = batchread.exec_()
+            else:
+                pass
+        except Exception:
             pass
 
         try:
