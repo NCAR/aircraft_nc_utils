@@ -346,11 +346,8 @@ class ncSane():
                     lzb = False
                     # extract firstbin, lastbin, and CellSizes attributes
                     firstbin = self.ds[self.da_conc_name.name].attrs['FirstBin']
-                    print(firstbin)
                     lastbin = self.ds[self.da_conc_name.name].attrs['LastBin']
-                    print(lastbin)
                     diameter = self.ds[self.da_conc_name.name].attrs['CellSizes']
-                    print(diameter)
                     # check to see if firstbin is 0
                     # if it is enter legacy zero bin check
                     if firstbin == 0:
