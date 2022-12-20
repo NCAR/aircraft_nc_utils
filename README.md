@@ -1,3 +1,5 @@
+[![DOI](https://img.shields.io/badge/DOI-10.26023/r1q1-wt90)](https://doi.org/10.26023/r1q1-wt90)
+
 # aircraft_nc_utils
 Collection of utilities that can operate on the RAF aircraft netCDF files. See the [Wiki](https://github.com/NCAR/aircraft_nc_utils/wiki) page associated with this GitHub repo for dependencies and installation instructions.
 
