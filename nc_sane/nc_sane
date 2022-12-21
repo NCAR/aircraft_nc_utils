@@ -6,20 +6,20 @@
 # Additional feature to check that histogram data sum matches the
 # Sum variable corresponding to that data
 #
+# Also check PLWCD against CCDP_*, if present
+#
 # Copyright University Corporation for Atmospheric Research (2022)
 #
 # Author: TMT
 ##############################################################################
 
-import os
 import sys
-import re
 import argparse
 import xarray as xr
 import datetime
-from datetime import timedelta, datetime, date, time
-import calendar
+from datetime import timedelta, date, datetime
 import numpy as np
+
 
 def main():
 
@@ -31,9 +31,12 @@ def main():
     ncsane.checkBasetime(args, ncsane.timeformat)
     try:
         ncsane.histoCheck(args, ncsane.ds, ncsane.histo_count_list,
-        ncsane.histo_count_list2, ncsane.histo_conc_list, ncsane.histo_conc_list2)
-    except:
+                          ncsane.histo_count_list2, ncsane.histo_conc_list,
+                          ncsane.histo_conc_list2)
+    except Exception:
         pass
+
+
 class ncSane():
 
     def timeInterval(self, args):
@@ -54,7 +57,7 @@ class ncSane():
             self.d = date(1900, 1, 1)
             self.start = datetime.strptime(self.start, '%H:%M:%S').time()
             self.end = datetime.strptime(self.end, '%H:%M:%S').time()
-            if verbose == True:
+            if verbose:
                 print('****************************************')
                 print('Start Time: ' + str(self.start))
                 print('End Time: ' + str(self.end))
@@ -101,11 +104,11 @@ class ncSane():
                     if i.startswith(n):
                         try:
                             self.plwc = str(i)
-                        except:
+                        except Exception:
                             pass
             return(self.plwc, self.histo_count_list, self.histo_count_list2,
-            self.histo_conc_list, self.histo_conc_list2, self.ds, self.ti,
-            self.timeformat, self.time,
+                   self.histo_conc_list, self.histo_conc_list2, self.ds, self.ti,
+                   self.timeformat, self.time,
                    self.diff, self.d, self.start, self.end)
 
     def startEndtime(self, args, diff, start, end, d):
@@ -115,28 +118,28 @@ class ncSane():
         """
         verbose = args.verbose
         if end < start:
-            if verbose == True:
+            if verbose:
                 print('****************************************')
                 print('Midnight Rollover was detected...')
             else:
                 print('Midnight Rollover Check: Detected')
             midnight = str(end).replace('1', '0').replace('2', '0')\
-            .replace('3', '0').replace('4', '0').replace('5', '0')\
-            .replace('6', '0').replace('7', '0').replace('8', '0')\
-            .replace('9', '0')
+                       .replace('3', '0').replace('4', '0').replace('5', '0')\
+                       .replace('6', '0').replace('7', '0').replace('8', '0')\
+                       .replace('9', '0')
             midnight = datetime.strptime(midnight, '%H:%M:%S').time()
             midnight = datetime.combine(d, midnight)
             diff1 = datetime.combine(d, end) - midnight
             diff2 = midnight - datetime.combine(d, start)
             diff2 = diff2 + timedelta(hours=24)
             self.diff = (diff1 + diff2)
-            if verbose == True:
+            if verbose:
                 print('Flight Duration: ' + str(self.diff))
                 print('****************************************')
             else:
                 pass
         else:
-            if verbose == True:
+            if verbose:
                 print('****************************************')
                 print('No midnight rollover detected.')
                 print('Flight Duration: ' + str(self.diff))
@@ -151,20 +154,20 @@ class ncSane():
         account for midnight rollover
         """
         verbose = args.verbose
-        if verbose == True:
+        if verbose:
             print('Flight Duration (seconds): ' +
-            str(int(diff.total_seconds())))
+                  str(int(diff.total_seconds())))
             print('Reported Time dimension range (seconds): ' + str(int(time)))
         else:
             pass
         time_diff = int(diff.total_seconds()) - int(time)
         if abs(time_diff) < 2:
-            if verbose == True:
+            if verbose:
                 print('Reported and calculated time intervals match!')
             else:
                 print('Time Interval Check: Pass')
         else:
-            if verbose == True:
+            if verbose:
                 print('Reported and calculated time interval do NOT match!')
             else:
                 print('Time Interval Check: Fail')
@@ -175,14 +178,14 @@ class ncSane():
         """
         verbose = args.verbose
         if timeformat == "seconds since %F %T %z":
-            if verbose == True:
+            if verbose:
                 print('****************************************')
                 print('Time format is correct: ' + timeformat)
                 print('****************************************')
             else:
                 print('Base Time Check: Pass')
         else:
-            if verbose == True:
+            if verbose:
                 print('Time format does not match: ' + timeformat)
                 print('****************************************')
             else:
@@ -193,7 +196,7 @@ class ncSane():
         Set up argument parsing
         """
         parser = argparse.ArgumentParser(
-            description='Provide input file, histogram var and total var.')
+            description='Provide input file and verbose flag if you wish')
 
         parser.add_argument('file_pattern', type=str, nargs='*',
                             help='Input file to check' +
@@ -201,13 +204,13 @@ class ncSane():
         parser.add_argument('-v', '--verbose', action='store_true',
                             help="flag for verbose output")
 
-        if len(sys.argv) < 1:
-            parser.print_help(sys.stderr)
-            sys.exit(1)
         self.args = parser.parse_args()
+        if len(sys.argv) < 2:
+            parser.print_help()
+            sys.exit(1)
         return(self.args)
 
-    def histoVarSetup(self, ds, index, histo1, histo2, histo3, histo4i, liquid_water):
+    def histoVarSetup(self, ds, index, histo1, histo2, histo3, histo4, liquid_water):
         """
         Create the objects to store the histogram data including liquid water comparison
         """
@@ -215,33 +218,33 @@ class ncSane():
             self.da_counts = ds[histo1[index]]
             self.da_long_name_counts = self.da_counts.long_name
             self.da_counts = self.da_counts.values
-        except:
+        except Exception:
             self.da_counts = None
             self.da_long_name_counts = None
         try:
             self.da_compare_counts = ds[histo2[index]]
             self.da_compare_long_name_counts = self.da_compare_counts.long_name
             self.da_compare_counts = self.da_compare_counts.values
-        except:
+        except Exception:
             self.da_compare_counts = None
             self.da_compare_long_name_counts = None
         try:
             self.da_conc_name = ds[histo3[index]]
             self.da_long_name_conc = self.da_conc_name.long_name
             self.da_conc = self.da_conc_name.values
-        except:
+        except Exception:
             self.da_conc = None
             self.da_long_name_conc = None
         try:
             self.da_compare_conc = ds[histo4[index]]
             self.da_compare_long_name_conc = self.da_compare_conc.long_name
             self.da_compare_conc = self.da_compare_conc.values
-        except:
+        except Exception:
             self.da_compare_conc = None
             self.da_compare_long_name_conc = None
         try:
             self.plwc_data = ds[self.plwc].values
-        except:
+        except Exception:
             self.plwc_data = None
 
         return(self.plwc_data, self.da_counts, self.da_long_name_counts, self.da_compare_counts,
@@ -254,226 +257,223 @@ class ncSane():
                   da_compare_long_name_conc, da_long_name_counts,
                   da_long_name_conc):
 
-            """
-            Function containing the loop over all histogram vars matching the
-            provided pattern. Function makes the comparison between the
-            reported values and calculated values. Reports pass / fail
-            to user and other info, depending on whether in verbose mode
-            """
-            verbose = self.args.verbose
-            failed = False
-            if verbose == True:
+        """
+        Function containing the loop over all histogram vars matching the
+        provided pattern. Function makes the comparison between the
+        reported values and calculated values. Reports pass / fail
+        to user and other info, depending on whether in verbose mode
+        """
+        verbose = self.args.verbose
+        failed = False
+        if verbose:
+            print('Starting histogram checking: ' +
+                  str(da_compare_long_name_counts))
+        else:
+            pass
+        try:
+            # loop over time dimension to calculate sum
+            for i in range(0, len(da_counts)):
+                # calculate sum from histo var and check if matches reported
+                if np.sum(da_counts[i]) == da_compare_counts[i]:
+                    pass
+                # handle cases where there are missing or nan values
+                else:
+                    if da_compare_counts[i] == -32767.:
+                        pass
+                    elif str(da_compare_counts[i]) == 'nan':
+                        pass
+                    elif str(np.sum(da_compare_counts[i])) == 'nan':
+                        pass
+                    # report if the sum values do not match
+                    else:
+                        # handle float rounding errors
+                        if np.sum(da_counts[i]) - da_compare_counts[i] < .01:
+                            pass
+                        # report failure
+                        else:
+                            print(str(da_compare_long_name_counts) + ' failed on line: ' + str(i))
+        except Exception:
+            pass
+        try:
+            if verbose:
+                print('Done with histogram checking: ' +
+                      str(da_compare_long_name_counts))
+                print('****************************************')
                 print('Starting histogram checking: ' +
-                str(da_compare_long_name_counts))
+                      str(da_compare_long_name_conc))
             else:
                 pass
-            try:
-                # loop over time dimension to calculate sum
-                for i in range(0, len(da_counts)):
-                    # calculate sum from histo var and check if matches reported
-                    if np.sum(da_counts[i]) == da_compare_counts[i]:
-                        pass
-                    # handle cases where there are missing or nan values
-                    else:
-                        if da_compare_counts[i] == -32767.:
-                            pass
-                        elif str(da_compare_counts[i]) == 'nan':
-                            pass
-                        elif str(np.sum(da_compare_counts[i])) == 'nan':
-                            pass
-                        # report if the sum values do not match
-                        else:
-                            # handle float rounding errors
-                            if np.sum(da_counts[i]) - da_compare_counts[i] < .01:
-                                pass
-                            # report failure
-                            else:
-                                if verbose == True:
-                                    print('Failed on line: ' + str(i))
-                                else:
-                                    print('Failed on line ' + str(i))
-            except:
-                pass
-            try:
-                if verbose == True:
-                    print('Done with histogram checking: ' +
-                    str(da_compare_long_name_counts))
-                    print('****************************************')
-                if verbose == True:
-                    print('Starting histogram checking: ' +
-                    str(da_compare_long_name_conc))
-                else:
+        except Exception:
+            pass
+
+        try:
+            # loop over time dimension to calculate sum
+            for i in range(0, len(da_conc)):
+                # calculate sum from histo var and check if matches reported
+                if np.sum(da_conc[i]) == da_compare_conc[i]:
                     pass
-            except:
-                pass
-
-            try:
-                # loop over time dimension to calculate sum
-                for i in range(0, len(da_conc)):
-                    # calculate sum from histo var and check if matches reported
-                    if np.sum(da_conc[i]) == da_compare_conc[i]:
-                        print(passiing)
-                        pass
-                    # handle cases where there are missing or nan values
-                    else:
-                        if da_compare_conc[i] == -32767.:
-                            pass
-                        elif str(da_compare_conc[i]) == 'nan':
-                            pass
-                        elif str(np.sum(da_compare_conc[i])) == 'nan':
-                            pass
-                        # report if the sum values do not match
-                        else:
-                            # handle float rounding errors
-                            if np.sum(da_conc[i]) - da_compare_conc[i] < .01:
-                                pass
-                            # report failure
-                            else:
-                                if verbose == True:
-                                    print("Error")
-                                else:
-                                    failed = True
-            except Exception as e:
-                print(e)
-
-            try:
-                # if a concentration vector variable starts with CCDP
-                # perform a comparison of a calculated liquid water content
-                # with the reported liquid water content in var PLWCD
-                if self.da_conc_name.name.startswith('CCDP_'):
-                    # start with boolean lzb set to false
-                    # lzb represents a flag to recognize legacy zero bin data
-                    lzb = False
-                    # extract firstbin, lastbin, and CellSizes attributes
-                    firstbin = self.ds[self.da_conc_name.name].attrs['FirstBin']
-                    lastbin = self.ds[self.da_conc_name.name].attrs['LastBin']
-                    diameter = self.ds[self.da_conc_name.name].attrs['CellSizes']
-                    # check to see if firstbin is 0
-                    # if it is enter legacy zero bin check
-                    if firstbin == 0:
-                        lzb = True
-                    if lzb == True:
-                        # create list of bin midpoints based on CellSizes attribute
-                        # lzb midpoints
-                        diameter_1 = [(diameter[0] + diameter[1]) / 2, 
-                                      (diameter[1] + diameter[2]) / 2, 
-                                      (diameter[2] + diameter[3]) / 2, 
-                                      (diameter[3] + diameter[4]) / 2, 
-                                      (diameter[4] + diameter[5]) / 2,
-                                      (diameter[5] + diameter[6]) / 2,
-                                      (diameter[6] + diameter[7]) / 2, 
-                                      (diameter[7] + diameter[8]) / 2,
-                                      (diameter[8] + diameter[9]) / 2, 
-                                      (diameter[9] + diameter[10]) / 2, 
-                                      (diameter[10] + diameter[11]) / 2,
-                                      (diameter[11] + diameter[12]) / 2,
-                                      (diameter[12] + diameter[13]) / 2,
-                                      (diameter[13] + diameter[14]) / 2,
-                                      (diameter[14] + diameter[15]) / 2,
-                                      (diameter[15] + diameter[16]) / 2,
-                                      (diameter[16] + diameter[17]) / 2,
-                                      (diameter[17] + diameter[18]) / 2,
-                                      (diameter[18] + diameter[19]) / 2,
-                                      (diameter[19] + diameter[20]) / 2,
-                                      (diameter[20] + diameter[21]) / 2,
-                                      (diameter[21] + diameter[22]) / 2,
-                                      (diameter[22] + diameter[23]) / 2,
-                                      (diameter[23] + diameter[24]) / 2, 
-                                      (diameter[24] + diameter[25]) / 2,
-                                      (diameter[25] + diameter[26]) / 2,
-                                      (diameter[26] + diameter[27]) / 2,
-                                      (diameter[27] + diameter[28]) / 2,
-                                      (diameter[28] + diameter[29]) / 2,
-                                      (diameter[29] + diameter[30]) / 2]
-                        # create numpy array and define shape of array
-                        diameter_1 = np.array(diameter_1)
-                        diameter_1.shape = (1, 30)
-                    else:
-                        diameter_1 = [(0 + diameter[0]) / 2,
-                                      (diameter[0] + diameter[1]) / 2,
-                                      (diameter[1] + diameter[2]) / 2,
-                                      (diameter[2] + diameter[3]) / 2,
-                                      (diameter[3] + diameter[4]) / 2,
-                                      (diameter[4] + diameter[5]) / 2,
-                                      (diameter[5] + diameter[6]) / 2,
-                                      (diameter[6] + diameter[7]) / 2,
-                                      (diameter[7] + diameter[8]) / 2,
-                                      (diameter[8] + diameter[9]) / 2,
-                                      (diameter[9] + diameter[10]) / 2,
-                                      (diameter[10] + diameter[11]) / 2,
-                                      (diameter[11] + diameter[12]) / 2,
-                                      (diameter[12] + diameter[13]) / 2,
-                                      (diameter[13] + diameter[14]) / 2,
-                                      (diameter[14] + diameter[15]) / 2,
-                                      (diameter[15] + diameter[16]) / 2,
-                                      (diameter[16] + diameter[17]) / 2,
-                                      (diameter[17] + diameter[18]) / 2,
-                                      (diameter[18] + diameter[19]) / 2,
-                                      (diameter[19] + diameter[20]) / 2,
-                                      (diameter[20] + diameter[21]) / 2,
-                                      (diameter[21] + diameter[22]) / 2,
-                                      (diameter[22] + diameter[23]) / 2,
-                                      (diameter[23] + diameter[24]) / 2,
-                                      (diameter[24] + diameter[25]) / 2,
-                                      (diameter[25] + diameter[26]) / 2,
-                                      (diameter[26] + diameter[27]) / 2,
-                                      (diameter[27] + diameter[28]) / 2,
-                                      (diameter[28] + diameter[29]) / 2,
-                                      (diameter[29] + diameter[30]) / 2]
-                        # create numpy array and define shape of array
-                        diameter_1 = np.array(diameter_1)
-                        diameter_1.shape = (1, 31)
-                    plwc = 0.0
-                    plwc_calc = []
-                    for row in range(0, len(da_conc)):
-                        plwc = np.sum(np.multiply((diameter_1**3), da_conc[row]))
-                        plwc_calc.append(plwc * ((3.14 / 6.0) * 1.0 * (0.000001)))
-                        try:
-                            if plwc_calc[row] == self.plwc_data[row]:
-                                if verbose == True:
-                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
-                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
-                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
-                                    print("PLWCD_ Matches!")
-                                else:
-                                    pass
-                            elif plwc_calc[row] > (self.plwc_data[row]*.95) and plwc_calc[row] < (self.plwc_data[row]*1.05):
-                                if verbose == True:
-                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
-                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
-                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
-                                    print("PLWCD_ Matches!")
-                                else:
-                                    pass
-                            elif plwc_calc[row] == 'nan' and self.plwc_data[row] == 'nan':
-                                if verbose == True:
-                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
-                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
-                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
-                                    print("PLWCD_ Matches!")
-                                else:
-                                    pass  
-                            else:
-                                if verbose == True:
-                                    print('Calculating liquid water and comparing to reported value for row: ' + str(row))
-                                    print('Calculated liquid water: ' + str(plwc_calc[row]))
-                                    print('Reported liquid water: ' + str(self.plwc_data[row]))
-                                    print('PLWCD_ does not match!')
-                                    failed = True
-                                else:
-                                    print('PLWCD_ does not match on row: ' + str(row) + ' Run in verbose mode -v for more info')
-                                    failed = True
-                        except Exception as e:
-                            print(e)
-
-                if failed == True:
-                    print('Histogram Check: Fail.')
-                if verbose == True:
-                    print('Done with histogram checking')
+                # handle cases where there are missing or nan values
                 else:
-                    pass
-            except Exception as e:
-                print(e)
+                    if da_compare_conc[i] == -32767.:
+                        pass
+                    elif str(da_compare_conc[i]) == 'nan':
+                        pass
+                    elif str(np.sum(da_compare_conc[i])) == 'nan':
+                        pass
+                    # report if the sum values do not match
+                    else:
+                        # handle float rounding errors
+                        if np.sum(da_conc[i]) - da_compare_conc[i] < .01:
+                            pass
+                        # report failure
+                        else:
+                            if verbose:
+                                print("Error")
+                            else:
+                                failed = True
+        except Exception as e:
+            print(e)
+
+        try:
+            # if a concentration vector variable starts with CCDP
+            # perform a comparison of a calculated liquid water content
+            # with the reported liquid water content in var PLWCD
+            if self.da_conc_name.name.startswith('CCDP_'):
+                # start with boolean lzb set to false
+                # lzb represents a flag to recognize legacy zero bin data
+                lzb = False
+                # extract firstbin, lastbin, and CellSizes attributes
+                firstbin = self.ds[self.da_conc_name.name].attrs['FirstBin']
+                # lastbin = self.ds[self.da_conc_name.name].attrs['LastBin']
+                diameter = self.ds[self.da_conc_name.name].attrs['CellSizes']
+                # check to see if firstbin is 0
+                # if it is enter legacy zero bin check
+                if firstbin == 0:
+                    lzb = True
+                if lzb:
+                    # create list of bin midpoints based on CellSizes attribute
+                    # lzb midpoints
+                    diameter_1 = [(diameter[0] + diameter[1]) / 2,
+                                  (diameter[1] + diameter[2]) / 2,
+                                  (diameter[2] + diameter[3]) / 2,
+                                  (diameter[3] + diameter[4]) / 2,
+                                  (diameter[4] + diameter[5]) / 2,
+                                  (diameter[5] + diameter[6]) / 2,
+                                  (diameter[6] + diameter[7]) / 2,
+                                  (diameter[7] + diameter[8]) / 2,
+                                  (diameter[8] + diameter[9]) / 2,
+                                  (diameter[9] + diameter[10]) / 2,
+                                  (diameter[10] + diameter[11]) / 2,
+                                  (diameter[11] + diameter[12]) / 2,
+                                  (diameter[12] + diameter[13]) / 2,
+                                  (diameter[13] + diameter[14]) / 2,
+                                  (diameter[14] + diameter[15]) / 2,
+                                  (diameter[15] + diameter[16]) / 2,
+                                  (diameter[16] + diameter[17]) / 2,
+                                  (diameter[17] + diameter[18]) / 2,
+                                  (diameter[18] + diameter[19]) / 2,
+                                  (diameter[19] + diameter[20]) / 2,
+                                  (diameter[20] + diameter[21]) / 2,
+                                  (diameter[21] + diameter[22]) / 2,
+                                  (diameter[22] + diameter[23]) / 2,
+                                  (diameter[23] + diameter[24]) / 2,
+                                  (diameter[24] + diameter[25]) / 2,
+                                  (diameter[25] + diameter[26]) / 2,
+                                  (diameter[26] + diameter[27]) / 2,
+                                  (diameter[27] + diameter[28]) / 2,
+                                  (diameter[28] + diameter[29]) / 2,
+                                  (diameter[29] + diameter[30]) / 2]
+                    # create numpy array and define shape of array
+                    diameter_1 = np.array(diameter_1)
+                    diameter_1.shape = (1, 30)
+                else:
+                    diameter_1 = [(0 + diameter[0]) / 2,
+                                  (diameter[0] + diameter[1]) / 2,
+                                  (diameter[1] + diameter[2]) / 2,
+                                  (diameter[2] + diameter[3]) / 2,
+                                  (diameter[3] + diameter[4]) / 2,
+                                  (diameter[4] + diameter[5]) / 2,
+                                  (diameter[5] + diameter[6]) / 2,
+                                  (diameter[6] + diameter[7]) / 2,
+                                  (diameter[7] + diameter[8]) / 2,
+                                  (diameter[8] + diameter[9]) / 2,
+                                  (diameter[9] + diameter[10]) / 2,
+                                  (diameter[10] + diameter[11]) / 2,
+                                  (diameter[11] + diameter[12]) / 2,
+                                  (diameter[12] + diameter[13]) / 2,
+                                  (diameter[13] + diameter[14]) / 2,
+                                  (diameter[14] + diameter[15]) / 2,
+                                  (diameter[15] + diameter[16]) / 2,
+                                  (diameter[16] + diameter[17]) / 2,
+                                  (diameter[17] + diameter[18]) / 2,
+                                  (diameter[18] + diameter[19]) / 2,
+                                  (diameter[19] + diameter[20]) / 2,
+                                  (diameter[20] + diameter[21]) / 2,
+                                  (diameter[21] + diameter[22]) / 2,
+                                  (diameter[22] + diameter[23]) / 2,
+                                  (diameter[23] + diameter[24]) / 2,
+                                  (diameter[24] + diameter[25]) / 2,
+                                  (diameter[25] + diameter[26]) / 2,
+                                  (diameter[26] + diameter[27]) / 2,
+                                  (diameter[27] + diameter[28]) / 2,
+                                  (diameter[28] + diameter[29]) / 2,
+                                  (diameter[29] + diameter[30]) / 2]
+                    # create numpy array and define shape of array
+                    diameter_1 = np.array(diameter_1)
+                    diameter_1.shape = (1, 31)
+                plwc = 0.0
+                plwc_calc = []
+                for row in range(0, len(da_conc)):
+                    plwc = np.sum(np.multiply((diameter_1**3), da_conc[row]))
+                    plwc_calc.append(plwc * ((3.14 / 6.0) * 1.0 * (0.000001)))
+                    try:
+                        if plwc_calc[row] == self.plwc_data[row]:
+                            if verbose:
+                                print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                print("PLWCD_ Matches!")
+                            else:
+                                pass
+                        elif plwc_calc[row] > (self.plwc_data[row]*.95) and plwc_calc[row] < (self.plwc_data[row]*1.05):
+                            if verbose:
+                                print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                print("PLWCD_ Matches!")
+                            else:
+                                pass
+                        elif plwc_calc[row] == 'nan' and self.plwc_data[row] == 'nan':
+                            if verbose:
+                                print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                print("PLWCD_ Matches!")
+                            else:
+                                pass
+                        else:
+                            if verbose:
+                                print('Calculating liquid water and comparing to reported value for row: ' + str(row))
+                                print('Calculated liquid water: ' + str(plwc_calc[row]))
+                                print('Reported liquid water: ' + str(self.plwc_data[row]))
+                                print('PLWCD_ does not match!')
+                                failed = True
+                            else:
+                                print('PLWCD_ does not match on row: ' + str(row) + ' Run in verbose mode -v for more info')
+                                failed = True
+                    except Exception as e:
+                        print(e)
+
+            if failed:
+                print('Histogram Check: Fail')
+            else:
+                print('Histogram Check: Pass')
+            if verbose:
+                print('Done with histogram checking')
+            else:
+                pass
+        except Exception as e:
+            print(e)
 
     def histoCheck(self, args, ds, histo1, histo2, histo3, histo4):
         """
@@ -485,11 +485,8 @@ class ncSane():
         Reports falied lines and the time on the command line.
         """
         # read input file, histogram count data, and total count for comparison
-        input_file = args.file_pattern
-        verbose = args.verbose
-        time = ds["Time"].values
         index = 0
-        maxindex = 1 # update for more var formats in the future
+        maxindex = 1
         for i in range(maxindex):
             try:
                 self.histoVarSetup(ds, index, self.histo_count_list,
@@ -506,6 +503,7 @@ class ncSane():
             except Exception as e:
                 print(e)
             index = index + 1
+
 
 if __name__ == "__main__":
 
