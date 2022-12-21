@@ -1173,7 +1173,7 @@ class gui(QMainWindow):
             self.averaging_window = self.averagingbox.text()
             if len(self.averaging_window) != 0:
                 self.averaging_window = int(self.averaging_window)
-                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean()
+                self.preview = self.preview.rolling(self.averaging_window, min_periods=0).mean().round(decimals=0)
                 self.preview = self.preview.iloc[::self.averaging_window, :]
             else:
                 pass
@@ -1537,7 +1537,7 @@ class gui(QMainWindow):
                     self.averaging_window = self.avg
                 if len(self.averaging_window) != 0:
                     self.averaging_window = int(self.averaging_window)
-                    self.write = self.write.rolling(self.averaging_window, min_periods=0).mean()
+                    self.write = self.write.rolling(self.averaging_window, min_periods=0).mean().round(decimals=0)
                     self.write = self.write.iloc[::self.averaging_window, :]
                 else:
                     pass
