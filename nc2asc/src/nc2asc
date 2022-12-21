@@ -1163,6 +1163,7 @@ class gui(QMainWindow):
                 self.preview = self.asc_new
         except Exception:
             self.preview = self.asc
+        self.preview = round(self.preview, 5)
         # get the output file from the text box
         self.output_file = os.path.join(self.outputdirbox.text(), self.outputfilebox.text())
         # get the start and end times from the text box in the gui
@@ -1452,6 +1453,7 @@ class gui(QMainWindow):
                 self.write = self.asc_new
         except Exception:
             self.write = self.asc
+        self.write = round(self.write, 5)
         # determine which output file to use based on mode
         try:
             output_file = os.path.join(self.outputdirbox.text(), self.outputfilebox.text())
