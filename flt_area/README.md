@@ -1,25 +1,23 @@
 # flt_area
 
-## Summary
-
-flt_area is a script that determines the minimum bounding box of one or more NetCDF files. If available, the attribute information from a set of NetCDF files, geospatial_[lat/lon]_[max/min] are extracted into lists. If the attribute information is not available for the files or a subset of files, this information is displayed to the user and each file that is missing the attribute information is skipped. For each file that does contain the attribute information, the lists are appended with new values, and the maximum and minimum latitude and longitude are calculated from the lists. 
+flt_area is a script that determines the minimum bounding box of one or more netCDF files. If available, the attribute information from a set of NetCDF files, geospatial_[lat/lon]_[max/min] are extracted into lists. If the attribute information is not available for the files or a subset of files, this information is displayed to the user and each file that is missing the attribute information is skipped. For each file that does contain the attribute information, the lists are appended with new values, and the maximum and minimum latitude and longitude are calculated from the lists. 
 
 ### Instructions for Use
 
 The script expects one argument: the set of input file(s) to process. 
 
 Example with one file to process:
-`$ ./flt_area /scr/tmp/taylort/processing/MethaneAIR21rf03.nc`
+`./flt_area /scr/tmp/taylort/processing/MethaneAIR21rf03.nc`
 
 Example with a subset of files in a directory to process:
-`$ ./flt_area /scr/tmp/taylort/processing/MethaneAIR21rf0[3-4].nc`
+`./flt_area /scr/tmp/taylort/processing/MethaneAIR21rf0[3-4].nc`
 
 Example of all netCDF files in a directory to process:
-`$ ./flt_area /scr/tmp/taylort/processing/MethaneAIR21rf0*.nc`
+`./flt_area /scr/tmp/taylort/processing/MethaneAIR21rf0*.nc`
 
 Example output:
 
-`$ ./flt_area /scr/raf/Prod_Data/SOCRATES/SOCRATESrf0[3-7].nc`
+`./flt_area /scr/raf/Prod_Data/SOCRATES/SOCRATESrf0[3-7].nc`
 
 `Input file /scr/raf/Prod_Data/SOCRATES/SOCRATESrf03.nc exists.`
 
@@ -71,4 +69,4 @@ positional arguments:
                     e.g./scr/raf/Prod_Data/<PROJECT>rf0[1-4].nc
 
 optional arguments:'
-  -h, --help         show this help message and exit```
+  -h, --help         show this help message and exit
