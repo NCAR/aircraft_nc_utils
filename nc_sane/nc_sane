@@ -443,7 +443,7 @@ class ncSane():
                                 print("PLWCD_ Matches!")
                             else:
                                 pass
-                        elif plwc_calc[row] == 'nan' and self.plwc_data[row] == 'nan':
+                        elif str(plwc_calc[row]) == 'nan' and str(self.plwc_data[row]) == 'nan':
                             if verbose:
                                 print('Calculating liquid water and comparing to reported value for row: ' + str(row))
                                 print('Calculated liquid water: ' + str(plwc_calc[row]))
