@@ -1,0 +1,13 @@
+name: nc_utils_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - conda
+  - python=3.10
+  - pyqt
+  - pyyaml
+  - netcdf4
+  - pandas
+  - numpy
+  - xarray
