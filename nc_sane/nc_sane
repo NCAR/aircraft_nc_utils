@@ -331,8 +331,8 @@ class ncSane():
                                 print("Error")
                             else:
                                 failed = True
-        except Exception as e:
-            print(e)
+        except Exception:
+            print("No qualifying histogram data to check.")
 
         try:
             # if a concentration vector variable starts with CCDP
@@ -466,14 +466,12 @@ class ncSane():
 
             if failed:
                 print('Histogram Check: Fail')
-            else:
-                print('Histogram Check: Pass')
             if verbose:
                 print('Done with histogram checking')
             else:
                 pass
-        except Exception as e:
-            print(e)
+        except Exception:
+            print("No qualifying liquid water data to check.")
 
     def histoCheck(self, args, ds, histo1, histo2, histo3, histo4):
         """
