@@ -171,14 +171,6 @@ def buildIWG():
            df["SOLAZ"].astype(float).round(decimals = 2), \
            df["Sun_Az_AC"].astype(float).round(decimals = 2)], axis=1, ignore_index=True)
 
-    # since longitude can have three digits to left of decimal
-    # need to set precision in those cases
-    for i in iwg[2]:
-        if abs(i) >= 100:
-            i = round(i, 4)
-            iwg[2] = i
-        else:
-            pass
     try:
         iwg.insert(loc=0, column='PID', value=platform)
     except:
