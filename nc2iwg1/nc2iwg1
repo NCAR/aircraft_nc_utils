@@ -141,7 +141,7 @@ def buildIWG():
                     elif (i == "TTX"):
                         try:
                             output = nc.variables["RTX"][:]
-                            print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                            print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
                         except Exception as e:
                             print(e)
                     else:
