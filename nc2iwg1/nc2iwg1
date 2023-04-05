@@ -25,13 +25,13 @@ parser = argparse.ArgumentParser(description='A program to produce IWG1 packets 
                                   If a variable is missing from a netCDF file, maintains blank \
                                   entries to keep IWG1 structure.')
 parser.add_argument("input_file", help="netCDF file to convert")
-parser.add_argument("-o", "--output_file", help="Optional IWG1 format converted output file")
+parser.add_argument("-o", "--output_file", help="If you want to write to an output file, include path to output file.")
 parser.add_argument("-d", "--delay", help="Optional conversion interval delay in microseconds")
 parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=False, \
-                    help="Boolean to put program into UDP mode. Default is false. Only provide \
+                    help="Provide this if you want to emulate realtime. Boolean to put program into UDP mode. Default is false. Only provide \
                      '-u' with nothing following")
 parser.set_defaults(feature=False)
-parser.add_argument("-v", "--extravars", help="file containing comma separated list of vars")
+parser.add_argument("-v", "--extravars", help="File containing comma separated list of vars")
 parser.add_argument("-so", "--standard_out", type=bool, const=True, nargs="?",\
                     default=False, help="Optional argument for standard out. \
                     If you don't provide, file writes to output file, and that's it. Only provide \
@@ -132,7 +132,20 @@ def buildIWG():
                 if i in list(nc.variables.keys()):
                     output = nc.variables[i][:]
                 elif i not in list(nc.variables.keys()):
-                    output = pd.DataFrame(columns=[i])[:]
+                    if (i == "GSF"):
+                        try:
+                            output = nc.variables["GSPD"][:]
+                            print("*********NOTICE: VARIABLE GSF NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                        except Exception as e:
+                            print(e)
+                    elif (i == "TTX"):
+                        try:
+                            output = nc.variables["RTX"][:]
+                            print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                        except Exception as e:
+                            print(e)
+                    else:
+                        output = pd.DataFrame(columns=[i])[:]
                 else:
                     pass
             except:
@@ -145,7 +158,7 @@ def buildIWG():
            df["NAVAIL"].astype(float).round(decimals = 2), \
            df["PALTF"].astype(float).round(decimals = 2), \
            df["HGM232"].astype(float).round(decimals = 2), \
-           df["GSF"].astype(float).round(decimals = 2), \
+	   df["GSF"].astype(float).round(decimals = 2), \
            df["TASX"].astype(float).round(decimals = 2), \
            df["IAS"].astype(float).round(decimals = 2), \
            df["MACH_A"].astype(float).round(decimals = 2), \
@@ -159,8 +172,8 @@ def buildIWG():
            df["ATTACK"].astype(float).round(decimals = 2), \
            df["ATX"].astype(float).round(decimals = 2), \
            df["DPXC"].astype(float).round(decimals = 2), \
-           df["TTX"].astype(float).round(decimals = 2), \
-           df["PSXC"].astype(float).round(decimals = 2), \
+	   df["TTX"].astype(float).round(decimals = 2), \
+	   df["PSXC"].astype(float).round(decimals = 2), \
            df["QCXC"].astype(float).round(decimals = 2), \
            df["PCAB"].astype(float).round(decimals = 2), \
            df["WSC"].astype(float).round(decimals = 2), \
@@ -181,17 +194,17 @@ def buildIWG():
         pass
     if args.extravars is not None:
         with open(args.extravars) as file:
-            print(file)
             for line in file:
                 additional_vars_list = line.split()
                 print(additional_vars_list)
         extravars = {}
         for i in additional_vars_list:
-            try:
-                extra_output = extractVar(i, nc.variables)
+            print(i)
+            if i in list(nc.variables.keys()):
+                print("here")
+                extra_output = nc.variables[i][:]
+                print(extra_output)
                 extravars[i] = pd.DataFrame(extra_output)
-            except:
-                print("Additional variables expected, but error in extraction.")
 
         extravars=pd.concat(extravars, axis=1, ignore_index=False)
         iwg = pd.concat([iwg, extravars], axis=1, ignore_index=False)
