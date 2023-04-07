@@ -4,21 +4,19 @@
 # Produce IWG1 packets from a netCDF file. If variable is missing from
 # netCDF file, maintain blank entries to keep IWG1 structure.
 #
-# Written in Python 3
-#
-# Copyright University Corporation for Atmospheric Research, 2020 
+# Copyright University Corporation for Atmospheric Research, 2020
 #######################################################################
 
 import netCDF4
 import pandas as pd
-from datetime import datetime
 import sys
-import threading
 import socket
 import argparse
 import time
 import io
 import os
+import warnings
+warnings.filterwarnings('ignore')
 
 # get arguments from command line
 parser = argparse.ArgumentParser(description='A program to produce IWG1 packets from a netCDF file \
@@ -27,12 +25,12 @@ parser = argparse.ArgumentParser(description='A program to produce IWG1 packets 
 parser.add_argument("input_file", help="netCDF file to convert")
 parser.add_argument("-o", "--output_file", help="If you want to write to an output file, include path to output file.")
 parser.add_argument("-d", "--delay", help="Optional conversion interval delay in microseconds")
-parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=False, \
+parser.add_argument("-u", "--UDP", type=bool, const=True, nargs="?", default=False,
                     help="Provide this if you want to emulate realtime. Boolean to put program into UDP mode. Default is false. Only provide \
                      '-u' with nothing following")
 parser.set_defaults(feature=False)
 parser.add_argument("-v", "--extravars", help="File containing comma separated list of vars")
-parser.add_argument("-so", "--standard_out", type=bool, const=True, nargs="?",\
+parser.add_argument("-so", "--standard_out", type=bool, const=True, nargs="?",
                     default=False, help="Optional argument for standard out. \
                     If you don't provide, file writes to output file, and that's it. Only provide \
                      '-so' with nothing following")
@@ -41,18 +39,18 @@ parser.add_argument("-p", "--port_number", type=int, help="Optional argument to 
                     otherwise uses 7071")
 parser.add_argument("-k", "--key_word_platform", help="Optional argument to set platform e.g.\
                      WB57, C130, WKA, GV, LEAR")
-if len(sys.argv)==1:
+if len(sys.argv) == 1:
     parser.print_help(sys.stderr)
     sys.exit(1)
 args = parser.parse_args()
 
-if args.output_file is not None and args.UDP == True:
+if args.output_file is not None and args.UDP:
     sys.exit("Output file option set and UDP set to True. Only one can be set.")
 elif args.output_file is not None and args.delay is not None:
     print("Output file and conversion interval arguments provided. Igoring conversion interval.")
-elif args.UDP == False and args.hostname_to_send_to is not None:
+elif args.UDP is False and args.hostname_to_send_to is not None:
     sys.exit("You have UDP output set to False but you have provided a hostname.")
-elif args.UDP == False and args.port_number is not None:
+elif args.UDP and args.port_number is not None:
     sys.exit("You have UDP output set to False but you have provided a port number.")
 else:
     pass
@@ -65,7 +63,7 @@ else:
     interval = 1
 
 # configure UDP broadcast if argument is provided
-if args.UDP == True:
+if args.UDP:
     UDP_OUT = True
     # if port # arg is provided, use that
     if args.port_number is not None:
@@ -89,30 +87,32 @@ if args.key_word_platform is not None:
 else:
     pass
 
+
 #######################################################################
 # define function to convert data to IWG1 format
 #######################################################################
+
 def buildIWG():
 
-# read the input file to convert
+    # read the input file to convert
     nc = netCDF4.Dataset(input_file, mode='r')
-    iwg1_vars_list = ["GGLAT", "GGLON", "GGALT", "NAVAIL", "PALTF", \
-                  "HGM232", "GSF", "TASX", "IAS", "MACH_A", "VSPD", \
-                  "THDG", "TKAT", "DRFTA", "PITCH", "ROLL", "SSLIP", \
-                  "ATTACK", "ATX", "DPXC", "TTX", "PSXC", "QCXC", \
-                  "PCAB", "WSC", "WDC", "WIC", "SOLZE", "Solar_El_AC", \
-                  "SOLAZ", "Sun_Az_AC"]
+    iwg1_vars_list = ["GGLAT", "GGLON", "GGALT", "NAVAIL", "PALTF",
+                      "HGM232", "GSF", "TASX", "IAS", "MACH_A", "VSPD",
+                      "THDG", "TKAT", "DRFTA", "PITCH", "ROLL", "SSLIP",
+                      "ATTACK", "ATX", "DPXC", "TTX", "PSXC", "QCXC",
+                      "PCAB", "WSC", "WDC", "WIC", "SOLZE", "Solar_El_AC",
+                      "SOLAZ", "Sun_Az_AC"]
 
     # extract the time variable from the netCDF file
     df = {}
     TIME = nc.variables["Time"]
-    dtime = netCDF4.num2date(TIME[:],TIME.units)
+    dtime = netCDF4.num2date(TIME[:], TIME.units)
     dtime = pd.Series(dtime).astype(str)
     dtime = dtime.str.replace(":", "")
     dtime = dtime.str.replace("-", "")
     dtime = dtime.str.replace(" ", "T")
     if args.output_file is None and args.UDP is None:
-        dtime = dtime.iloc[-1:]    
+        dtime = dtime.iloc[-1:]
         for i in iwg1_vars_list:
             try:
                 if i in list(nc.variables.keys()):
@@ -121,7 +121,7 @@ def buildIWG():
                     output = pd.DataFrame(columns=[i]).iloc[-1:]
                 else:
                     pass
-            except:
+            except Exception:
                 print(("Error in extracting variable "+i+" in "+input_file))
             df[i] = pd.DataFrame(output)
     else:
@@ -148,67 +148,78 @@ def buildIWG():
                         output = pd.DataFrame(columns=[i])[:]
                 else:
                     pass
-            except:
+            except Exception:
                 print(("Error in extracting variable "+i+" in "+input_file))
             df[i] = pd.DataFrame(output)
     global iwg
-    iwg = pd.concat([dtime, df["GGLAT"].astype(float).round(decimals = 5), \
-           df["GGLON"].astype(float).round(decimals = 5), \
-           df["GGALT"].astype(float).round(decimals = 2), \
-           df["NAVAIL"].astype(float).round(decimals = 2), \
-           df["PALTF"].astype(float).round(decimals = 2), \
-           df["HGM232"].astype(float).round(decimals = 2), \
-	   df["GSF"].astype(float).round(decimals = 2), \
-           df["TASX"].astype(float).round(decimals = 2), \
-           df["IAS"].astype(float).round(decimals = 2), \
-           df["MACH_A"].astype(float).round(decimals = 2), \
-           df["VSPD"].astype(float).round(decimals = 2), \
-           df["THDG"].astype(float).round(decimals = 2), \
-           df["TKAT"].astype(float).round(decimals = 2), \
-           df["DRFTA"].astype(float).round(decimals = 2), 
-           df["PITCH"].astype(float).round(decimals = 2), \
-           df["ROLL"].astype(float).round(decimals = 2), \
-           df["SSLIP"].astype(float).round(decimals = 2), \
-           df["ATTACK"].astype(float).round(decimals = 2), \
-           df["ATX"].astype(float).round(decimals = 2), \
-           df["DPXC"].astype(float).round(decimals = 2), \
-	   df["TTX"].astype(float).round(decimals = 2), \
-	   df["PSXC"].astype(float).round(decimals = 2), \
-           df["QCXC"].astype(float).round(decimals = 2), \
-           df["PCAB"].astype(float).round(decimals = 2), \
-           df["WSC"].astype(float).round(decimals = 2), \
-           df["WDC"].astype(float).round(decimals = 2), \
-           df["WIC"].astype(float).round(decimals = 2), \
-           df["SOLZE"].astype(float).round(decimals = 2), \
-           df["Solar_El_AC"].astype(float).round(decimals = 2), \
-           df["SOLAZ"].astype(float).round(decimals = 2), \
-           df["Sun_Az_AC"].astype(float).round(decimals = 2)], axis=1, ignore_index=True)
+    iwg = pd.concat([dtime, df["GGLAT"].astype(float).round(decimals=5),
+                    df["GGLON"].astype(float).round(decimals=5),
+                    df["GGALT"].astype(float).round(decimals=2),
+                    df["NAVAIL"].astype(float).round(decimals=2),
+                    df["PALTF"].astype(float).round(decimals=2),
+                    df["HGM232"].astype(float).round(decimals=2),
+                    df["GSF"].astype(float).round(decimals=2),
+                    df["TASX"].astype(float).round(decimals=2),
+                    df["IAS"].astype(float).round(decimals=2),
+                    df["MACH_A"].astype(float).round(decimals=2),
+                    df["VSPD"].astype(float).round(decimals=2),
+                    df["THDG"].astype(float).round(decimals=2),
+                    df["TKAT"].astype(float).round(decimals=2),
+                    df["DRFTA"].astype(float).round(decimals=2),
+                    df["PITCH"].astype(float).round(decimals=2),
+                    df["ROLL"].astype(float).round(decimals=2),
+                    df["SSLIP"].astype(float).round(decimals=2),
+                    df["ATTACK"].astype(float).round(decimals=2),
+                    df["ATX"].astype(float).round(decimals=2),
+                    df["DPXC"].astype(float).round(decimals=2),
+                    df["TTX"].astype(float).round(decimals=2),
+                    df["PSXC"].astype(float).round(decimals=2),
+                    df["QCXC"].astype(float).round(decimals=2),
+                    df["PCAB"].astype(float).round(decimals=2),
+                    df["WSC"].astype(float).round(decimals=2),
+                    df["WDC"].astype(float).round(decimals=2),
+                    df["WIC"].astype(float).round(decimals=2),
+                    df["SOLZE"].astype(float).round(decimals=2),
+                    df["Solar_El_AC"].astype(float).round(decimals=2),
+                    df["SOLAZ"].astype(float).round(decimals=2),
+                    df["Sun_Az_AC"].astype(float).round(decimals=2)], axis=1, ignore_index=True)
 
     try:
         iwg.insert(loc=0, column='PID', value=platform)
-    except:
+    except Exception:
         iwg.insert(loc=0, column='IWG1', value='IWG1')
     if args.output_file is None and args.UDP is None:
         iwg[0] = iwg[0].shift(-1)
     else:
         pass
+
+
     if args.extravars is not None:
         with open(args.extravars) as file:
             for line in file:
                 additional_vars_list = line.split()
-                print(additional_vars_list)
         extravars = {}
+        extra_output = {}
         for i in additional_vars_list:
-            print(i)
-            if i in list(nc.variables.keys()):
-                print("here")
-                extra_output = nc.variables[i][:]
-                print(extra_output)
-                extravars[i] = pd.DataFrame(extra_output)
-
-        extravars=pd.concat(extravars, axis=1, ignore_index=False)
-        iwg = pd.concat([iwg, extravars], axis=1, ignore_index=False)
-
+            print('Additional Variables: ' + i)
+            try:
+                if i in list(nc.variables.keys()):
+                    output = nc.variables[i].iloc[-1:]
+                elif i not in list(nc.variables.keys()):
+                    output = pd.DataFrame(columns=[i]).iloc[-1:]
+                else:
+                    pass
+            except Exception:
+                print(("Error in extracting variable "+i))
+            extravars[i] = pd.DataFrame(extra_output)
+        try:
+            extravars = pd.concat(extravars, axis=1, ignore_index=False)
+        except Exception as e:
+            print(e)
+        try:
+            iwg = pd.concat([iwg, extravars], axis=1, ignore_index=False)
+        except Exception as e:
+            print(e)
     else:
         pass
 
@@ -216,15 +227,17 @@ def buildIWG():
     iwg = iwg.astype(str)
     return iwg
 
+
 ######################################################################
 # define main function
 #######################################################################
+
 def main():
-  
+
     buildIWG()
     if args.output_file is not None:
         iwg.to_csv(args.output_file, header=False, index=False)
-    elif args.UDP == True:
+    elif args.UDP:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         iwg.to_csv("output.txt", header=False, index=False)
@@ -253,5 +266,7 @@ def main():
 #######################################################################
 # main
 #######################################################################
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()
