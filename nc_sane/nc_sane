@@ -234,6 +234,7 @@ class ncSane():
             self.da_conc = self.da_conc_name.values
         except Exception:
             self.da_conc = None
+            self.da_conc_name = None
             self.da_long_name_conc = None
         try:
             self.da_compare_conc = ds[histo4[index]]
