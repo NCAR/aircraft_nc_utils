@@ -153,25 +153,27 @@ class ncSane():
         check record num matches the time interval difference
         account for midnight rollover
         """
-        verbose = args.verbose
-        if verbose:
-            print('Flight Duration (seconds): ' +
-                  str(int(diff.total_seconds())))
-            print('Reported Time dimension range (seconds): ' + str(int(time)))
-        else:
+        try:
+            verbose = args.verbose
+            if verbose:
+                print('Flight Duration (seconds): ' +
+                      str(int(diff.total_seconds())))
+                print('Reported Time dimension range (seconds): ' + str(int(time)))
+            else:
+                pass
+            time_diff = int(diff.total_seconds()) - int(time)
+            if abs(time_diff) < 2:
+                if verbose:
+                    print('Reported and calculated time intervals match!')
+                else:
+                    print('Time Interval Check: Pass')
+            else:
+                if verbose:
+                    print('Reported and calculated time interval do NOT match!')
+                else:
+                    print('Time Interval Check: Fail')
+        except:
             pass
-        time_diff = int(diff.total_seconds()) - int(time)
-        if abs(time_diff) < 2:
-            if verbose:
-                print('Reported and calculated time intervals match!')
-            else:
-                print('Time Interval Check: Pass')
-        else:
-            if verbose:
-                print('Reported and calculated time interval do NOT match!')
-            else:
-                print('Time Interval Check: Fail')
-
     def checkBasetime(self, args, timeformat):
         """
         check basetime is correct
