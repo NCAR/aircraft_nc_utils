@@ -3,7 +3,7 @@ nc2asc is a python 3 based program that is intended for users of NSF/NCAR RAF ne
 
 The program is under revision control under the repo `NCAR/aircraft_nc_utils/nc2asc/src`. Template header files for ICARTT (https://www-air.larc.nasa.gov/missions/etc/IcarttDataFormat.htm) and AMES (https://espoarchive.nasa.gov/content/Ames_Format_Specification_v20) formats are contained in `NCAR/aircraft_nc_utils/nc2asc/lib`. The program will modify and write from these templates depending on the user preference. 
 
-On EOL servers barolo and tikal, a user can execute `nc2asc` from the command line and the GUI will launch. `aircraft_nc_utils/nc2asc/src` is also installed on the EOL RAF Ground Station computer, where it us called in command line mode by the ground processing scripts to generate an ICARTT V2 (https://cdn.earthdata.nasa.gov/conduit/upload/6158/ESDS-RFC-029v2.pdf) file after a flight, if configured to do so.
+On EOL servers barolo, tikal, and mercury, a user can execute `nc2asc` from the command line and the GUI will launch. `aircraft_nc_utils/nc2asc/src` is also installed on the EOL RAF Ground Station computer, where it us called in command line mode by the ground processing scripts to generate an ICARTT V2 (https://cdn.earthdata.nasa.gov/conduit/upload/6158/ESDS-RFC-029v2.pdf) file after a flight, if configured to do so.
 
 ## GUI Mode
 The program can be run in two modes: the first is a graphical user interface that allows a user to import a netCDF file, choose an output directory and filename, as well as output format options for date, time, delimiter, fill value, and header.
