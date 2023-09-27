@@ -724,7 +724,7 @@ class gui(QMainWindow):
             self.long_name = {}
             self.variables = {}
             self.fileheader = {}
-            self.project_manager = 'Julie Haggerty, Pavel Romashkin'
+            self.project_manager = 'Patrick Veres, Pavel Romashkin'
             self.tail_number = nc.getncattr('Platform')
             if self.tail_number == 'N677F':
                 self.platform = 'GV'
@@ -2127,7 +2127,7 @@ class nc2asc_CL():
             self.long_name = {}
             self.variables = {}
             self.fileheader = {}
-            self.project_manager = 'Julie Haggerty, Pavel Romashkin'
+            self.project_manager = 'Patrick Veres, Pavel Romashkin'
             self.tail_number = nc.getncattr('Platform')
             if self.tail_number == 'N677F':
                 self.platform = 'GV'
