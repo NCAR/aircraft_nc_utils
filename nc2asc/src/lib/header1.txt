@@ -5,7 +5,7 @@ RAF instruments on
 <PROJECT>
 1, 1
 <YYYY, MM, DD,><YYYY, MM, DD>
-1.0 
+1.0
 Time_Start, seconds, Start measurement period given in UTC seconds from the midnight
 <varNumber>
 <1.0>
