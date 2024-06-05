@@ -184,6 +184,19 @@ public:
     return _nulps;
   }
 
+  compare_floating_point&
+  setNansEqual(bool nans_equal)
+  {
+    _nans_equal = nans_equal;
+    return *this;
+  }
+
+  bool
+  getNansEqual()
+  {
+    return _nans_equal;
+  }
+
   bool
   near_equal_ulps_float(float left, float right)
   {
@@ -208,12 +221,33 @@ public:
     return (left - right) < _ddelta && (left - right) > -_ddelta;
   }
 
+  /**
+   * Template for sharing the non-normal floating point comparisons.
+   * 
+   */
+  template <typename T>
+  inline bool
+  compare_non_normals(const T& left, const T& right, bool& result)
+  {
+    // if equal, then short circuit the rest.  this works for INFINITY, since
+    // INF==INF and -INF==-INF, and it also may avoid some extra computation
+    // steps for the ulps and delta comparisons.
+    if (left == right)
+      result = true;
+    else if (_nans_equal && isnan(left) && isnan(right))
+      result = (signbit(left) == signbit(right));
+    else
+      return false;
+    return true;
+  }
+
 private:
 
   float _fdelta;
   double _ddelta;
 
   int _nulps;
+  bool _nans_equal{false};
 
   bool (compare_floating_point::*_float_equal)(float left, float right);
   bool (compare_floating_point::*_double_equal)(double left, double right);
@@ -230,6 +264,9 @@ inline bool
 compare_floating_point::
 near_equal(const double& left, const double& right)
 {
+  bool result;
+  if (compare_non_normals(left, right, result))
+    return result;
   return (this->*_double_equal)(left, right);
 }
 
@@ -242,6 +279,9 @@ inline bool
 compare_floating_point::
 near_equal(const float& left, const float& right)
 {
+  bool result;
+  if (compare_non_normals(left, right, result))
+    return result;
   return (this->*_float_equal)(left, right);
 }
 

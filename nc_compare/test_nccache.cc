@@ -503,3 +503,41 @@ TEST(calling_gsl, empty)
   EXPECT_EQ(0, gsl::gsl_stats_mean(&value, 1, 0));
   EXPECT_EQ(10, gsl::gsl_stats_mean(&value, 1, 1));
 }
+
+
+TEST(compare_floating_point, non_normals)
+{
+  compare_floating_point cfp_a;
+  cfp_a.setNansEqual(true);
+
+  compare_floating_point cfp;
+  cfp = cfp_a;
+  EXPECT_EQ(cfp.getNansEqual(), true);
+  EXPECT_EQ(cfp.near_equal(NAN, NAN), true);
+  EXPECT_EQ(cfp.near_equal(NAN, -NAN), false);
+  EXPECT_EQ(cfp.near_equal(-NAN, -NAN), true);
+  EXPECT_EQ(cfp.near_equal(INFINITY, INFINITY), true);
+  EXPECT_EQ(cfp.near_equal(-INFINITY, INFINITY), false);
+  EXPECT_EQ(cfp.near_equal(-INFINITY, -INFINITY), true);
+
+  cfp.setNansEqual(false);
+  EXPECT_EQ(cfp.getNansEqual(), false);
+  EXPECT_EQ(cfp.near_equal(NAN, NAN), false);
+  EXPECT_EQ(cfp.near_equal(NAN, -NAN), false);
+  EXPECT_EQ(cfp.near_equal(-NAN, -NAN), false);
+  EXPECT_EQ(cfp.near_equal(INFINITY, INFINITY), true);
+  EXPECT_EQ(cfp.near_equal(-INFINITY, INFINITY), false);
+  EXPECT_EQ(cfp.near_equal(-INFINITY, -INFINITY), true);
+
+  // delta comparison should also respect the invariants of infinity and nan
+  // comparisons.
+  cfp.setDelta(1);
+  cfp.useDelta();
+  EXPECT_EQ(cfp.getNansEqual(), false);
+  EXPECT_EQ(cfp.near_equal(NAN, NAN), false);
+  EXPECT_EQ(cfp.near_equal(NAN, -NAN), false);
+  EXPECT_EQ(cfp.near_equal(-NAN, -NAN), false);
+  EXPECT_EQ(cfp.near_equal(INFINITY, INFINITY), true);
+  EXPECT_EQ(cfp.near_equal(-INFINITY, INFINITY), false);
+  EXPECT_EQ(cfp.near_equal(-INFINITY, -INFINITY), true);
+}

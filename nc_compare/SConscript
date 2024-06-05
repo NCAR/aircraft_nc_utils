@@ -17,8 +17,9 @@ def asciidoc(env):
     env['BUILDERS']['AsciidocMan'] = man
     env['BUILDERS']['AsciidocHTML'] = html
 
-tools=['default', 'netcdf', 'prefixoptions', 'buildmode', 'gsl',
-       'boost_program_options', asciidoc]
+
+tools = ['default', 'netcdf', 'prefixoptions', 'buildmode', 'gsl',
+         'boost_program_options', asciidoc]
 env = Environment(tools=tools)
 
 # nc_compare now requires C++11
@@ -35,8 +36,9 @@ env.Default(nccompare)
 env.Install('$INSTALL_PREFIX/bin', nccompare)
 env.Install('$INSTALL_PREFIX/man/man1', manpage)
 
+# gtest now requires C++14
 env = Environment(tools=tools+['testing', 'gtest_main'])
-env.AppendUnique(CXXFLAGS=['-std=c++11'])
+env.AppendUnique(CXXFLAGS=['-std=c++14'])
 
 test_sources = env.Split("test_nccache.cc")
 

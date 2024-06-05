@@ -75,6 +75,13 @@ nc_compare(int argc, char *argv[])
      "only if the dimension sizes are the same.")
     ("minmax",
      "Report min and max in the statistics report.")
+    ("nans-equal",
+     "By default a NAN does not equal anything, including another NAN. "
+     "Set nans-equal if a nan in both files should not be a difference. "
+     "Two NANs are equal if their signs are equal. INFINITY values are "
+     "always equal if their signs are equal, regardless of nans-equal. "
+     "This setting also affects the means comparison in the statistics "
+     "report.")
     ;
 
   po::positional_options_description p;
@@ -152,6 +159,7 @@ nc_compare(int argc, char *argv[])
     cfp.setFloatDelta(delta);
     cfp.useDelta();
   }
+  cfp.setNansEqual(vm.count("nans-equal") > 0);
   ncdiff.setFloatComparator(cfp);
   ncdiff.compare();
   ncdiff.report(cout);

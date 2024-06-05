@@ -245,8 +245,8 @@ report(std::ostream& out)
     {
       if (!header)
       {
-	header = true;
-	out << "dimensions:\n";
+        header = true;
+        out << "dimensions:\n";
       }
       dims[i]->generateReport(out, style.derive(1));
     }
@@ -288,13 +288,13 @@ report(std::ostream& out)
   header = false;
   for (unsigned int i = 0; i < evars.size(); ++i)
   {
-    if (show_equal || !evars[i]->meansNearEqual()||
+    if (show_equal || !evars[i]->meansNearEqual() ||
         (style.getShowIndex() && evars[i]->ranges.size()))
     {
       if (!header)
       {
-	evars[i]->statisticsHeader(out, style);
-	header = true;
+        evars[i]->statisticsHeader(out, style);
+        header = true;
       }
       evars[i]->reportStatistics(out, style);
     }
@@ -571,12 +571,12 @@ compare_variables(CompareNetcdf* ncf, nc_var<T>* left, nc_variable* _right)
   {
     // If not blanked on the right and not near equal, add to a range.
     if ((!blanks || !blanks->isMissing(coords.index)) &&
-	! ncf->near_equal(left->get(coords), right->get(coords)))
+        !ncf->near_equal(left->get(coords), right->get(coords)))
     {
       if (!inrange)
       {
-	range.start = coords;
-	inrange = true;
+        range.start = coords;
+        inrange = true;
       }
       range.end = coords;
     }
