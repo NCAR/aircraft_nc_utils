@@ -13,7 +13,7 @@ The RAF netCDF file conventions can be found here: http://www.eol.ucar.edu/raf/s
 | g2n | GENPRO to netCDF translator. |
 | mkcdf | Cheezy utility to make small test netCDF file. |
 | nc2asc | Python based netCDF to ASCII translator. Plain CSV or ICARTT output. https://github.com/NCAR/aircraft_nc_utils/blob/master/nc2asc/README.md| os, sys, argparse, netCDF4, pandas, numpy, datetime, PyQt5 |
-| nc2iwg1 | Python based program to read netCDF file and produce an ASCII file conforming to the IWG1.  Has UDP output options as well. http://www.eol.ucar.edu/raf/software/iwgadts/IWG1_Def.html |os, sys, netCDF4, pandas, datetime, threading, socket, argparse, time, io |
+| nc2iwg1 | Python based program to read netCDF file and produce an ASCII file conforming to the IWG1.  Has UDP output options as well. http://n2t.net/ark:/85065/d70k2dtg |os, sys, netCDF4, pandas, datetime, threading, socket, argparse, time, io |
 | nc_compare | Compare two netCDF files.  Useful for differing runs of the same flight. |
 | nc_dips | Count number of dips aircraft made in a flight. |
 | nc_gap | Report time gaps from flight. |
