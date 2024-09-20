@@ -128,6 +128,8 @@ void checkForOverlappingTimeSegments()
     strcpy(unitsFormat2, defaultFormat);
 
   struct tm tm1, tm2;
+  memset(&tm1, 0, sizeof(struct tm));
+  memset(&tm2, 0, sizeof(struct tm));
   strptime(units1, unitsFormat1, &tm1);
   strptime(units2, unitsFormat2, &tm2);
 

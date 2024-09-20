@@ -91,6 +91,7 @@ void determineTimeSegment()
     strcpy(unitsFormat1, defaultFormat);
 
   struct tm tm1;
+  memset(&tm1, 0, sizeof(struct tm));
   strptime(units1, unitsFormat1, &tm1);
 
   bt1 = mktime(&tm1);

@@ -52,6 +52,7 @@ basetime_from_units(const std::string& units,
   if (strptime_format.length())
   {
     struct tm tm1;
+    memset(&tm1, 0, sizeof(struct tm));
     strptime(units.c_str(), strptime_format.c_str(), &tm1);
     year = tm1.tm_year + 1900;
     month = tm1.tm_mon + 1;

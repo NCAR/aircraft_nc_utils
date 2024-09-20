@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
   struct tm	StartFlight;
 
   putenv("TZ=UTC");     // Perform all time calculations at UTC.
+  memset(&StartFlight, 0, sizeof(struct tm));
 
   fd = ncopen(argv[1], NC_WRITE);
 

@@ -66,6 +66,7 @@ void CreateBADCnetCDF(FILE *fp)
     time_t	t;
     struct tm	tm;
 
+    memset(&tm, 0, sizeof(struct tm));
     t = time(0);
     tm = *gmtime(&t);
     strftime(buffer, 128, "%h %d %R GMT %Y", &tm);

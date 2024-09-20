@@ -68,6 +68,7 @@ getStartTime(NcVar * time_var)
     strcpy(format, frmt_att->as_string(0));
 
   struct tm StartFlight;
+  memset(&StartFlight, 0, sizeof(struct tm));
   strptime(unit_att->as_string(0), format, &StartFlight);
 
   time_t start_t = mktime(&StartFlight);
