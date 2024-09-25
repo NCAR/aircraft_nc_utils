@@ -1454,12 +1454,11 @@ class gui(QMainWindow):
         except Exception:
             self.write = self.asc
 ################################################################################################
-        for columnName in self.write.iteritems():
+        for columnName,columnData in self.write.items():
                 try:
-                    self.write[columnName] = self.write[columnName].map(lambda x: '%5f' % x)
+                    self.write[columnName] = columnData.map(lambda x: '%5f' % x)
                 except Exception as e:
                     pass
-        self.write = self.write.round(5)
 ################################################################################################
         # determine which output file to use based on mode
         try:
