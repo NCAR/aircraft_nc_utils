@@ -246,7 +246,6 @@ void CreateICARTTnetCDF(FILE *fp)
 
     if ( (p = strchr(buffer, ',')) && (p1 = strchr(p+1, ',')))
     {
-      
       for (++p; *p == ' '; ) ++p;
       units[i] = (char *)GetMemory(p1 - p);
       *p1 = '\0';
@@ -447,6 +446,6 @@ void CreateICARTTnetCDF(FILE *fp)
       free(titles[i]);
     }
   }
-}	/* END CREATENASAAMESNETCDF */
+}	/* END CREATEICARTTNETCDF */
 
-/* END NASAAMES.C */
+/* END ICARTT.C */

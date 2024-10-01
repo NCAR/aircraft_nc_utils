@@ -89,17 +89,17 @@ int main(int argc, char *argv[])
     Usage();
 
   if ((inFP = fopen(argv[i], "r")) == NULL)
-    {
+  {
     fprintf(stderr, "Can't open input file %s.\n", argv[i]);
     exit(1);
-    }
+  }
 
 
   if (nc_create(argv[i+1], NC_CLOBBER, &ncid) != NC_NOERR)
-    {
+  {
     fprintf(stderr, "Can't destroy/create output file %s.\n", argv[i+1]);
     exit(1);
-    }
+  }
 
 
   switch (fileType)
@@ -150,10 +150,10 @@ int main(int argc, char *argv[])
 
 
   for (nRecords = 0; notLastRec; )
-    {
+  {
     if (getRec)
-      {
-      if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
+    {
+      if (fgets(buffer, BUFFSIZE, inFP) == NULL)
       {
         notLastRec = false;
 	break;
@@ -166,11 +166,11 @@ int main(int argc, char *argv[])
 
       p = strtok(buffer, ", \t");	// Parse the first value (Time) out of the buffer
 
-      }
+    }
     else
-      {
+    {
 	getRec=true;
-      }
+    }
 
 
     if (fileType == NASA_LANGLEY)	/* Skip Julian day column */
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     if (verbose)
 	printf("subsec: %d ; dataRate: %d\n",subsec,dataRate);
     for (hz = subsec; hz < dataRate; ++hz)
-      {
+    {
       // If histogram data, zeroth data bin must be zero for legacy
       // reasons.
       if (histogram) {
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
         index[0] = rec; index[1] = hz; index[2] = 0;
         status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
         if (status != NC_NOERR) handle_error(status);
-      }
+    }
       j=0; // index for netCDF variables
       // k values only apply to histograms stored as repeating column headers
       k=1; // index for histogram columns; First var is written to index 0 of histogram by C: loop, so start at 1
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
           dataValue = MISSING_VALUE;
 
 	// Increment netCDF variable pointer if working with a new var
-        if (fileType == BADC_CSV)	{
+        if (fileType == BADC_CSV) {
 	  strcpy(var,histo_vars[j]);
 	  if (strstr(histo_vars[j],":") != NULL) {
 	      strtok_r(var,":",&refptr);
@@ -242,12 +242,12 @@ int main(int argc, char *argv[])
 
 
         if (fileType != PLAIN_FILE)
-          {
+        {
           if (dataValue == missingVals[i])
             dataValue = MISSING_VALUE;
           else
             dataValue = dataValue * scale[i] + offset[i];
-          }
+        }
 
         if (histogram)
 	{
@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
       } // End hz loop
 
     ++nRecords;
-    }
+  }
 
   fclose(inFP);
 
