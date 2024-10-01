@@ -12,7 +12,7 @@ ENTRY POINTS:	SetPlainBaseTime()
 
 DESCRIPTION:	
 
-COPYRIGHT:	University Corporation for Atmospheric Research, 1996-07
+COPYRIGHT:	University Corporation for Atmospheric Research, 1996-2024
 -------------------------------------------------------------------------
 */
 
@@ -264,6 +264,11 @@ void addGlobalAttrs(const char *fileName)
     exit(1);
   }
 
+
+  /* Loop over lines in file.  key/value pair.
+   * '#' denotes comment
+   *  key=value
+   */
   while (fgets(buffer, BUFFSIZE, fp) > (char *)0)
   {
     char *p, *attr, *value;
@@ -297,13 +302,13 @@ void addGlobalAttrs(const char *fileName)
 	strcat(prev_value,";  ");
 	strcat(prev_value,value);
         strcpy(value,prev_value);
-    } 
-    else 
+    }
+    else
     {
 	if (strstr(all_atts,attr) != NULL) {
 	    //This att occured before, non-sequentially, so will be overwritten.
 	    fprintf(stderr, "WARNING: Found non-sequential duplicate attribute %s, overwriting\n",attr);
-	} 
+	}
 	else
 	{
 	    strcat(all_atts,attr);

@@ -64,7 +64,7 @@ const char	*noUnits = "Unk";
 
 void addGlobalAttrs(const char *p);
 //void WriteBaseTime(); // Base time is depricated.
-void handle_error(const int);
+void handle_error(const int), Usage();
 
 static int ProcessArgv(int argc, char **argv);
 static size_t ProcessTime(char *p);
@@ -86,10 +86,7 @@ int main(int argc, char *argv[])
   i = ProcessArgv(argc, argv);
 
   if ((argc - i) < 2)
-    {
-    fprintf(stderr, "Usage: asc2cdf [-b time_t] [-a] [-l] [-c] [-m] [-r n] [-s n] [-n] ascii_file output.nc\n");
-    exit(1);
-    }
+    Usage();
 
   if ((inFP = fopen(argv[i], "r")) == NULL)
     {
@@ -169,8 +166,8 @@ int main(int argc, char *argv[])
 
       p = strtok(buffer, ", \t");	// Parse the first value (Time) out of the buffer
 
-      } 
-    else 
+      }
+    else
       {
 	getRec=true;
       }
@@ -190,14 +187,14 @@ int main(int argc, char *argv[])
     rec = ProcessTime(p);
     // Ignore duplicate timestamp
     if (int(rec) == -1) continue;
-    
+
 
 //    dataValue = (float)(nRecords * BaseDataRate);
 //    nc_put_var1_float(ncid, timeVarID, &nRecords, &dataValue);
 //    nc_put_var1_float(ncid, timeOffsetID, &nRecords, &dataValue);
 
     //If subseconds are given in the time column, offset here.-JAG
-    if (verbose) 
+    if (verbose)
 	printf("subsec: %d ; dataRate: %d\n",subsec,dataRate);
     for (hz = subsec; hz < dataRate; ++hz)
       {
@@ -225,7 +222,7 @@ int main(int argc, char *argv[])
           dataValue = atof(p);
         else
           dataValue = MISSING_VALUE;
-	
+
 	// Increment netCDF variable pointer if working with a new var
         if (fileType == BADC_CSV)	{
 	  strcpy(var,histo_vars[j]);
@@ -252,14 +249,14 @@ int main(int argc, char *argv[])
             dataValue = dataValue * scale[i] + offset[i];
           }
 
-        if (histogram) 
+        if (histogram)
 	{
           index[0] = rec; index[1] = hz; index[2] = i+1;
 	  if (verbose)
 	      printf("A: Writing data point %f to variable %d:%d index[%lu,%d,%d] \n",dataValue,varid[1],i,rec,hz,i+1);
           status = nc_put_var1_float(ncid, varid[1], index, &dataValue);
           if (status != NC_NOERR) handle_error(status);
-        } 
+        }
 	else if (lastVar ==varid[j]) // repeating var, assume histogram
 	{
           index[0] = rec; index[1] = hz; index[2] = k;
@@ -286,16 +283,16 @@ int main(int argc, char *argv[])
 	  }
 #endif
 
-	  // The number of columns in this histogram is already in the netCDF header as the third 
+	  // The number of columns in this histogram is already in the netCDF header as the third
 	  // dimension of this variable.
 	  nc_inq_dimlen(ncid, 2,&ncol);
 	  count = int(ncol);
 #ifdef ZEROBIN
 	  count = count-1; // Have count bins, but only count-1 data point because first bin is legacy placeholder.
 #endif
- 	  if (k >= count) k=1;
+	  if (k >= count) k=1;
 #ifdef ZEROBIN
- 	  k++;
+	  k++;
 #endif
         }
         else
@@ -313,14 +310,14 @@ int main(int argc, char *argv[])
 
       }
 
-      // If haven't read all the sub-dataRate data, keep looping until reach 
+      // If haven't read all the sub-dataRate data, keep looping until reach
       // next time interval. Compare on current time to avoid merging data
       // from different seconds into a single second record. This additional
-      // fgets will cause us to loose a record when time passes a multiple 
+      // fgets will cause us to loose a record when time passes a multiple
       // of data rate. Set a flag so we don't repeat fgets at top of loop.
       if (hz != dataRate-1) {
 	getRec = false;
-        if (fgets(buffer, BUFFSIZE, inFP) == NULL) 
+        if (fgets(buffer, BUFFSIZE, inFP) == NULL)
         {
           notLastRec = false;
 	  break;
@@ -352,7 +349,6 @@ int main(int argc, char *argv[])
 	getRec = true;
       }
 
-      
       if (fileType == NASA_LANGLEY)     /* Skip Julian day      */
         p = strtok(NULL, ", \t");
 
@@ -588,4 +584,24 @@ size_t ProcessTime(char *p)
     return(rec);
 }	/* END PROCESSTIME */
 
+void Usage()
+{
+  printf("Usage: asc2cdf [options] ascii_file_name output.nc\n\nStandard options:\n");
+  printf("  -b time_t\tSet basetime.  Mostly deprecated, applied to original RAF files in the 1990's\n");
+  printf("  -d YYYY-MM-DD\tSet date, useful for plain ascii files.\n");
+  printf("  -g file\tAdd contents of file as global attributes, file should be in key=value format\n");
+  printf("  -a\tIncoming format is NASA Ames\n");
+  printf("  -l\tIncoming format is NASA Langely\n");
+  printf("  -c\tIncoming format is BADC CSV (Ames offshoot)\n");
+  printf("  -i\tIncoming format is ICARTT (this has mostly superceeded Ames and Langely)\n");
+  printf("  -m\tIncoming time column is seconds since midnight (Above formats engage this)\n");
+  printf("  -h\tIncoming file is a histogram\n");
+  printf("  -n\tDo not produce RAF/nimbus netCDF conventions\n");
+
+  printf("  -r n\tIncoming sample rate, for rates faster than 1 per second\n");
+  printf("  -s n\tSkip n lines from the file before decoding data (skip header)\n");
+  printf("  -v\tVerbose\n");
+  printf("  -:\tIncoming time column is HHMMSS, no colons.\n");
+  exit(1);
+}
 /* END ASC2CDF.C */
