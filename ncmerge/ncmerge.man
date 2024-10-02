@@ -17,7 +17,7 @@ in order for ncmerge to work.
 .PP
 .SH BUGS
 .PP
-There is potential for screwing up the output file.  If the time segment
+There is potential for discontinuous data in the output file.  If the time segment
 for the secondary file is a subset of the primary file, and there is a
 variable that exists in both files, and one file used different calibration
 coeffecients, then the resulting output file will have data for the same
