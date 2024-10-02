@@ -28,6 +28,8 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1993-09
 #define MAX_IN_VARS	800
 #define MAX_OUT_VARS	1000
 
+static const char conventions[] = "NCAR-RAF/nimbus";
+
 char	buffer[2048];
 char	VarList[MAX_IN_VARS][NAMELEN];
 int	inVarID[MAX_IN_VARS], outVarID[MAX_OUT_VARS];
@@ -68,11 +70,19 @@ void openFiles(int argc, char *argv[], int argp)
   /* Make sure files are similar.
    */
   nc_get_att_text(infd1, NC_GLOBAL, "Conventions", buffer);
-  nc_get_att_text(infd2, NC_GLOBAL, "Conventions", &buffer[500]);
 
-  if (strcmp(buffer, &buffer[500]) != 0)
+  if (strstr(buffer, conventions) == 0)
   {
-    std::cerr << "Conventions don't match, invalid merge.\n";
+    std::cerr	<< "Primary file conventions do not contain ["
+		<< conventions << "], not merging.\n";
+    Exit(1);
+  }
+
+  nc_get_att_text(infd2, NC_GLOBAL, "Conventions", buffer);
+  if (strstr(buffer, conventions) == 0)
+  {
+    std::cerr	<< "Secondary file conventions do not contain ["
+		<< conventions << "], not merging.\n";
     Exit(1);
   }
 }
