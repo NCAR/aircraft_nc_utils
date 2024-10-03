@@ -25,7 +25,7 @@ DESCRIPTION:	Header File for Nimbus Skeleton.
 #define CURRENT_BUFFER	-((NBUFFERS >> 1) + 1))
 
 
-#define NAMELEN		20
+#define NAMELEN		32
 #define MAX_VARIABLES	2000
 #define MAX_TIME_SLICES	5
 

@@ -52,13 +52,13 @@ void openFiles(int argc, char *argv[], int argp)
    */
   if (nc_open(argv[argp], NC_WRITE, &infd1) != NC_NOERR)
   {
-    fprintf(stderr, "Can't open primary file %s\n", argv[argp]);
+    fprintf(stderr, "Can't open netCDF file %s\n", argv[argp]);
     Exit(1);
   }
 
   nc_get_att_text(infd1, NC_GLOBAL, "Conventions", buffer);
 
-  if (strcmp(buffer,"NCAR-RAF/nimbus") != 0)
+  if (strstr(buffer,"NCAR-RAF/nimbus") == 0)
   {
     fprintf(stderr, "Conventions not NCAR-RAF/nimbus, invalid fill.\n");
     Exit(1);
@@ -72,7 +72,7 @@ void determineTimeSegment()
 
   if (nc_inq_varid(infd1, "Time", &varID1) != NC_NOERR)
   {
-    fprintf(stderr, "Master file does not contain the variable 'Time', fatal.\n");
+    fprintf(stderr, "File does not contain the variable 'Time', fatal.\n");
     fprintf(stderr, "  You are probably trying to add to old style RAF netCDF files.\n");
     Exit(1);
   }
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 
   if (argc < 2)
   {
-    fprintf(stderr, "Usage: ncfillvar [-v var0,var1,..,varn] [-c refvar] primary_file\n");
+    fprintf(stderr, "Usage: ncfillvar [-v var0,var1,..,varn] [-c refvar] file.nc\n");
     exit(1);
   }
 
@@ -186,7 +186,7 @@ void FillVariable()
   {
     nc_inq_var(infd1, j, name, &dataType, &nDims, dimIDs, &nAtts);
 
-    if (strcmp(RefVar,name) == 0) 
+    if (strcmp(RefVar,name) == 0)
     {
 	printf("Found reference var %s in file.\n",name);
 	break;
