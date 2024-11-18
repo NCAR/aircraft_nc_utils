@@ -27,6 +27,8 @@ from datetime import datetime
 from warnings import simplefilter, filterwarnings
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
+import xarray as xr
+import traceback
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -1557,26 +1559,32 @@ class gui(QMainWindow):
                         self.write.pop('Time')
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write = self.write[self.write['DateTime'] > start]
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write = self.write[self.write['DateTime'] < end]
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.insert(loc=0, column='Time', value=self.dtime_time)
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.pop('DateTime')
                     except Exception:
@@ -1620,27 +1628,33 @@ class gui(QMainWindow):
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write = self.write[self.write['DateTime'] > start]
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write = self.write[self.write['DateTime'] < end]
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.insert(loc=0, column='Date', value=self.dtime_date)
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.pop('DateTime')
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                 elif self.date == 'yyyy mm dd' and self.time == 'hh:mm:ss':
                     try:
                         self.write.pop('Time')
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
                     except Exception:
@@ -1816,12 +1830,14 @@ class gui(QMainWindow):
                                 self.processingSuccess_GUI()
                             except Exception as e:
                                 print(e)
+                                print(traceback.format_exc())
                         elif self.fillvalue == 'Blank':
                             self.write.to_csv(output_file, header=True, index=False, na_rep='')
                             try:
                                 self.processingSuccess_GUI()
                             except Exception as e:
                                 print(e)
+                                print(traceback.format_exc())
                         elif self.fillvalue == 'Replicate':
                             self.write = self.write.fillna(method='ffill')
                             self.write.to_csv(output_file, header=True, index=False)
@@ -1829,6 +1845,7 @@ class gui(QMainWindow):
                                 self.processingSuccess_GUI()
                             except Exception as e:
                                 print(e)
+                                print(traceback.format_exc())
                         else:
                             print('File not converted: '+self.input_file)
                     elif self.delimiter == 'space':
@@ -1863,11 +1880,13 @@ class gui(QMainWindow):
                             self.lib_path = self.lib_path.replace("bin", "lib")
                         except Exception as e:
                             print(e)
+                            print(traceback.format_exc())
                     else:
                         try:
                             self.lib_path = str(self.lib_path)+'/lib/'
                         except Exception as e:
                             print(e)
+                            print(traceback.format_exc())
                     # drop the unit and dimension rows for ICARTT
                     try:
                         try:
@@ -1917,10 +1936,10 @@ class gui(QMainWindow):
                                     lines[i] = self.varNumber+'\n'
                                 if line.startswith('<1.0>'):
                                     lines[i] = '1.0,' * int(self.varNumber)
-                                    lines[i] = lines[i].rstrip(lines[i][-1])+'\n'
+                                    lines[i] = lines[i].rstrip(',')+'\n'
                                 if line.startswith('<-99999.0>'):
                                     lines[i] = '-99999.0,' * int(self.varNumber)
-                                    lines[i] = lines[i].rstrip(lines[i][-1])+'\n'
+                                    lines[i] = lines[i].rstrip(',')+'\n'
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
@@ -1945,7 +1964,7 @@ class gui(QMainWindow):
                             for line in lines:
                                 f.write(line)
                         # combine and perform replacement on the combined header file
-                        self.columns = pd.DataFrame(self.write.columns.values.tolist())
+                        self.columns = pd.DataFrame(self.write.columns.values.tolist())                
                         self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
                         self.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
                         os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
@@ -1974,6 +1993,7 @@ class gui(QMainWindow):
                         os.system('mv '+str(output_file)+' '+str(os.path.abspath(os.path.dirname(output_file)))+'/'+str(self.icartt_filename))
                         os.system('rm header.tmp header1.tmp header2.tmp '+str(output_file)+'.tmp')
                     except Exception:
+                        print(traceback.format_exc())
                         print('ICARTT header was not created or appended to output file')
                     try:
                         self.processingSuccess_GUI()
@@ -2027,27 +2047,31 @@ class nc2asc_CL():
     #######################################################################
     def processData(self, args):
         self.timeHandler = gui.timeHandler
-        self.input_file = args.i
-        self.output_file = args.o
-        self.inputbatch_file = args.b
+        self.input_file = args.i if args.i else False
+        self.output_file = args.o if args.o else False
+        self.inputbatch_file = args.b if args.b else False
         try:
             self.rate = args.mixed_rate
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
             self.rate = False
         try:
             self.vars = args.v
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
         try:
             print('****Storing Command Line Arguments****')
             print('INPUT FILE:' + self.input_file)
             print('OUTPUT_FILE:' + self.output_file)
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
 
         # read in the input file
-        nc = netCDF4.Dataset(self.input_file, mode='r')
+        nc = xr.open_dataset(self.input_file,decode_times=False)
+        #netCDF4.Dataset(self.input_file, mode='r')
 
         # keep mixed_rate bool arg, to enter this as opposed to the full conversion.
         if args.mixed_rate:
@@ -2062,7 +2086,7 @@ class nc2asc_CL():
 
             # check to see if variables were included on command line
             if args.v is None:
-                vars = nc.variables.keys()
+                vars = nc.variables
             else:
                 if 'Time' in args.v:
                     vars = args.v
@@ -2075,7 +2099,7 @@ class nc2asc_CL():
             for i in vars:
 
                 # extract rates and append to dictionary
-                dim = str(nc.variables[i].dimensions).replace("('Time',)", str(1)).replace("('Time', 'sps", '').replace("')", '')
+                dim = str(nc[i].dims).replace("('Time',)", str(1)).replace("('Time', 'sps", '').replace("')", '')
                 variable_dimension_dict[i] = dim
                 # find maximum rate
                 value_list = variable_dimension_dict.values()
@@ -2119,7 +2143,7 @@ class nc2asc_CL():
 
         else:
             # create an empty pandas series to hold variables
-            self.variables_extract = pd.Series().astype(str)
+            self.variables_extract = pd.Series(dtype='str')
             # create empty dicts
             self.asc = {}
             self.units = {}
@@ -2127,61 +2151,63 @@ class nc2asc_CL():
             self.variables = {}
             self.fileheader = {}
             self.project_manager = 'Patrick Veres, Pavel Romashkin'
-            self.tail_number = nc.getncattr('Platform')
+            self.tail_number = nc.attrs['Platform']
             if self.tail_number == 'N677F':
                 self.platform = 'GV'
             elif self.tail_number == 'N130AR':
                 self.platform = 'C130'
-            self.project_name = nc.getncattr('project')
+            self.project_name = nc.attrs['project']
             self.today = str(datetime.today().strftime('%Y, %m, %d'))
             self.today = self.today.replace('-', ', ')
 
-            for i in nc.variables.keys():
+            for i in nc.variables:
                 # handle only time dimension variables
-                dims = str(nc.variables[i].dimensions)
+                dims = str(nc[i].dims)
                 if dims == "('Time',)":
-                    output = nc[i][:]
+                    output = nc[i].values
                     # append self.asc with vars in file
-                    self.asc[i] = pd.DataFrame(output)
+                    self.asc[i] = pd.DataFrame(output,columns=[i])
+                    units = nc[i].units
                     # append self.units with netcdf attribute units
-                    units = nc.variables[i].getncattr('units')
-                    self.units[i] = pd.Series(units)
+                    self.units[i] = pd.Series([units])
                     # append self.long_name with netcdf attribute long_name
-                    long_name = nc.variables[i].getncattr('long_name')
-                    self.long_name[i] = pd.Series(long_name)
+                    long_name = nc[i].attrs['long_name']
+                    self.long_name[i] = pd.Series([long_name])
                     # append self.variables with netcdf variable names
-                    variables = nc.variables[i].name
-                    self.variables[i] = pd.Series(variables)
-                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.units[i]))
+                    variables = i
+                    self.variables[i] = pd.Series([variables])
+                    #(self.asc[i].columns)
+                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, [units]))
 
                 elif "sps1" in dims:
-                    histo_output = pd.DataFrame(nc.variables[i][:, 0, :])
+                    histo_output = pd.DataFrame(nc[i][:, 0, :].values)
                     self.asc[i] = pd.DataFrame(histo_output)
                     # append self.units with netcdf attribute units
-                    units = nc.variables[i].getncattr('units')
-                    self.units[i] = pd.Series(units)
+                    units = nc[i].attrs['units']
+                    self.units[i] = pd.Series([units])
                     # append self.long_name with netcdf attribute long_name
-                    long_name = nc.variables[i].getncattr('long_name')
-                    self.long_name[i] = pd.Series(long_name)
+                    long_name = nc[i].attrs['long_name']
+                    self.long_name[i] = pd.Series([long_name])
                     # append self.variables with netcdf variable names
-                    variables = nc.variables[i].name
-                    self.variables[i] = pd.Series(variables)
+                    variables = i
+                    self.variables[i] = pd.Series([variables])
                     try:
-                        cellsize = nc.variables[i].getncattr('CellSizes')
+                        cellsize = nc[i].attrs['CellSizes']
                         self.cellsize = pd.Series(data=cellsize)
                         self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
 
                     except Exception as e:
                         print(e)
+                        print(traceback.format_exc())
                         self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
                 else:
                     pass
             # concatenate
+            print(self.asc)
             self.asc = pd.concat(self.asc, axis=1, ignore_index=False)
+            self.asc.columns=self.asc.columns.droplevel(1)
             # create an object to store the netCDF variable time
-            self.dtime = nc.variables['Time']
-            # use num2date to setup dtime object
-            self.dtime = netCDF4.num2date(self.dtime[:], self.dtime.units)
+            self.dtime = xr.coding.times.decode_cf_datetime(nc['Time'], nc['Time'].attrs['units'])
             self.dtime = pd.Series(self.dtime).astype(str)
             self.dtime_sep = self.dtime.str.split(' ', expand=True)
             # create separate date and time series for combination in previewData and writeData
@@ -2195,7 +2221,8 @@ class nc2asc_CL():
             # subset the start and end time from the dtime object by position
             self.start_time = self.dtime.iloc[0]
             self.end_time = self.dtime.iloc[-1]
-            self.dtime = nc.variables['Time']
+            self.dtime = nc['Time']
+            
 
             try:
                 with open(self.inputbatch_file, 'r') as fil:
@@ -2319,28 +2346,32 @@ class nc2asc_CL():
                     self.avg = self.avg.replace(']', '')
                     self.avg = self.avg.replace('g', '')
                     self.avg = self.avg[:-1]
-                for x in range(len(self.variables_extract_batch)):
+                #print(self.asc.columns)
+                if not self.variables_extract_batch:
+                    self.variables_extract_batch = list(nc.variables)
+                for x, var in enumerate(self.variables_extract_batch):
+                    #print(self.asc[x].columns)
                     self.asc_new_batch = pd.concat([self.asc_new_batch, self.asc[self.variables_extract_batch[x]]], axis=1, ignore_index=False)
                 self.asc_new_batch.columns = [self.variables_extract_batch]
+                #print(self.asc_new_batch)
             except Exception as e:
                 print(e)
+                print(traceback.format_exc())
             try:
                 for i in self.variables_extract_batch:
-                    if i not in nc.variables.keys():
+                    if i not in nc.variables:
                         print('***WARNING****Var '+str(i)+' not in netCDF file!!! Continuing with conversion****')
                     else:
                         pass
             except Exception as e:
                 print(e)
-            try:
-                os.system('rm '+args.output_file_cl)
-            except Exception as e:
-                print(e)
+                print(traceback.format_exc())
             try:
                 gui.writeData(self)
                 print('****Write Data Process Complete****')
             except Exception as e:
                 print(e)
+                print(traceback.format_exc())
             return self.asc, self.input_file, self.output_file, self.dtime_date, self.dtime_time, self.dtime
 
 
@@ -2355,14 +2386,18 @@ def main():
             cl = nc2asc_CL()
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
         try:
             args = cl.parse_args()
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
         try:
             cl.processData(args)
         except Exception as e:
             print(e)
+            print("Error processing data:")
+            print(traceback.format_exc())
     else:
         app = QtWidgets.QApplication(sys.argv)
         app.setStyle('Windows')
