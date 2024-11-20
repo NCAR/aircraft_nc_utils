@@ -1562,16 +1562,23 @@ class gui(QMainWindow):
                         print(traceback.format_exc())
                     try:
                         self.write.insert(loc=0, column='DateTime', value=self.dtime)
+                    
                     except Exception as e:
                         print(e)
                         print(traceback.format_exc())
                     try:
                         self.write = self.write[self.write['DateTime'] > start]
+                    except UnboundLocalError:
+                        print('Start time not set. Not trimming data.')
+                        pass
                     except Exception as e:
                         print(e)
                         print(traceback.format_exc())
                     try:
                         self.write = self.write[self.write['DateTime'] < end]
+                    except UnboundLocalError:
+                        print('End time not set. Not trimming data.')
+                        pass
                     except Exception as e:
                         print(e)
                         print(traceback.format_exc())
@@ -2034,7 +2041,7 @@ class nc2asc_CL():
         # set up argument parsing
         parser = argparse.ArgumentParser(description='Provide (Optional) (-i) Input File (Optional) (-o) Output File and (-b) Batch File')
         # define input file(s) to process
-        parser.add_argument('-b', type=str, required=True, help='Batch file')
+        parser.add_argument('-b', type=str, help='Batch file')
         parser.add_argument('-i', type=str, help='(Optional) Input file to convert' + 'e.g. /scr/raf_data/<PROJECT>/PROJECTrf01.nc')
         parser.add_argument('-o', type=str, help='(Optional) Output file')
         parser.add_argument('-mixed_rate', action='store_true')
@@ -2075,133 +2082,165 @@ class nc2asc_CL():
             # read in the input file
         if self.output_file:
             print('OUTPUT_FILE:' + self.output_file)
-        
-        #netCDF4.Dataset(self.input_file, mode='r')
-        with open(self.inputbatch_file, 'r') as fil:
-            print('****Reading Batch File****')
-            # create empty placeholders
-            self.variables_extract_batch = []
-            self.asc_new_batch = pd.DataFrame()
-            for ln in fil:
-                if ln.startswith('if='):
-                    if self.input_file == False:
-                        print('No input file provided.')
-                        self.input_file=self.store_File(ln)
-                    else:
-                        ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                        if ip == 'Y' or ip == 'y':
+        if self.inputbatch_file:
+            #netCDF4.Dataset(self.input_file, mode='r')
+            with open(self.inputbatch_file, 'r') as fil:
+                print('****Reading Batch File****')
+                # create empty placeholders
+                self.variables_extract_batch = []
+                self.asc_new_batch = pd.DataFrame()
+                for ln in fil:
+                    if ln.startswith('if='):
+                        if self.input_file == False:
+                            print('No input file provided.')
                             self.input_file=self.store_File(ln)
                         else:
-                            print("Using input file from command line: " + self.input_file)
-                            pass
+                            ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                            if ip == 'Y' or ip == 'y':
+                                self.input_file=self.store_File(ln)
+                            else:
+                                print("Using input file from command line: " + self.input_file)
+                                pass
 
-                elif ln.startswith('of='):
-                    if self.output_file == False:
-                        print('No output file provided.')
-                        self.output_file = self.store_File(ln)
-                    else:
-                        of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                        if of == 'Y' or of == 'y':
+                    elif ln.startswith('of='):
+                        if self.output_file == False:
+                            print('No output file provided.')
                             self.output_file = self.store_File(ln)
                         else:
-                            print("Using output file from command line: " + self.output_file)
-                            pass
-                
+                            of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
+                            if of == 'Y' or of == 'y':
+                                self.output_file = self.store_File(ln)
+                            else:
+                                print("Using output file from command line: " + self.output_file)
+                                pass
+                    
 
-                # get the header format from the batch file
-                if ln.startswith('hd=Plain'):
-                    try:
-                        self.header1.setChecked(True)
-                    except Exception:
-                        self.header = 'Plain'
-                elif ln.startswith('hd=ICARTT'):
-                    try:
-                        self.header2.setChecked(True)
-                    except Exception:
-                        self.header = 'ICARTT'
-                elif ln.startswith('hd=AMES'):
-                    try:
-                        self.header3.setChecked(True)
-                    except Exception:
-                        self.header = 'AMES'
-                elif ln.startswith('dt=yyyy-mm-dd'):
-                    try:
-                        self.date1.setChecked(True)
-                    except Exception:
-                        self.date = 'yyyy-mm-dd'
-                elif ln.startswith('dt=yyyy mm dd'):
-                    try:
-                        self.date2.setChecked(True)
-                    except Exception:
-                        self.date = 'yyyy mm dd'
-                elif ln.startswith('dt=NoDate'):
-                    try:
-                        self.date3.setChecked(True)
-                    except Exception:
-                        self.date = 'NoDate'
-                elif ln.startswith('tm=hh:mm:ss'):
-                    try:
-                        self.time1.setChecked(True)
-                    except Exception:
-                        self.time = 'hh:mm:ss'
-                elif ln.startswith('tm=hh mm ss'):
-                    try:
-                        self.time2.setChecked(True)
-                    except Exception:
-                        self.time = 'hh mm ss'
-                elif ln.startswith('tm=SecOfDay'):
-                    try:
-                        self.time3.setChecked(True)
-                    except Exception:
-                        self.time = 'SecOfDay'
-                elif ln.startswith('sp=comma'):
-                    try:
-                        self.comma.setChecked(True)
-                    except Exception:
-                        self.delimiter = 'comma'
-                elif ln.startswith('sp=space'):
-                    try:
-                        self.space.setChecked(True)
-                    except Exception:
-                        self.delimiter = 'space'
-                elif ln.startswith('fv=-32767'):
-                    try:
-                        self.fillvalue1.setChecked(True)
-                    except Exception:
-                        self.fillvalue = '-32767'
-                elif ln.startswith('fv=blank'):
-                    try:
-                        self.fillvalue2.setChecked(True)
-                    except Exception:
-                        self.fillvalue = 'blank'
-                elif ln.startswith('fv=replicate'):
-                    try:
-                        self.fillvalue3.setChecked(True)
-                    except Exception:
-                        self.fillvalue = 'replicate'
+                    # get the header format from the batch file
+                    if ln.startswith('hd=Plain'):
+                        try:
+                            self.header1.setChecked(True)
+                        except Exception:
+                            self.header = 'Plain'
+                    elif ln.startswith('hd=ICARTT'):
+                        try:
+                            self.header2.setChecked(True)
+                        except Exception:
+                            self.header = 'ICARTT'
+                    elif ln.startswith('hd=AMES'):
+                        try:
+                            self.header3.setChecked(True)
+                        except Exception:
+                            self.header = 'AMES'
+                    elif ln.startswith('dt=yyyy-mm-dd'):
+                        try:
+                            self.date1.setChecked(True)
+                        except Exception:
+                            self.date = 'yyyy-mm-dd'
+                    elif ln.startswith('dt=yyyy mm dd'):
+                        try:
+                            self.date2.setChecked(True)
+                        except Exception:
+                            self.date = 'yyyy mm dd'
+                    elif ln.startswith('dt=NoDate'):
+                        try:
+                            self.date3.setChecked(True)
+                        except Exception:
+                            self.date = 'NoDate'
+                    elif ln.startswith('tm=hh:mm:ss'):
+                        try:
+                            self.time1.setChecked(True)
+                        except Exception:
+                            self.time = 'hh:mm:ss'
+                    elif ln.startswith('tm=hh mm ss'):
+                        try:
+                            self.time2.setChecked(True)
+                        except Exception:
+                            self.time = 'hh mm ss'
+                    elif ln.startswith('tm=SecOfDay'):
+                        try:
+                            self.time3.setChecked(True)
+                        except Exception:
+                            self.time = 'SecOfDay'
+                    elif ln.startswith('sp=comma'):
+                        try:
+                            self.comma.setChecked(True)
+                        except Exception:
+                            self.delimiter = 'comma'
+                    elif ln.startswith('sp=space'):
+                        try:
+                            self.space.setChecked(True)
+                        except Exception:
+                            self.delimiter = 'space'
+                    elif ln.startswith('fv=-32767'):
+                        try:
+                            self.fillvalue1.setChecked(True)
+                        except Exception:
+                            self.fillvalue = '-32767'
+                    elif ln.startswith('fv=blank'):
+                        try:
+                            self.fillvalue2.setChecked(True)
+                        except Exception:
+                            self.fillvalue = 'blank'
+                    elif ln.startswith('fv=replicate'):
+                        try:
+                            self.fillvalue3.setChecked(True)
+                        except Exception:
+                            self.fillvalue = 'replicate'
 
-                # get the version information from file for appending
-                elif ln.startswith('version='):
-                    self.version = str(ln).replace('version=', '').replace('\n', '')
-                # get the time interval from the batch file
-                elif ln.startswith('ti='):
-                    self.ti = ln[2:]
-                # get the average value (if provided) from the bath file
-                elif ln.startswith('avg='):
-                    self.avg = ln[2:]
-                elif ln.startswith('Vars='):
-                    var_batchfile = str(ln)
-                    if var_batchfile not in self.variables_extract_batch:
-                        self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
-            # format averaging
-            self.avg = self.avg.replace('[', '')
-            self.avg = self.avg.replace("'", '')
-            self.avg = self.avg.replace('=', '')
-            self.avg = self.avg.replace(']', '')
-            self.avg = self.avg.replace('g', '')
-            self.avg = self.avg[:-1]
-        #print(self.asc.columns)
+                    # get the version information from file for appending
+                    elif ln.startswith('version='):
+                        self.version = str(ln).replace('version=', '').replace('\n', '')
+                    # get the time interval from the batch file
+                    elif ln.startswith('ti='):
+                        self.ti = ln[2:]
+                    # get the average value (if provided) from the bath file
+                    elif ln.startswith('avg='):
+                        self.avg = ln[2:]
+                    elif ln.startswith('Vars='):
+                        var_batchfile = str(ln)
+                        if var_batchfile not in self.variables_extract_batch:
+                            self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
+                # format averaging
+                self.avg = self.avg.replace('[', '')
+                self.avg = self.avg.replace("'", '')
+                self.avg = self.avg.replace('=', '')
+                self.avg = self.avg.replace(']', '')
+                self.avg = self.avg.replace('g', '')
+                self.avg = self.avg[:-1]
+            #print(self.asc.columns)
+        else:
+            print('No batch file provided. Using defaults')
+            #Use ICARTT header by default
+            try:
+                self.header2.setChecked(True)
+            except:
+                self.header = 'ICARTT'
+            #Use yyyy-mm-dd by default
+            try:
+                self.date1.setChecked(True)
+            except Exception:
+                self.date = 'yyyy-mm-dd'
+            #Use hh:mm:ss by default
+            try:
+                self.time1.setChecked(True)
+            except Exception:
+                self.time = 'hh:mm:ss'
+            try:
+                self.comma.setChecked(True)
+            except Exception:
+                self.delimiter = 'comma'
+            try:
+                self.fillvalue2.setChecked(True)
+            except Exception:
+                self.fillvalue = 'blank'
+            self.variables_extract_batch =[]
+            self.asc_new_batch = pd.DataFrame()
+            self.version = 'RA'
 
+            # get the time interval from the batch file
+            self.ti = 'X,X'
+            self.avg = ''
+            
         nc = xr.open_dataset(self.input_file,decode_times=False)
         # keep mixed_rate bool arg, to enter this as opposed to the full conversion.
         if args.mixed_rate:
