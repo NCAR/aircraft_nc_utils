@@ -727,7 +727,10 @@ class gui(QMainWindow):
             self.variables = {}
             self.fileheader = {}
             self.project_manager = 'Patrick Veres, Pavel Romashkin'
-            self.tail_number = nc.getncattr('Platform')
+            try:
+                self.tail_number = nc.getncattr('Platform')
+            except KeyError:
+                self.tail_number = nc.getncattr('platform')
             if self.tail_number == 'N677F':
                 self.platform = 'GV'
             elif self.tail_number == 'N130AR':
@@ -767,6 +770,7 @@ class gui(QMainWindow):
                     self.variables[i] = pd.Series(variables)
                     try:
                         cellsize = nc.variables[i].getncattr('CellSizes')
+                        print(cellsize)
                         self.cellsize = pd.Series(data=cellsize)
                         self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
 
@@ -1457,6 +1461,7 @@ class gui(QMainWindow):
             self.write = self.asc
 ################################################################################################
         for columnName,columnData in self.write.items():
+                #print(columnName)
                 try:
                     self.write[columnName] = columnData.map(lambda x: '%5f' % x)
                 except Exception as e:
@@ -1962,11 +1967,11 @@ class gui(QMainWindow):
                                         lines[i] = line.replace('RA', self.version)
                                     except Exception:
                                         pass
-                                if line.startswith('RA: Field Data'):
-                                    try:
-                                        lines[i] = str(line)+self.version+':\n'
-                                    except Exception:
-                                        pass
+                                # if line.startswith('RA: Field Data'):
+                                #     try:
+                                #         lines[i] = str(line)+self.version+'\n'
+                                #     except Exception:
+                                #         pass
                             f.seek(0)
                             for line in lines:
                                 f.write(line)
@@ -2259,11 +2264,9 @@ class nc2asc_CL():
             else:
                 if 'Time' in args.v:
                     vars = args.v
-                    print(vars)
                 else:
                     args.v.insert(0, 'Time')
                     vars = args.v
-                    print('Variable List: ' + str(vars))
             # iterate over vars
             for i in vars:
 
@@ -2320,7 +2323,10 @@ class nc2asc_CL():
             self.variables = {}
             self.fileheader = {}
             self.project_manager = 'Patrick Veres, Pavel Romashkin'
-            self.tail_number = nc.attrs['Platform']
+            try:
+                self.tail_number = nc.attrs['Platform']
+            except KeyError:
+                self.tail_number = nc.attrs['platform']
             if self.tail_number == 'N677F':
                 self.platform = 'GV'
             elif self.tail_number == 'N130AR':
@@ -2348,12 +2354,12 @@ class nc2asc_CL():
                     # append self.variables with netcdf variable names
                     variables = i
                     self.variables[i] = pd.Series([variables])
+                    var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
                     #(self.asc[i].columns)
-                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, [units]))
-
+                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, [units]))
+                    
                 elif "sps1" in dims:
                     histo_output = pd.DataFrame(nc[i][:, 0, :].values)
-                    print(histo_output)
                     self.asc[i] = pd.DataFrame(histo_output)
                     # append self.units with netcdf attribute units
                     units = nc[i].attrs['units']
@@ -2366,18 +2372,21 @@ class nc2asc_CL():
                     self.variables[i] = pd.Series([variables])
                     try:
                         cellsize = nc[i].attrs['CellSizes']
-                        self.cellsize = pd.Series(data=cellsize)
-                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.cellsize))
+                        var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
+                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, cellsize))
 
                     except Exception as e:
                         print(e)
                         print(traceback.format_exc())
-                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(self.asc[i].columns, self.asc[i].columns))
+                        var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
+                        self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list, self.asc[i].columns, self.asc[i].columns))
+                        #print(self.asc[i].columns)
                 else:
                     pass
             # concatenate
             print('****Concatenating Variables****')
             self.asc = pd.concat(self.asc, axis=1, ignore_index=False)
+            #print(self.asc.columns.droplevel(1))
             self.asc.columns=self.asc.columns.droplevel(1)
             # create an object to store the netCDF variable time
             self.dtime = xr.coding.times.decode_cf_datetime(nc['Time'], nc['Time'].attrs['units'])
@@ -2398,13 +2407,18 @@ class nc2asc_CL():
             
 
             if not self.variables_extract_batch:
-                self.variables_extract_batch = list(nc.variables)
-            for x, var in enumerate(self.variables_extract_batch):
-                #print(self.asc[x].columns)
-                self.asc_new_batch = pd.concat([self.asc_new_batch, self.asc[self.variables_extract_batch[x]]], axis=1, ignore_index=False)
-            self.asc_new_batch.columns = [self.variables_extract_batch]
-            #print(self.asc_new_batch)
+                print('Adding all vars')
+                self.variables_extract_batch = list(nc.variables)  
 
+            for x, var in enumerate(self.variables_extract_batch):
+                #print('test:'+var)
+                if var not in self.asc.columns:
+                    #Remove var from list if it is not in the netCDF file
+                    
+                    print('***WARNING***Var '+str(var)+' not in netCDF file!!! Continuing with conversion****')
+            self.variables_extract_batch = [var for var in self.variables_extract_batch if var in self.asc.columns]
+            self.asc_new_batch = self.asc[self.variables_extract_batch]
+                #print(self.asc_new_batch.columns)
             try:
                 for i in self.variables_extract_batch:
                     if i not in nc.variables:
