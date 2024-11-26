@@ -53,6 +53,7 @@ class gui(QMainWindow):
         # bold font to help with organization of processing options
         myFont = QtGui.QFont()
         myFont.setBold(True)
+        self.histo = False
 
         #####################################################################
         # QGridLayout: Variable table and selection / deselection options
@@ -718,10 +719,13 @@ class gui(QMainWindow):
             if dims == "('Time',)":
                 output = nc[i].values
                 # append self.asc with vars in file
-                self.asc[i] = pd.DataFrame(output,columns=[i])
-                units = nc[i].units
+                self.asc[i] = pd.DataFrame(output,columns=[i])      
                 # append self.units with netcdf attribute units
-                self.units[i] = pd.Series([units])
+                try:
+                    units = nc[i].units
+                    self.units[i] = pd.Series([units])
+                except AttributeError:
+                    self.units[i] = pd.Series([''])
                 # append self.long_name with netcdf attribute long_name
                 long_name = nc[i].attrs['long_name']
                 self.long_name[i] = pd.Series([long_name])
@@ -733,6 +737,7 @@ class gui(QMainWindow):
                 self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, [units]))
                 
             elif "sps1" in dims:
+                self.histo = True
                 histo_output = pd.DataFrame(nc[i][:, 0, :].values)
                 self.asc[i] = pd.DataFrame(histo_output)
                 # append self.units with netcdf attribute units
@@ -749,12 +754,9 @@ class gui(QMainWindow):
                     var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
                     self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, cellsize))
 
-                except Exception as e:
-                    print(e)
-                    print(traceback.format_exc())
+                except KeyError:
                     var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
                     self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list, self.asc[i].columns, self.asc[i].columns))
-                    #print(self.asc[i].columns)
             else:
                 pass
     # Define function to format the data loaded
@@ -1901,6 +1903,7 @@ class gui(QMainWindow):
                         print('File not converted: '+self.input_file)
                 # ICARTT header
                 elif self.header == 'ICARTT':
+                    
                     self.lib_path = str(os.path.abspath(os.path.dirname(__file__)))
                     if self.lib_path == '/opt/local/bin':
                         try:
@@ -1915,17 +1918,20 @@ class gui(QMainWindow):
                             print(e)
                             print(traceback.format_exc())
                     # drop the unit and dimension rows for ICARTT
-                    try:
+                    if self.histo == False:
                         try:
-                            self.write.columns = self.write.columns.droplevel(1)
+                            try:
+                                # drop the unit and dimension rows for ICARTT if no histogram variables
+                                self.write.columns = self.write.columns.droplevel(1)         
+                            except Exception:
+                                pass
+                            try:
+                                # Try and drop the levels again if there are three levels to drop
+                                self.write.columns = self.write.columns.droplevel(1)
+                            except Exception:
+                                pass
                         except Exception:
                             pass
-                        try:
-                            self.write.columns = self.write.columns.droplevel(1)
-                        except Exception:
-                            pass
-                    except Exception:
-                        pass
                     # try renaming the time var to Time_Start
                     try:
                         self.write = pd.DataFrame(self.write.rename(columns={'Time': 'Time_Start'}))
@@ -2083,6 +2089,7 @@ class nc2asc_CL():
     # Define processing function
     #######################################################################
     def processData(self, args):
+        self.histo = False
         self.timeHandler = gui.timeHandler
         self.input_file = args.i if args.i else False
         self.output_file = args.o if args.o else False
@@ -2357,6 +2364,7 @@ class nc2asc_CL():
 
             # concatenate
             print('****Concatenating Variables****')
+            
             self.asc = pd.concat(self.asc, axis=1, ignore_index=False)
             #print(self.asc.columns.droplevel(1))
             self.asc.columns=self.asc.columns.droplevel(1)
