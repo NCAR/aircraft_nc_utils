@@ -54,6 +54,7 @@ class gui(QMainWindow):
         myFont = QtGui.QFont()
         myFont.setBold(True)
         self.histo = False
+        self.variables_extract_batch = []
 
         #####################################################################
         # QGridLayout: Variable table and selection / deselection options
@@ -88,6 +89,8 @@ class gui(QMainWindow):
         self.var.resize(400, 430)
         self.var.setHorizontalHeaderLabels(['Var', 'Units', 'Long Name'])
         self.var.clicked.connect(self.selectVars_GUI)
+        self.guiMode = True
+        #self.version = 'RA'
 
         #####################################################################
         # QGridLayout: Output preview options
@@ -374,7 +377,10 @@ class gui(QMainWindow):
 #############################################################################
 # End UI Setup ##############################################################
 #############################################################################
-
+    def _log_exception(self, exception):
+            """Log exception with traceback."""
+            print(exception)
+            print(traceback.format_exc())
     def openhelp(self):
         url = QtCore.QUrl('https://github.com/NCAR/aircraft_nc_utils/blob/master/nc2asc/README.md')
         if not QtGui.QDesktopServices.openUrl(url):
@@ -476,7 +482,104 @@ class gui(QMainWindow):
                     x = savebatch.exec_()
                 except Exception as e:
                     print(e)
+                    
+    def process_batch_file(self, inputbatch_file):
+        """Processes a batch file to extract settings and variables."""
+        action_map = {
+            'if=': lambda ln: self._handle_file(ln, 'input_file', 'Input'),
+            'of=': lambda ln: self._handle_file(ln, 'output_file', 'Output'),
+            'hd=': lambda ln: self._handle_directive(ln, 'header', self._header_map()),
+            'dt=': lambda ln: self._handle_directive(ln, 'date', self._date_map()),
+            'tm=': lambda ln: self._handle_directive(ln, 'time', self._time_map()),
+            'sp=': lambda ln: self._handle_directive(ln, 'delimiter', self._delimiter_map()),
+            'fv=': lambda ln: self._handle_directive(ln, 'fillvalue', self._fillvalue_map()),
+            'version=': lambda ln: setattr(self, 'version', ln.replace('version=', '').strip()),
+            'ti=': lambda ln: setattr(self, 'ti', ln[3:].strip()),
+            'avg=': lambda ln: setattr(self, 'avg', self._format_avg(ln[4:])),
+            'Vars=': lambda ln: self._add_variable(ln),
+        }
+        
+        with open(inputbatch_file, 'r') as fil:
+            print('****Reading Batch File****')
+            for ln in fil:
+                ln = ln.strip()
+                for key, action in action_map.items():
+                    if ln.startswith(key):
+                        action(ln)
+                        break
+            print('Batch file processing complete.')
+        
+    def _header_map(self):
+        return {
+            'hd=Plain': ('header1', 'Plain'),
+            'hd=ICARTT': ('header2', 'ICARTT'),
+            'hd=AMES': ('header3', 'AMES'),
+        }
 
+    def _date_map(self):
+        return {
+            'dt=yyyy-mm-dd': ('date1', 'yyyy-mm-dd'),
+            'dt=yyyy mm dd': ('date2', 'yyyy mm dd'),
+            'dt=NoDate': ('date3', 'NoDate'),
+        }
+
+    def _time_map(self):
+        return {
+            'tm=hh:mm:ss': ('time1', 'hh:mm:ss'),
+            'tm=hh mm ss': ('time2', 'hh mm ss'),
+            'tm=SecOfDay': ('time3', 'SecOfDay'),
+        }
+
+    def _delimiter_map(self):
+        return {
+            'sp=comma': ('comma', 'comma'),
+            'sp=space': ('space', 'space'),
+        }
+
+    def _fillvalue_map(self):
+        return {
+            'fv=-32767': ('fillvalue1', '-32767'),
+            'fv=blank': ('fillvalue2', 'blank'),
+            'fv=replicate': ('fillvalue3', 'replicate'),
+        }
+
+    def _handle_file(self, line, attr_name, file_type):
+        """Prompt user to confirm file selection from batch file or use command line input."""
+        batch_file_value = line.split('=')[1].strip() # extract file path from batch file line
+        current_value = getattr(self, attr_name, None)
+
+        if not current_value:
+            print(f'No {file_type} file provided.')
+            setattr(self, attr_name, batch_file_value) 
+            ## print attr to make sure it's set
+        else:
+            choice = input(
+                f"Would you like to use the {file_type.lower()} file from the batch file? (y/Y to confirm, any other key to keep current): "
+            )
+            if choice.lower() == 'y':
+                setattr(self, attr_name, batch_file_value)
+            else:
+                print(f"Using {file_type.lower()} file from command line: {current_value}")
+
+
+    def _handle_directive(self, line, attr_name, directive_map):
+        """Set an attribute and toggle GUI checkbox based on a line and a directive map."""
+        if line in directive_map:
+            gui_attr, value = directive_map[line]
+            try:
+                getattr(self, gui_attr).setChecked(True)
+            except AttributeError:
+                setattr(self, attr_name, value)
+
+    def _add_variable(self, line):
+        """Extract and add variables from a batch file line."""
+        variable = line.replace('Vars=', '').replace("'", "").replace('[', '').replace(']', '').strip()
+        if variable not in self.variables_extract_batch:
+            self.variables_extract_batch.append(variable)
+
+    def _format_avg(self, avg):
+        """Format the averaging value from the batch file."""
+        return avg.translate({ord(c): None for c in "[]='g"}).strip()[:-1]
     # Define function to read batch file and render in GUI or use in command line processing mode
     def readBatchFile(self):
 
@@ -489,166 +592,18 @@ class gui(QMainWindow):
             except Exception:
                 pass
         try:
-            with open(self.inputbatch_file, 'r') as fil:
-                # create empty placeholders for objects
-                self.input_file = []
-                self.output_file = []
-                self.variables_extract_batch = []
+            self.process_batch_file(self.inputbatch_file)
 
-                # step through batchfile to find relevant information and assign
-                # to be used to populate fields (GUI) and format and convert data
-                for ln in fil:
-
-                    # extract the path of the input file from the batch file
-                    if ln.startswith('if='):
-                        self.input_file.append(ln[2:])
-
-                    # extract the path of the output file
-                    elif ln.startswith('of='):
-                        self.output_file.append(ln[2:])
-
-                    # get the header format from the batch file
-                    elif ln.startswith('hd=Plain'):
-                        try:
-                            self.header1.setChecked(True)
-                        except Exception:
-                            self.header = 'Plain'
-                    elif ln.startswith('hd=ICARTT'):
-                        try:
-                            self.header2.setChecked(True)
-                            print('ICARTT')
-                        except Exception:
-                            self.header = 'ICARTT'
-                            print('ICARTT')
-                    elif ln.startswith('hd=AMES'):
-                        try:
-                            self.header3.setChecked(True)
-                        except Exception:
-                            self.header = 'AMES'
-
-                    # get the date format from the batch file
-                    elif ln.startswith('dt=yyyy-mm-dd'):
-                        try:
-                            self.date1.setChecked(True)
-                        except Exception:
-                            self.date = 'yyyy-mm-dd'
-                    elif ln.startswith('dt=yyyy mm dd'):
-                        try:
-                            self.date2.setChecked(True)
-                        except Exception:
-                            self.date = 'yyyy mm dd'
-                    elif ln.startswith('dt=NoDate'):
-                        try:
-                            self.date3.setChecked(True)
-                        except Exception:
-                            self.date = 'NoDate'
-
-                    # get the time format from the batch file
-                    elif ln.startswith('tm=hh:mm:ss'):
-                        try:
-                            self.time1.setChecked(True)
-                        except Exception:
-                            self.time = 'hh:mm:ss'
-                    elif ln.startswith('tm=hh mm ss'):
-                        try:
-                            self.time2.setChecked(True)
-                        except Exception:
-                            self.time = 'hh mm ss'
-                    elif ln.startswith('tm=SecOfDay'):
-                        try:
-                            self.time3.setChecked(True)
-                        except Exception:
-                            self.time = 'SecOfDay'
-
-                    # get the delimiter from the batch faile
-                    elif ln.startswith('sp=comma'):
-                        try:
-                            self.comma.setChecked(True)
-                        except Exception:
-                            self.delimiter = 'comma'
-                    elif ln.startswith('sp=space'):
-                        try:
-                            self.space.setChecked(True)
-                        except Exception:
-                            self.delimiter = 'space'
-
-                    # get the fill value from the batch file
-                    elif ln.startswith('fv=-32767'):
-                        try:
-                            self.fillvalue1.setChecked(True)
-                        except Exception:
-                            self.fillvalue = '-32767'
-                    elif ln.startswith('fv=blank'):
-                        try:
-                            self.fillvalue2.setChecked(True)
-                        except Exception:
-                            self.fillvalue = 'blank'
-                    elif ln.startswith('fv=replicate'):
-                        try:
-                            self.fillvalue3.setChecked(True)
-                        except Exception:
-                            self.fillvalue = 'replicate'
-                    # get the version information from file for appending
-                    elif ln.startswith('version='):
-                        self.version = str(ln).replace('version=', '').replace('\n', '')
-
-                    # get the time interval from the batch file
-                    elif ln.startswith('ti='):
-                        self.ti = ln[2:]
-
-                    # get the average value (if provided) from the bath file
-                    elif ln.startswith('avg='):
-                        self.avg = ln[2:]
-                    elif ln.startswith('Vars='):
-                        var_batchfile = str(ln)
-                        var_batchfile = str(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
-                        self.variables_extract_batch.append(var_batchfile)
-                        print(self.variables_extract_batch)
-
-                try:
-                    # cleanup the extracted text from the batch file
-                    # format the input file
-                    self.input_file = str(self.input_file)
-                    self.input_file = self.input_file.replace('[', '')
-                    self.input_file = self.input_file.replace("'", '')
-                    self.input_file = self.input_file.replace('=', '')
-                    self.input_file = self.input_file.replace(']', '')
-                    self.input_file = self.input_file[:-2]
-                    # format the output dir and file
-                    self.output_file = str(self.output_file)
-                    self.output_file = self.output_file.replace('[', '')
-                    self.output_file = self.output_file.replace("'", '')
-                    self.output_file = self.output_file.replace('=', '')
-                    self.output_file = self.output_file.replace(']', '')
-                    self.output_file = self.output_file[:-2]
-                    # format the start and end time
-                    self.ti = self.ti.replace('[', '')
-                    self.ti = self.ti.replace("'", '')
-                    self.ti = self.ti.replace('=', '')
-                    self.ti = self.ti.replace(']', '')
-                    self.ti = self.ti[:-1]
-                    self.ti = self.ti.split(',')
-                    self.start_time = self.ti[0]
-                    self.end_time = self.ti[1]
-                    # format averaging
-                    self.avg = self.avg.replace('[', '')
-                    self.avg = self.avg.replace("'", '')
-                    self.avg = self.avg.replace('=', '')
-                    self.avg = self.avg.replace(']', '')
-                    self.avg = self.avg.replace('g', '')
-                    self.avg = self.avg[:-1]
-                except Exception:
-                    pass
                 # update the gui fields
-                try:
-                    self.inputfilebox.setText(self.input_file)
-                    self.outputdirbox.setText(os.path.dirname(self.output_file) + '/')
-                    self.outputfilebox.setText(os.path.basename(self.output_file))
-                    self.start.setText(str(self.start_time))
-                    self.end.setText(str(self.end_time))
-                    self.averagingbox.setText(self.avg)
-                except Exception:
-                    pass
+            try:
+                self.inputfilebox.setText(self.input_file)
+                self.outputdirbox.setText(os.path.dirname(self.output_file) + '/')
+                self.outputfilebox.setText(os.path.basename(self.output_file))
+                self.start.setText(str(self.start_time))
+                self.end.setText(str(self.end_time))
+                self.averagingbox.setText(self.avg)
+            except Exception:
+                pass
 
             # get data from input file field and format
             try:
@@ -656,18 +611,19 @@ class gui(QMainWindow):
             except Exception:
                 self.input_file = self.input_file
             self.batchfile_read = True
-            print('SELF VARS EXTRACT BATCH ' + str(self.variables_extract_batch))
             try:
+                
                 self.formatData()
                 self.asc_new_batch = self.asc[self.variables_extract_batch]
-                print('SELF ASC NEW BATCH ' + self.asc_new_batch)
-                return self.batchfile_read, self.input_file, self.asc_new_batch, self.output_file, self.version, self.ti, self.avg, self.start_time, self.end_time
-                self.formatData()
-            except Exception:
+                self.asc_new =self.asc_new_batch
+                #return self.batchfile_read, self.input_file, self.asc_new_batch, self.output_file, self.start_time, self.end_time
+            except Exception as e:
+                self._log_exception(e)
                 pass
             try:
                 self.loadVars_GUI()
-            except Exception:
+            except Exception as e:
+                self._log_exception(e)
                 pass
 
             try:
@@ -680,12 +636,14 @@ class gui(QMainWindow):
                         else:
                             pass
             except Exception as e:
-                print(e)
+                self._log_exception(e)
             try:
                 self.previewData_GUI()
-            except Exception:
+            except Exception as e :
+                self._log_exception(e)
                 pass
-        except Exception:
+        except Exception as e:
+            self._log_exception(e)
             pass
 
 #######################################################################
@@ -719,7 +677,7 @@ class gui(QMainWindow):
             if dims == "('Time',)":
                 output = nc[i].values
                 # append self.asc with vars in file
-                self.asc[i] = pd.DataFrame(output,columns=[i])      
+                self.asc[i] = pd.DataFrame(output,columns=[i])   
                 # append self.units with netcdf attribute units
                 try:
                     units = nc[i].units
@@ -733,7 +691,6 @@ class gui(QMainWindow):
                 variables = i
                 self.variables[i] = pd.Series([variables])
                 var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
-                #(self.asc[i].columns)
                 self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, [units]))
                 
             elif "sps1" in dims:
@@ -749,14 +706,19 @@ class gui(QMainWindow):
                 # append self.variables with netcdf variable names
                 variables = i
                 self.variables[i] = pd.Series([variables])
+                bin_cols =[]
+                for num in self.asc[i].columns:
+                    #check if list is empty
+                    bin_cols.append(i+'_'+str(num))
+                #print(bin_cols)
+                self.asc[i].columns = pd.MultiIndex.from_tuples(zip(bin_cols, self.asc[i].columns, self.asc[i].columns))
                 try:
-                    cellsize = nc[i].attrs['CellSizes']
-                    var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
-                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, cellsize))
-
+                    cellsize = nc[i].attrs['CellSizes'] #TODO: Add cellsize to the ICARTT header and only have bin number in the column header
+                    var_list = [i] * len(self.asc[i].columns) 
+                    ## Add the bin number to variable name
                 except KeyError:
                     var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
-                    self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list, self.asc[i].columns, self.asc[i].columns))
+                
             else:
                 pass
     # Define function to format the data loaded
@@ -824,7 +786,6 @@ class gui(QMainWindow):
         try:
             
             self.formatData()
-            print(self.fileheader)
             self.header_np = self.fileheader.to_numpy()
             self.row_count = (len(self.header_np))
             self.column_count = 3
@@ -982,8 +943,7 @@ class gui(QMainWindow):
         icartt_header.to_csv(self.output_file, header=True, index=False, na_rep='-99999.0')
         try:
             self.columns = pd.DataFrame(icartt_header.columns.values.tolist())
-            self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
-            self.data_date = str(self.dtime_sep[0].iloc[1])
+            self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])] 
             self.data_date = self.data_date.replace('-', ', ')
             # start going through the template text docs
             os.system('cp ' + lib_dir + '/header1.txt ./header1.tmp')
@@ -1039,7 +999,7 @@ class gui(QMainWindow):
             os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
             with open('./header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines) + 1) + ', 1001, V02_2016'
+                count = str(len(lines) + 1) + ', 1001, V02_2016' ##TODO: find where freeform count is and add header lines if histogram variables present
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count + '\n'
@@ -1389,7 +1349,7 @@ class gui(QMainWindow):
             if self.header1.isChecked():
                 if self.comma.isChecked():
                     if self.fillvalue1.isChecked():
-                        self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0')
+                        self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep=-32767.0)
                         self.formatPreview_GUI()
                     elif self.fillvalue2.isChecked():
                         self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep='')
@@ -1402,7 +1362,7 @@ class gui(QMainWindow):
                         print('File not converted: ' + self.input_file)
                 elif self.space.isChecked():
                     if self.fillvalue1.isChecked():
-                        self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
+                        self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep=-32767.0, sep=' ')
                         self.formatPreview_GUI()
                     elif self.fillvalue2.isChecked():
                         self.preview.head(20).to_csv(self.output_file, header=True, index=False, na_rep='', sep=' ')
@@ -1469,13 +1429,8 @@ class gui(QMainWindow):
         #####################################################################
         # Get inputs from GUI or CL depending on mode
         #####################################################################
-        try:
-            try:
-                self.write = self.asc_new_batch
-            except Exception:
-                self.write = self.asc_new
-        except Exception:
-            self.write = self.asc
+        self.write = self.asc_new_batch
+        print(self.write.columns)
 ################################################################################################
         for columnName,columnData in self.write.items():
                 #print(columnName)
@@ -1485,10 +1440,19 @@ class gui(QMainWindow):
                     pass
 ################################################################################################
         # determine which output file to use based on mode
-        try:
+        if self.guiMode:
             output_file = os.path.join(self.outputdirbox.text(), self.outputfilebox.text())
-        except Exception:
+            start = self.start.text()
+            end = self.end.text()
+            self.date = 'yyyy-mm-dd' if self.date1.isChecked() else 'yyyy mm dd' if self.date2.isChecked() else 'NoDate'
+            self.time = 'hh:mm:ss' if self.time1.isChecked() else 'hh mm ss' if self.time2.isChecked() else 'SecOfDay'
+            self.fillvalue = -32767 if self.fillvalue1.isChecked() else 'Blank' if self.fillvalue2.isChecked() else 'Replicate'
+            self.delimiter = 'comma' if self.comma.isChecked() else 'space'
+            self.header = 'Plain' if self.header1.isChecked() else 'ICARTT' if self.header2.isChecked() else 'AMES'
+        else:
             output_file = self.output_file
+            start = self.start_time
+            end = self.end_time
         try:
             os.remove(str(self.output_file))
         except Exception:
@@ -1500,562 +1464,247 @@ class gui(QMainWindow):
                 buttonReply = QMessageBox.question(self, 'Warning', "Output file already exists. Overwrite?", QMessageBox.Yes | QMessageBox.No)
             except Exception:
                 pass
-        else:
-            pass
         if buttonReply == QMessageBox.No:
-            print('No clicked.')
-        else:
-            print('Continuing...')
-            try:
-                # gui fields
-                start = self.start.text()
-                end = self.end.text()
-            except Exception:
-                pass
-            # determine the date option based on gui or batchfile
-            try:
-                if self.date1.isChecked():
-                    self.date = 'yyyy-mm-dd'
-                elif self.date2.isChecked():
-                    self.date = 'yyyy mm dd'
-                elif self.date3.isChecked():
-                    self.date = 'NoDate'
-            except Exception:
-                self.date = self.date
-                print('Date Format: ' + self.date)
-            try:
-                if self.time1.isChecked():
-                    self.time = 'hh:mm:ss'
-                elif self.time2.isChecked():
-                    self.time = 'hh mm ss'
-                elif self.time3.isChecked():
-                    self.time = 'SecOfDay'
-            except Exception:
-                self.time = self.time
-                print('Time Format: ' + self.time)
-            try:
-                if self.comma.isChecked():
-                    self.delimiter = 'comma'
-                elif self.space.isChecked():
-                    self.delimiter = 'space'
-            except Exception:
-                self.delimiter = self.delimiter
-                print('Delimiter Format: ' + self.delimiter)
-            try:
-                if self.fillvalue1.isChecked():
-                    self.fillvalue = '-32767'
-                elif self.fillvalue2.isChecked():
-                    self.fillvalue = 'Blank'
-                elif self.fillvalue3.isChecked():
-                    self.fillvalue = 'Replicate'
-            except Exception:
-                self.fillvalue = self.fillvalue
-                print('FillValue Format: ' + self.fillvalue)
-            try:
-                if self.header1.isChecked():
-                    self.header = 'Plain'
-                elif self.header2.isChecked():
-                    self.header = 'ICARTT'
-                elif self.header3.isChecked():
-                    self.header = 'AMES'
-            except Exception:
-                self.header = self.header
-                print('Header Format: '+self.header)
-            try:
-                # get averaging information from window then batchfile
-                try:
-                    self.averaging_window = self.averagingbox.text()
-                except Exception:
-                    self.averaging_window = self.avg
-                if len(self.averaging_window) != 0:
-                    self.averaging_window = int(self.averaging_window)
-                    self.write = self.write.rolling(self.averaging_window, min_periods=0).mean().round(decimals=0)
-                    self.write = self.write.iloc[::self.averaging_window, :]
-                else:
-                    pass
-                #################################################################
-                # Date and time combination checks for output file
-                #################################################################
-                if self.date == 'yyyy-mm-dd' and self.time == 'hh:mm:ss':
-                    try:
-                        self.write.pop('Time')
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except UnboundLocalError:
-                        print('Start time not set. Not trimming data.')
-                        pass
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except UnboundLocalError:
-                        print('End time not set. Not trimming data.')
-                        pass
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    self.write.pop('Date')
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                elif self.date == 'yyyy-mm-dd' and self.time == 'hh mm ss':
-                    try:
-                        self.write.pop('Time')
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    self.write.pop('Date')
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    self.write['Time'] = self.write['Time'].str.replace(':', ' ')
-                elif self.date == 'yyyy-mm-dd' and self.time == 'SecOfDay':
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                elif self.date == 'yyyy mm dd' and self.time == 'hh:mm:ss':
-                    try:
-                        self.write.pop('Time')
-                    except Exception as e:
-                        print(e)
-                        print(traceback.format_exc())
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    self.write.pop('Date')
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    self.write['Date'] = self.write['Date'].str.replace('-', ' ')
-                elif self.date == 'yyyy mm dd' and self.time == 'hh mm ss':
-                    try:
-                        self.write.pop('Time')
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    self.write.pop('Date')
-                    self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    self.write['Date'] = self.write['Date'].str.replace('-', ' ')
-                    self.write['Time'] = self.write['Time'].str.replace(':', ' ')
-                elif self.date == 'yyyy mm dd' and self.time == 'SecOfDay':
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    try:
-                        self.write['Date'] = self.write['Date'].str.replace('-', ' ')
-                    except Exception:
-                        pass
-                elif self.date == 'NoDate' and self.time == 'hh:mm:ss':
-                    try:
-                        self.write.pop('Time')
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    self.write.pop('Date')
-                elif self.date == 'NoDate' and self.time == 'hh mm ss':
-                    try:
-                        self.write.pop('Time')
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        pass
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Time', value=self.dtime_time)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.insert(loc=0, column='Date', value=self.dtime_date)
-                    except Exception:
-                        pass
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        pass
-                    self.write.pop('Date')
-                    self.write['Time'] = self.write['Time'].str.replace(':', ' ')
-                elif self.date == 'NoDate' and self.time == 'SecOfDay':
-                    try:
-                        self.write.insert(loc=0, column='DateTime', value=self.dtime)
-                    except Exception:
-                        self.write = self.write
-                    try:
-                        self.write = self.write[self.write['DateTime'] > start]
-                    except Exception:
-                        self.write = self.write
-                    try:
-                        self.write = self.write[self.write['DateTime'] < end]
-                    except Exception:
-                        self.write = self.write
-                    try:
-                        self.write.pop('DateTime')
-                    except Exception:
-                        self.write = self.write
-                else:
-                    pass
+            print('No clicked. Exiting.')
+            return
+        
+        print('Continuing...')
+            # gui fields
+            
+        # Confirm formatting-- set from batchfile or defaults if using CLI
+        print('Date Format: ' + self.date)            
+        print('Time Format: ' + self.time)
+        print('Delimiter Format: ' + self.delimiter)
+        print('FillValue Format: ' + self.fillvalue)
+        print('Header Format: ' + self.header)
 
-                # Plain header
-                if self.header == 'Plain':
-                    if self.delimiter == 'comma':
-                        if self.fillvalue == '-32767':
-                            self.write.to_csv(output_file, header=True, index=False, na_rep='-32767.0')
-                            try:
-                                self.processingSuccess_GUI()
-                            except Exception as e:
-                                print(e)
-                                print(traceback.format_exc())
-                        elif self.fillvalue == 'Blank':
-                            self.write.to_csv(output_file, header=True, index=False, na_rep='')
-                            try:
-                                self.processingSuccess_GUI()
-                            except Exception as e:
-                                print(e)
-                                print(traceback.format_exc())
-                        elif self.fillvalue == 'Replicate':
-                            self.write = self.write.fillna(method='ffill')
-                            self.write.to_csv(output_file, header=True, index=False)
-                            try:
-                                self.processingSuccess_GUI()
-                            except Exception as e:
-                                print(e)
-                                print(traceback.format_exc())
-                        else:
-                            print('File not converted: '+self.input_file)
-                    elif self.delimiter == 'space':
-                        if self.fillvalue == '-32767':
-                            self.write.to_csv(output_file, header=True, index=False, na_rep='-32767.0', sep=' ')
-                            try:
-                                self.processingSuccess_GUI()
-                            except Exception:
-                                pass
-                        elif self.fillvalue == 'Blank':
-                            self.write.to_csv(output_file, header=True, index=False, na_rep='', sep=' ')
-                            try:
-                                self.processingSuccess_GUI()
-                            except Exception:
-                                pass
-                        elif self.fillvalue == 'Replicate':
-                            self.write = self.write.fillna(method='ffill')
-                            self.write.to_csv(output_file, header=True, index=False, sep=' ')
-                            try:
-                                self.processingSuccess_GUI()
-                            except Exception:
-                                pass
-                        else:
-                            print('File not converted: '+self.input_file)
-                    else:
-                        print('File not converted: '+self.input_file)
-                # ICARTT header
-                elif self.header == 'ICARTT':
-                    
-                    self.lib_path = str(os.path.abspath(os.path.dirname(__file__)))
-                    if self.lib_path == '/opt/local/bin':
-                        try:
-                            self.lib_path = self.lib_path.replace("bin", "lib")
-                        except Exception as e:
-                            print(e)
-                            print(traceback.format_exc())
-                    else:
-                        try:
-                            self.lib_path = str(self.lib_path)+'/lib/'
-                        except Exception as e:
-                            print(e)
-                            print(traceback.format_exc())
-                    # drop the unit and dimension rows for ICARTT
-                    if self.histo == False:
-                        try:
-                            try:
-                                # drop the unit and dimension rows for ICARTT if no histogram variables
-                                self.write.columns = self.write.columns.droplevel(1)         
-                            except Exception:
-                                pass
-                            try:
-                                # Try and drop the levels again if there are three levels to drop
-                                self.write.columns = self.write.columns.droplevel(1)
-                            except Exception:
-                                pass
-                        except Exception:
-                            pass
-                    # try renaming the time var to Time_Start
-                    try:
-                        self.write = pd.DataFrame(self.write.rename(columns={'Time': 'Time_Start'}))
-                    except Exception:
-                        pass
-                    try:
-                        self.write = pd.DataFrame(self.write.rename(columns={'DateTime': 'Time_Start'}))
-                    except Exception:
-                        pass
-                    # get the varNumber from the # of columns in the dataframe
-                    self.varNumber = str(len(self.write.columns)-1)
-                    self.write.to_csv(output_file, header=True, index=False, na_rep='-99999.0')
-                    try:
-                        self.data_date = str(self.dtime_sep[0].iloc[1])
-                        self.data_date = self.data_date.replace('-', ', ')
-                        # start going through the template text docs
-                        os.system('cp '+self.lib_path+'/header1.txt ./header1.tmp')
-                        os.system("ex -s -c '5i' -c x "' ./header1.tmp')
-                        os.system('cp '+self.lib_path+'/header2.txt ./header2.tmp')
-                        # get today's date
-                        self.today = datetime.today().strftime('%Y, %m, %d')
-                        # perform the replacements on the first header file
-                        with open('./header1.tmp', 'r+') as f:
-                            lines = f.readlines()
-                            for i, line in enumerate(lines):
-                                if line.startswith('RAF instruments on'):
-                                    lines[i] = lines[i].strip()+' '+self.platform+'\n'
-                                if line.startswith('<PROJECT MANAGER>'):
-                                    lines[i] = self.project_manager+'\n'
-                                if line.startswith('<PROJECT>'):
-                                    lines[i] = self.project_name+'\n'
-                                if line.startswith('<YYYY, MM, DD,>'):
-                                    lines[i] = self.data_date+', '+self.today+'\n'
-                                if line.startswith('<varNumber>'):
-                                    lines[i] = self.varNumber+'\n'
-                                if line.startswith('<1.0>'):
-                                    lines[i] = '1.0,' * int(self.varNumber)
-                                    lines[i] = lines[i].rstrip(',')+'\n'
-                                if line.startswith('<-99999.0>'):
-                                    lines[i] = '-99999.0,' * int(self.varNumber)
-                                    lines[i] = lines[i].rstrip(',')+'\n'
-                            f.seek(0)
-                            for line in lines:
-                                f.write(line)
-                        # perform the replacements on the second header file
-                        with open('./header2.tmp', 'r+') as f:
-                            lines = f.readlines()
-                            for i, line in enumerate(lines):
-                                if line.startswith('<PLATFORM>'):
-                                    lines[i] = 'PLATFORM: NSF/NCAR '+self.platform+' '+self.tail_number+'\n'
-                                if line.startswith('REVISION: RA'):
-                                    try:
-                                        lines[i] = str(line)
-                                        lines[i] = line.replace('RA', self.version)
-                                    except Exception:
-                                        pass
-                                # if line.startswith('RA: Field Data'):
-                                #     try:
-                                #         lines[i] = str(line)+self.version+'\n'
-                                #     except Exception:
-                                #         pass
-                            f.seek(0)
-                            for line in lines:
-                                f.write(line)
-                        # combine and perform replacement on the combined header file
-                        self.columns = pd.DataFrame(self.write.columns.values.tolist())                
-                        self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
-                        self.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
-                        os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
-                        with open('./header.tmp', 'r+') as f:
-                            lines = f.readlines()
-                            count = str(len(lines)+1)+', 1001, V02_2016'
-                            for i, line in enumerate(lines):
-                                if line.startswith('<ROWCOUNT>'):
-                                    lines[i] = count+'\n'
-                            f.seek(0)
-                            for line in lines:
-                                f.write(line)
-                        try:
-                            self.data_date = str(self.dtime_sep[0].iloc[1])
-                            self.data_date = self.data_date.replace('-', ', ')
-                        except Exception:
-                            pass
-                        self.icartt_filename_date = self.data_date.replace(', ', '')
-                        try:
-                            self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_'+self.version+'.ict'
-                        except Exception:
-                            self.icartt_filename = self.project_name+'-CORE_'+self.platform+'_'+self.icartt_filename_date+'_RA.ict'
-                        print('Overwriting Output Filename, since ICARTT file has strict format: '+self.icartt_filename)
-                        os.system('mv '+str(output_file)+' '+str(output_file)+'.tmp')
-                        os.system('cat ./header.tmp '+str(output_file)+'.tmp >> '+str(output_file))
-                        os.system('mv '+str(output_file)+' '+str(os.path.abspath(os.path.dirname(output_file)))+'/'+str(self.icartt_filename))
-                        os.system('rm header.tmp header1.tmp header2.tmp '+str(output_file)+'.tmp')
-                    except Exception:
-                        print(traceback.format_exc())
-                        print('ICARTT header was not created or appended to output file')
-                    try:
-                        self.processingSuccess_GUI()
-                    except Exception:
-                        print('Processing complete')
-                # AMES header
-                elif self.header == 'AMES':
-                    try:
-                        # drop the unit and dimension rows for AMES
-                        self.write.columns = self.write.columns.droplevel(1)
-                        self.write.columns = self.write.columns.droplevel(1)
-                        self.AMESHeader(self.write)
-                    except Exception:
-                        print('AMES header was not created or appended to output file.')
-                    try:
-                        self.processingSuccess_GUI()
-                        self.deselectAll_GUI()
-                    except Exception as e:
-                        print(e)
+            # get averaging information from window then batchfile
+        self.averaging_window = getattr(self, 'averagingbox', None)
+        if self.averaging_window:
+            self.averaging_window = self.averaging_window.text()
+        else:
+            self.averaging_window = self.avg
+
+        if self.averaging_window:
+            self.averaging_window = int(self.averaging_window)
+            self.write = self.write.rolling(self.averaging_window, min_periods=0).mean().round(decimals=0)
+            self.write = self.write.iloc[::self.averaging_window, :]
+        #################################################################
+        # Date and time combination checks for output file
+        #################################################################
+        def _process_date_time(replace_time=True, replace_date=True, date_replace=None, time_replace=None):
+            """
+            Process the DateTime, Date, and Time columns of the dataframe.
+            """
+            try:
+                self.write.pop('Time')
+            except KeyError:
+                print(f"Column 'Time' does not exist. Columns available: {self.write.columns}")
+            except Exception as e:
+                self._log_exception(e)
+
+            _insert_column('DateTime', self.dtime)
+
+            _trim_data_frame()
+
+            if replace_time:
+                _insert_column('Time', self.dtime_time)
+                if time_replace:
+                    _replace_column_values('Time', ':', time_replace)
+
+            if replace_date:
+                _insert_column('Date', self.dtime_date)
+                if date_replace:
+                    _replace_column_values('Date', '-', date_replace)
+
+            self.write.pop('DateTime')
+
+        def _insert_column(column_name, value):
+            """Insert a column into the dataframe."""
+            try:
+                self.write.insert(0, column=column_name, value=value)
+            except Exception as e:
+                self._log_exception(e)
+
+        def _replace_column_values(column_name, old, new):
+            """Replace values in a column."""
+            try:
+                self.write[column_name] = self.write[column_name].str.replace(old, new)
+            except Exception as e:
+                self._log_exception(e)
+
+        def _trim_data_frame():
+            """Trim rows in the dataframe based on a condition."""
+            try:
+                self.write = self.write[start< self.write['DateTime'] < end]
+            except:
+                print('Not trimming data frame')
+
+        
+
+        def process_date_time():
+            """Map combinations of date and time formats to processing configurations."""
+            config_map = {
+                ('yyyy-mm-dd', 'hh:mm:ss'): {},
+                ('yyyy-mm-dd', 'hh mm ss'): {'time_replace': ' '},
+                ('yyyy-mm-dd', 'SecOfDay'): {'replace_time': False},
+                ('yyyy mm dd', 'hh:mm:ss'): {'date_replace': ' '},
+                ('yyyy mm dd', 'hh mm ss'): {'date_replace': ' ', 'time_replace': ' '},
+                ('yyyy mm dd', 'SecOfDay'): {'replace_time': False, 'date_replace': ' '},
+                ('NoDate', 'hh:mm:ss'): {'replace_date': False},
+                ('NoDate', 'hh mm ss'): {'replace_date': False, 'time_replace': ' '},
+                ('NoDate', 'SecOfDay'): {'replace_date': False, 'replace_time': False},
+            }
+
+            # Get the config based on `self.date` and `self.time`, or default to an empty dict
+            config = config_map.get((self.date, self.time), {})
+
+            # Call `_process_date_time` with the resolved configuration
+            _process_date_time(**config) 
+
+        process_date_time() 
+        if self.header == 'Plain':
+            na_rep = '-32767.0' if self.fillvalue == '-32767' else ''
+            if self.fillvalue == 'Replicate':
+                self.write = self.write.fillna(method='ffill')
+                na_rep = None
+
+            sep = ',' if self.delimiter == 'comma' else ' '
+            self.write.to_csv(output_file, header=True, index=False, na_rep=na_rep, sep=sep)
+            try:
+                self.processingSuccess_GUI()
             except Exception as e:
                 print(e)
+                print(traceback.format_exc())
+        # ICARTT header
+        elif self.header == 'ICARTT':
+            
+            self.lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+            if self.lib_path == '/opt/local/bin':
                 try:
-                    processing_complete = QMessageBox()
-                    processing_complete.setWindowTitle("Error")
-                    processing_complete.setText("There was an error writing your ASCII file. Please try again.")
-                    x = processing_complete.exec_()
+                    self.lib_path = self.lib_path.replace("bin", "lib")
                 except Exception as e:
                     print(e)
-                    print('Data was not written. Please try again.')
+                    print(traceback.format_exc())
+            else:
+                try:
+                    self.lib_path = str(self.lib_path) + '/lib/'
+                except Exception as e:
+                    print(e)
+                    print(traceback.format_exc())
+
+            # Drop levels until there is only one level left in the columns
+            while isinstance(self.write.columns, pd.MultiIndex):
+                try:
+                    self.write.columns = self.write.columns.droplevel(1)
+                except IndexError:
+                    break
+
+            # Rename the time var to Time_Start
+            self.write = self.write.rename(columns={'Time': 'Time_Start', 'DateTime': 'Time_Start'})
+            # Convert columns to float
+            for column in self.write.columns:
+                try:
+                    self.write[column] = self.write[column].astype(float)
+                except Exception:
+                    if column == 'Time_Start' or column == 'Date':
+                        pass
+                    else:
+                        print(f'Could not convert {column} to float')
+                        pass
+            self.write = self.write.replace(np.nan, -99999.0)
+            self.write.to_csv(output_file, header=True, index=False)
+            self.varNumber = str(len(self.write.columns) - 1)
+            try:
+                self.data_date = str(self.dtime_sep[0].iloc[1]).replace('-', ', ')
+                os.system(f'cp {self.lib_path}/header1.txt ./header1.tmp')
+                os.system("ex -s -c '5i' -c x ./header1.tmp")
+                os.system(f'cp {self.lib_path}/header2.txt ./header2.tmp')
+                self.today = datetime.today().strftime('%Y, %m, %d')
+
+                with open('./header1.tmp', 'r+') as f:
+                    lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        if line.startswith('RAF instruments on'):
+                            lines[i] = f'{line.strip()} {self.platform}\n'
+                        if line.startswith('<PROJECT MANAGER>'):
+                            lines[i] = f'{self.project_manager}\n'
+                        if line.startswith('<PROJECT>'):
+                            lines[i] = f'{self.project_name}\n'
+                        if line.startswith('<YYYY, MM, DD,>'):
+                            lines[i] = f'{self.data_date}, {self.today}\n'
+                        if line.startswith('<varNumber>'):
+                            lines[i] = f'{self.varNumber}\n'
+                        if line.startswith('<1.0>'):
+                            lines[i] = '1.0,' * int(self.varNumber)
+                            lines[i] = lines[i].rstrip(',') + '\n'
+                        if line.startswith('<-99999.0>'):
+                            lines[i] = '-99999.0,' * int(self.varNumber)
+                            lines[i] = lines[i].rstrip(',') + '\n'
+                    f.seek(0)
+                    f.writelines(lines)
+
+                with open('./header2.tmp', 'r+') as f:
+                    lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        if line.startswith('<PLATFORM>'):
+                            lines[i] = f'PLATFORM: NSF/NCAR {self.platform} {self.tail_number}\n'
+                        if line.startswith('REVISION: RA'):
+                            lines[i] = line.replace('RA', self.version)
+                    f.seek(0)
+                    f.writelines(lines)
+
+                self.columns = pd.DataFrame(self.write.columns.values.tolist())
+                self.fileheader = self.fileheader.loc[self.fileheader[0].isin(self.columns[0])]
+                self.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
+                os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
+
+                with open('./header.tmp', 'r+') as f:
+                    lines = f.readlines()
+                    count = f'{len(lines) + 1}, 1001, V02_2016'
+                    for i, line in enumerate(lines):
+                        if line.startswith('<ROWCOUNT>'):
+                            lines[i] = f'{count}\n'
+                        f.seek(0)
+                        f.writelines(lines)
+
+                self.icartt_filename_date = self.data_date.replace(', ', '')
+                self.icartt_filename = f'{self.project_name}-CORE_{self.platform}_{self.icartt_filename_date}_{self.version}.ict'
+                print(f'Overwriting Output Filename, since ICARTT file has strict format: {self.icartt_filename}')
+                os.system(f'mv {output_file} {output_file}.tmp')
+                os.system(f'cat ./header.tmp {output_file}.tmp >> {output_file}')
+                os.system(f'mv {output_file} {os.path.abspath(os.path.dirname(output_file))}/{self.icartt_filename}')
+                os.system(f'rm header.tmp header1.tmp header2.tmp {output_file}.tmp')
+            except Exception:
+                print(traceback.format_exc())
+                print('ICARTT header was not created or appended to output file')
+
+            try:
+                self.processingSuccess_GUI()
+            except Exception:
+                print('Processing complete')
+        # AMES header
+        elif self.header == 'AMES':
+            try:
+                # drop the unit and dimension rows for AMES
+                self.write.columns = self.write.columns.droplevel(1)
+                self.write.columns = self.write.columns.droplevel(1)
+                self.AMESHeader(self.write)
+            except Exception:
+                print('AMES header was not created or appended to output file.')
+            try:
+                self.processingSuccess_GUI()
+                self.deselectAll_GUI()
+            except Exception as e:
+                print(e)
+        # try:
+        #     processing_complete = QMessageBox()
+        #     processing_complete.setWindowTitle("Error")
+        #     processing_complete.setText("There was an error writing your ASCII file. Please try again.")
+        #     x = processing_complete.exec_()
+        # except Exception as e:
+        #     print(e)
+        #     print('Data was not written. Please try again.')
     
 
 
@@ -2063,6 +1712,21 @@ class gui(QMainWindow):
 # nc2asc CL Class
 #############################################################################
 class nc2asc_CL():
+    def __init__(self):
+        self.guiMode = False
+        self.histo = False
+        self.timeHandler = gui.timeHandler
+        self.input_file = False
+        self.output_file = False
+        self.inputbatch_file = False
+        self.rate = False
+        self.vars = False
+        self.variables_extract_batch=[]
+        self.version = 'RA' ##Defaults to field data unless overridden
+    #inherit self._log_exception from nc2asc_GUI
+    def _log_exception(self, e):
+        print(e)
+        print(traceback.format_exc())
 
     def parse_args(self):
         # set up argument parsing
@@ -2084,13 +1748,111 @@ class nc2asc_CL():
         filename = filename.replace('\n', '')
         print(f'Using filename from the batch file: '+filename)
         return filename
+    
+    def process_batch_file(self, inputbatch_file):
+        """Processes a batch file to extract settings and variables."""
+        action_map = {
+            'if=': lambda ln: self._handle_file(ln, 'input_file', 'Input'),
+            'of=': lambda ln: self._handle_file(ln, 'output_file', 'Output'),
+            'hd=': lambda ln: self._handle_directive(ln, 'header', self._header_map()),
+            'dt=': lambda ln: self._handle_directive(ln, 'date', self._date_map()),
+            'tm=': lambda ln: self._handle_directive(ln, 'time', self._time_map()),
+            'sp=': lambda ln: self._handle_directive(ln, 'delimiter', self._delimiter_map()),
+            'fv=': lambda ln: self._handle_directive(ln, 'fillvalue', self._fillvalue_map()),
+            'version=': lambda ln: setattr(self, 'version', ln.replace('version=', '').strip()),
+            'ti=': lambda ln: setattr(self, 'ti', ln[3:].strip()),
+            'avg=': lambda ln: setattr(self, 'avg', self._format_avg(ln[4:])),
+            'Vars=': lambda ln: self._add_variable(ln),
+        }
+        
+        with open(inputbatch_file, 'r') as fil:
+            print('****Reading Batch File****')
+            for ln in fil:
+                ln = ln.strip()
+                for key, action in action_map.items():
+                    if ln.startswith(key):
+                        action(ln)
+                        break
+            print('Batch file processing complete.')
+        
+    def _header_map(self):
+        return {
+            'hd=Plain': ('header1', 'Plain'),
+            'hd=ICARTT': ('header2', 'ICARTT'),
+            'hd=AMES': ('header3', 'AMES'),
+        }
 
+    def _date_map(self):
+        return {
+            'dt=yyyy-mm-dd': ('date1', 'yyyy-mm-dd'),
+            'dt=yyyy mm dd': ('date2', 'yyyy mm dd'),
+            'dt=NoDate': ('date3', 'NoDate'),
+        }
+
+    def _time_map(self):
+        return {
+            'tm=hh:mm:ss': ('time1', 'hh:mm:ss'),
+            'tm=hh mm ss': ('time2', 'hh mm ss'),
+            'tm=SecOfDay': ('time3', 'SecOfDay'),
+        }
+
+    def _delimiter_map(self):
+        return {
+            'sp=comma': ('comma', 'comma'),
+            'sp=space': ('space', 'space'),
+        }
+
+    def _fillvalue_map(self):
+        return {
+            'fv=-32767': ('fillvalue1', '-32767'),
+            'fv=blank': ('fillvalue2', 'blank'),
+            'fv=replicate': ('fillvalue3', 'replicate'),
+        }
+
+    def _handle_file(self, line, attr_name, file_type):
+        """Prompt user to confirm file selection from batch file or use command line input."""
+        batch_file_value = self._parse_file_path(line)
+        current_value = getattr(self, attr_name, None)
+
+        if not current_value:
+            print(f'No {file_type} file provided.')
+            setattr(self, attr_name, batch_file_value)
+        else:
+            choice = input(
+                f"Would you like to use the {file_type.lower()} file from the batch file? (y/Y to confirm, any other key to keep current): "
+            )
+            if choice.lower() == 'y':
+                setattr(self, attr_name, batch_file_value)
+            else:
+                print(f"Using {file_type.lower()} file from command line: {current_value}")
+
+    def _parse_file_path(self, line):
+        """Extract file path from a batch file line."""
+        return line.split('=')[1].strip()
+
+    def _handle_directive(self, line, attr_name, directive_map):
+        """Set an attribute and toggle GUI checkbox based on a line and a directive map."""
+        if line in directive_map:
+            gui_attr, value = directive_map[line]
+            try:
+                getattr(self, gui_attr).setChecked(True)
+            except AttributeError:
+                setattr(self, attr_name, value)
+
+    def _add_variable(self, line):
+        """Extract and add variables from a batch file line."""
+        variable = line.replace('Vars=', '').replace("'", "").replace('[', '').replace(']', '').strip()
+        if variable not in self.variables_extract_batch:
+            self.variables_extract_batch.append(variable)
+
+    def _format_avg(self, avg):
+        """Format the averaging value from the batch file."""
+        return avg.translate({ord(c): None for c in "[]='g"}).strip()[:-1]
+    
     #######################################################################
     # Define processing function
     #######################################################################
     def processData(self, args):
-        self.histo = False
-        self.timeHandler = gui.timeHandler
         self.input_file = args.i if args.i else False
         self.output_file = args.o if args.o else False
         self.inputbatch_file = args.b if args.b else False
@@ -2110,132 +1872,9 @@ class nc2asc_CL():
             # read in the input file
         if self.output_file:
             print('OUTPUT_FILE:' + self.output_file)
+            
         if self.inputbatch_file:
-            #netCDF4.Dataset(self.input_file, mode='r')
-            with open(self.inputbatch_file, 'r') as fil:
-                print('****Reading Batch File****')
-                # create empty placeholders
-                self.variables_extract_batch = []
-                self.asc_new_batch = pd.DataFrame()
-                for ln in fil:
-                    if ln.startswith('if='):
-                        if self.input_file == False:
-                            print('No input file provided.')
-                            self.input_file=self.store_File(ln)
-                        else:
-                            ip = input('Please confirm: would you like to use the input file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                            if ip == 'Y' or ip == 'y':
-                                self.input_file=self.store_File(ln)
-                            else:
-                                print("Using input file from command line: " + self.input_file)
-                                pass
-
-                    elif ln.startswith('of='):
-                        if self.output_file == False:
-                            print('No output file provided.')
-                            self.output_file = self.store_File(ln)
-                        else:
-                            of = input('Please confirm: would you like to use the output file from the batchfile? (Yes = y or Y and Enter, No = anything else)')
-                            if of == 'Y' or of == 'y':
-                                self.output_file = self.store_File(ln)
-                            else:
-                                print("Using output file from command line: " + self.output_file)
-                                pass
-                    
-
-                    # get the header format from the batch file
-                    if ln.startswith('hd=Plain'):
-                        try:
-                            self.header1.setChecked(True)
-                        except Exception:
-                            self.header = 'Plain'
-                    elif ln.startswith('hd=ICARTT'):
-                        try:
-                            self.header2.setChecked(True)
-                        except Exception:
-                            self.header = 'ICARTT'
-                    elif ln.startswith('hd=AMES'):
-                        try:
-                            self.header3.setChecked(True)
-                        except Exception:
-                            self.header = 'AMES'
-                    elif ln.startswith('dt=yyyy-mm-dd'):
-                        try:
-                            self.date1.setChecked(True)
-                        except Exception:
-                            self.date = 'yyyy-mm-dd'
-                    elif ln.startswith('dt=yyyy mm dd'):
-                        try:
-                            self.date2.setChecked(True)
-                        except Exception:
-                            self.date = 'yyyy mm dd'
-                    elif ln.startswith('dt=NoDate'):
-                        try:
-                            self.date3.setChecked(True)
-                        except Exception:
-                            self.date = 'NoDate'
-                    elif ln.startswith('tm=hh:mm:ss'):
-                        try:
-                            self.time1.setChecked(True)
-                        except Exception:
-                            self.time = 'hh:mm:ss'
-                    elif ln.startswith('tm=hh mm ss'):
-                        try:
-                            self.time2.setChecked(True)
-                        except Exception:
-                            self.time = 'hh mm ss'
-                    elif ln.startswith('tm=SecOfDay'):
-                        try:
-                            self.time3.setChecked(True)
-                        except Exception:
-                            self.time = 'SecOfDay'
-                    elif ln.startswith('sp=comma'):
-                        try:
-                            self.comma.setChecked(True)
-                        except Exception:
-                            self.delimiter = 'comma'
-                    elif ln.startswith('sp=space'):
-                        try:
-                            self.space.setChecked(True)
-                        except Exception:
-                            self.delimiter = 'space'
-                    elif ln.startswith('fv=-32767'):
-                        try:
-                            self.fillvalue1.setChecked(True)
-                        except Exception:
-                            self.fillvalue = '-32767'
-                    elif ln.startswith('fv=blank'):
-                        try:
-                            self.fillvalue2.setChecked(True)
-                        except Exception:
-                            self.fillvalue = 'blank'
-                    elif ln.startswith('fv=replicate'):
-                        try:
-                            self.fillvalue3.setChecked(True)
-                        except Exception:
-                            self.fillvalue = 'replicate'
-
-                    # get the version information from file for appending
-                    elif ln.startswith('version='):
-                        self.version = str(ln).replace('version=', '').replace('\n', '')
-                    # get the time interval from the batch file
-                    elif ln.startswith('ti='):
-                        self.ti = ln[2:]
-                    # get the average value (if provided) from the bath file
-                    elif ln.startswith('avg='):
-                        self.avg = ln[2:]
-                    elif ln.startswith('Vars='):
-                        var_batchfile = str(ln)
-                        if var_batchfile not in self.variables_extract_batch:
-                            self.variables_extract_batch.append(var_batchfile.replace('Vars=', '').replace('\n', '').replace("'", '').replace('[', '').replace(']', ''))
-                # format averaging
-                self.avg = self.avg.replace('[', '')
-                self.avg = self.avg.replace("'", '')
-                self.avg = self.avg.replace('=', '')
-                self.avg = self.avg.replace(']', '')
-                self.avg = self.avg.replace('g', '')
-                self.avg = self.avg[:-1]
-            #print(self.asc.columns)
+            self.process_batch_file(self.inputbatch_file)
         else:
             print('No batch file provided. Using defaults')
             #Use ICARTT header by default
@@ -2265,7 +1904,7 @@ class nc2asc_CL():
             self.asc_new_batch = pd.DataFrame()
             self.version = 'RA'
 
-            # get the time interval from the batch file
+            # set default time and averaging: no averaging or time trimming
             self.ti = 'X,X'
             self.avg = ''
             
@@ -2366,8 +2005,14 @@ class nc2asc_CL():
             print('****Concatenating Variables****')
             
             self.asc = pd.concat(self.asc, axis=1, ignore_index=False)
+            self.asc.columns = self.asc.columns.droplevel(0)
             #print(self.asc.columns.droplevel(1))
-            self.asc.columns=self.asc.columns.droplevel(1)
+            while isinstance(self.asc.columns, pd.MultiIndex):
+                try:
+                    self.asc.columns = self.asc.columns.droplevel(1)
+                except IndexError:
+                    break
+            
             # create an object to store the netCDF variable time
             self.dtime = xr.coding.times.decode_cf_datetime(nc['Time'], nc['Time'].attrs['units'])
             self.dtime = pd.Series(self.dtime).astype(str)
@@ -2387,17 +2032,19 @@ class nc2asc_CL():
             
 
             if not self.variables_extract_batch:
-                print('Adding all vars')
+                print('Using all variables')
                 self.variables_extract_batch = list(nc.variables)  
+                self.asc_new_batch = self.asc
 
-            for x, var in enumerate(self.variables_extract_batch):
-                #print('test:'+var)
-                if var not in self.asc.columns:
-                    #Remove var from list if it is not in the netCDF file
-                    
-                    print('***WARNING***Var '+str(var)+' not in netCDF file!!! Continuing with conversion****')
-            self.variables_extract_batch = [var for var in self.variables_extract_batch if var in self.asc.columns]
-            self.asc_new_batch = self.asc[self.variables_extract_batch]
+            else:
+                for x, var in enumerate(self.variables_extract_batch):
+                    #print('test:'+var)
+                    if var not in self.asc.columns:
+                        #Remove var from list if it is not in the netCDF file
+                        
+                        print('***WARNING***Var '+str(var)+' not in netCDF file!!! Continuing with conversion****')
+                self.variables_extract_batch = [var for var in self.variables_extract_batch if var in self.asc.columns]
+                self.asc_new_batch = self.asc[self.variables_extract_batch]
                 #print(self.asc_new_batch.columns)
             try:
                 for i in self.variables_extract_batch:
