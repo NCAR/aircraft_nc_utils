@@ -671,6 +671,7 @@ class gui(QMainWindow):
             x = no_process.exec_()
             
     def parse_vars(self,nc):
+        cellsize_dict = {}
         for i in nc.variables:
             # handle only time dimension variables
             dims = str(nc[i].dims)
@@ -714,6 +715,7 @@ class gui(QMainWindow):
                 self.asc[i].columns = pd.MultiIndex.from_tuples(zip(bin_cols, self.asc[i].columns, self.asc[i].columns))
                 try:
                     cellsize = nc[i].attrs['CellSizes'] #TODO: Add cellsize to the ICARTT header and only have bin number in the column header
+                    cellsize_dict[i] = cellsize
                     var_list = [i] * len(self.asc[i].columns) 
                     ## Add the bin number to variable name
                 except KeyError:
@@ -1646,7 +1648,13 @@ class gui(QMainWindow):
 
                 with open('./header2.tmp', 'r+') as f:
                     lines = f.readlines()
+                    if self.histo:
+                        for var in self.cellsize_dict:
+                            lines.insert(0, f'{var} Cellsizes: {self.cellsize_dict[var]}\n')
+                        cells_len = len(self.cellsize_dict)
                     for i, line in enumerate(lines):
+                        if line.startswith('18'):
+                            lines[i] =str(cells_len+18) + '\n'
                         if line.startswith('<PLATFORM>'):
                             lines[i] = f'PLATFORM: NSF/NCAR {self.platform} {self.tail_number}\n'
                         if line.startswith('REVISION: RA'):
