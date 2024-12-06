@@ -54,6 +54,7 @@ class gui(QMainWindow):
         myFont = QtGui.QFont()
         myFont.setBold(True)
         self.histo = False
+        self.cellsize_dict = {}
         self.variables_extract_batch = []
 
         #####################################################################
@@ -671,7 +672,6 @@ class gui(QMainWindow):
             x = no_process.exec_()
             
     def parse_vars(self,nc):
-        cellsize_dict = {}
         for i in nc.variables:
             # handle only time dimension variables
             dims = str(nc[i].dims)
@@ -715,7 +715,7 @@ class gui(QMainWindow):
                 self.asc[i].columns = pd.MultiIndex.from_tuples(zip(bin_cols, self.asc[i].columns, self.asc[i].columns))
                 try:
                     cellsize = nc[i].attrs['CellSizes'] #TODO: Add cellsize to the ICARTT header and only have bin number in the column header
-                    cellsize_dict[i] = cellsize
+                    self.cellsize_dict[i] = cellsize
                     var_list = [i] * len(self.asc[i].columns) 
                     ## Add the bin number to variable name
                 except KeyError:
@@ -1432,7 +1432,6 @@ class gui(QMainWindow):
         # Get inputs from GUI or CL depending on mode
         #####################################################################
         self.write = self.asc_new_batch
-        print(self.write.columns)
 ################################################################################################
         for columnName,columnData in self.write.items():
                 #print(columnName)
@@ -1650,7 +1649,7 @@ class gui(QMainWindow):
                     lines = f.readlines()
                     if self.histo:
                         for var in self.cellsize_dict:
-                            lines.insert(0, f'{var} Cellsizes: {self.cellsize_dict[var]}\n')
+                            lines.insert(3, f'{var} Cellsizes: {", ".join(map(str, self.cellsize_dict[var].flatten()))}\n')
                         cells_len = len(self.cellsize_dict)
                     for i, line in enumerate(lines):
                         if line.startswith('18'):
@@ -1730,6 +1729,7 @@ class nc2asc_CL():
         self.rate = False
         self.vars = False
         self.variables_extract_batch=[]
+        self.cellsize_dict = {}
         self.version = 'RA' ##Defaults to field data unless overridden
     #inherit self._log_exception from nc2asc_GUI
     def _log_exception(self, e):
@@ -1867,14 +1867,12 @@ class nc2asc_CL():
         try:
             self.rate = args.mixed_rate
         except Exception as e:
-            print(e)
-            print(traceback.format_exc())
+            self._log_exception(e)
             self.rate = False
         try:
             self.vars = args.v
         except Exception as e:
-            print(e)
-            print(traceback.format_exc())
+            self._log_exception(e)
         if self.input_file:
             print('INPUT FILE:' + self.input_file)
             # read in the input file
@@ -2013,8 +2011,7 @@ class nc2asc_CL():
             print('****Concatenating Variables****')
             
             self.asc = pd.concat(self.asc, axis=1, ignore_index=False)
-            self.asc.columns = self.asc.columns.droplevel(0)
-            #print(self.asc.columns.droplevel(1))
+            self.asc.columns = self.asc.columns.droplevel(0) # Drop the first variable level that does not have bin numbers
             while isinstance(self.asc.columns, pd.MultiIndex):
                 try:
                     self.asc.columns = self.asc.columns.droplevel(1)
@@ -2046,14 +2043,12 @@ class nc2asc_CL():
 
             else:
                 for x, var in enumerate(self.variables_extract_batch):
-                    #print('test:'+var)
                     if var not in self.asc.columns:
                         #Remove var from list if it is not in the netCDF file
                         
                         print('***WARNING***Var '+str(var)+' not in netCDF file!!! Continuing with conversion****')
                 self.variables_extract_batch = [var for var in self.variables_extract_batch if var in self.asc.columns]
                 self.asc_new_batch = self.asc[self.variables_extract_batch]
-                #print(self.asc_new_batch.columns)
             try:
                 for i in self.variables_extract_batch:
                     if i not in nc.variables:
@@ -2061,14 +2056,12 @@ class nc2asc_CL():
                     else:
                         pass
             except Exception as e:
-                print(e)
-                print(traceback.format_exc())
+                self._log_exception(e)
             try:
                 gui.writeData(self)
                 print('****Write Data Process Complete****')
             except Exception as e:
-                print(e)
-                print(traceback.format_exc())
+                self._log_exception(e)
             return self.asc, self.input_file, self.output_file, self.dtime_date, self.dtime_time, self.dtime
 
 
@@ -2082,19 +2075,15 @@ def main():
         try:
             cl = nc2asc_CL()
         except Exception as e:
-            print(e)
-            print(traceback.format_exc())
+            gui._log_exception(e)
         try:
             args = cl.parse_args()
         except Exception as e:
-            print(e)
-            print(traceback.format_exc())
+            gui._log_exception(e)
         try:
             cl.processData(args)
         except Exception as e:
-            print(e)
-            print("Error processing data:")
-            print(traceback.format_exc())
+            gui._log_exception(e+ ': Error processing data')
     else:
         app = QtWidgets.QApplication(sys.argv)
         app.setStyle('Windows')
