@@ -16,15 +16,7 @@ DESCRIPTION:	This file has the routines necassary to Create and write
 		data for distribution of NCAR/RAF aircraft data in netCDF
 		format.
 
-INPUT:      
-
-OUTPUT:		none
-
-REFERENCES:	none
-
-REFERENCED BY:	LowRateLoop()
-
-COPYRIGHT:	University Corporation for Atmospheric Research, 1993
+COPYRIGHT:	University Corporation for Atmospheric Research, 1993-2024
 -------------------------------------------------------------------------
 */
 
@@ -150,8 +142,8 @@ void SetBaseTime()
 void CreateNetCDF(file_name)
 char  file_name[];
 {
-  register int  i;
-  register VARTBL  *vp;
+  int  i;
+  VARTBL  *vp;
 
   int	timeOffsetID;
   int	ndims, dims[3],

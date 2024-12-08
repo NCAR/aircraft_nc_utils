@@ -31,7 +31,7 @@ char	*table[];
 int	ntable;		/* Number in list	*/
 char	target[];
 {
-	register int	beg, mid, end, rc;
+	int	beg, mid, end, rc;
 
 	if (ntable == 0)
 		return(ERR);
