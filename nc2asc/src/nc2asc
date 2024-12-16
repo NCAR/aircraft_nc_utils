@@ -569,6 +569,7 @@ class gui(QMainWindow):
             gui_attr, value = directive_map[line]
             try:
                 getattr(self, gui_attr).setChecked(True)
+                setattr(self, attr_name, value)
             except AttributeError:
                 setattr(self, attr_name, value)
 
@@ -865,10 +866,11 @@ class gui(QMainWindow):
 
         try:
             self.output = pd.Series(self.var.item(self.var.currentRow(), 0).text())
-            self.variables_extract = self.variables_extract.append(self.output)
+            self.variables_extract = pd.concat([self.variables_extract, self.output], ignore_index=True)            
             self.variables_extract = self.variables_extract.drop_duplicates()
             self.asc_new = self.asc[self.variables_extract]
-        except Exception:
+        except Exception as e:
+            self._log_exception(e)
             pass
         try:
             self.var_selected = str(self.asc_new.columns.values.tolist())
@@ -893,7 +895,7 @@ class gui(QMainWindow):
         self.checkoutput = self.var.item(self.var.currentRow(), 0).text()
         if self.checkoutput in self.variables_extract.values:
             self.variables_extract = self.variables_extract.loc[self.variables_extract.values != self.checkoutput]
-            self.asc_new = self.asc_new.drop(self.checkoutput, axis=1)
+            self.asc_new = self.asc.drop(self.checkoutput, axis=1)
             self.var_selected = self.var_selected.replace(self.checkoutput, '')
             self.var.item(self.var.currentRow(), 0).setBackground(QtGui.QColor(255, 255, 255))
         else:
@@ -1001,7 +1003,7 @@ class gui(QMainWindow):
             os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
             with open('./header.tmp', 'r+') as f:
                 lines = f.readlines()
-                count = str(len(lines) + 1) + ', 1001, V02_2016' ##TODO: find where freeform count is and add header lines if histogram variables present
+                count = str(len(lines) + 1) + ', 1001, V02_2016' 
                 for i, line in enumerate(lines):
                     if line.startswith('<ROWCOUNT>'):
                         lines[i] = count + '\n'
@@ -1431,7 +1433,13 @@ class gui(QMainWindow):
         #####################################################################
         # Get inputs from GUI or CL depending on mode
         #####################################################################
-        self.write = self.asc_new_batch
+        try:
+            self.write = self.asc_new
+        except Exception:
+            try:
+                self.write = self.asc_new_batch
+            except Exception:
+                self.write = self.asc
 ################################################################################################
         for columnName,columnData in self.write.items():
                 #print(columnName)
@@ -1441,7 +1449,7 @@ class gui(QMainWindow):
                     pass
 ################################################################################################
         # determine which output file to use based on mode
-        if self.guiMode:
+        try:
             output_file = os.path.join(self.outputdirbox.text(), self.outputfilebox.text())
             start = self.start.text()
             end = self.end.text()
@@ -1450,7 +1458,8 @@ class gui(QMainWindow):
             self.fillvalue = -32767 if self.fillvalue1.isChecked() else 'Blank' if self.fillvalue2.isChecked() else 'Replicate'
             self.delimiter = 'comma' if self.comma.isChecked() else 'space'
             self.header = 'Plain' if self.header1.isChecked() else 'ICARTT' if self.header2.isChecked() else 'AMES'
-        else:
+        except Exception as e:
+            self._log_exception(e)
             output_file = self.output_file
             start = self.start_time
             end = self.end_time
@@ -1473,11 +1482,11 @@ class gui(QMainWindow):
             # gui fields
             
         # Confirm formatting-- set from batchfile or defaults if using CLI
-        print('Date Format: ' + self.date)            
-        print('Time Format: ' + self.time)
-        print('Delimiter Format: ' + self.delimiter)
-        print('FillValue Format: ' + self.fillvalue)
-        print('Header Format: ' + self.header)
+        # print('Date Format: ' + self.date)            
+        # print('Time Format: ' + self.time)
+        # print('Delimiter Format: ' + self.delimiter)
+        # print('FillValue Format: ' + str(self.fillvalue))
+        # print('Header Format: ' + self.header)
 
             # get averaging information from window then batchfile
         self.averaging_window = getattr(self, 'averagingbox', None)
@@ -1571,12 +1580,22 @@ class gui(QMainWindow):
                 na_rep = None
 
             sep = ',' if self.delimiter == 'comma' else ' '
-            self.write.to_csv(output_file, header=True, index=False, na_rep=na_rep, sep=sep)
+            cellsizes_lines = []
+            if self.histo:
+                for var in self.cellsize_dict:
+                    cellsizes_lines.append(f'{var} Cellsizes: {", ".join(map(str, self.cellsize_dict[var].flatten()))}\n')
+                cells_len = len(self.cellsize_dict)
+
+            # Write the Cellsizes information to the file
+            with open(output_file, 'w') as f:
+                f.writelines(cellsizes_lines)
+
+# Append the DataFrame content to the file
+            self.write.to_csv(output_file, mode='a', header=True, index=False, na_rep=na_rep, sep=sep)
             try:
                 self.processingSuccess_GUI()
             except Exception as e:
-                print(e)
-                print(traceback.format_exc())
+                pass
         # ICARTT header
         elif self.header == 'ICARTT':
             
@@ -1732,6 +1751,11 @@ class nc2asc_CL():
         self.cellsize_dict = {}
         self.version = 'RA' ##Defaults to field data unless overridden
     #inherit self._log_exception from nc2asc_GUI
+        self.fillvalue = '-32767'
+        self.delimiter = 'comma'
+        self.date = 'yyyy-mm-dd'
+        self.time = 'hh:mm:ss'
+        self.header = 'Plain'
     def _log_exception(self, e):
         print(e)
         print(traceback.format_exc())
@@ -1771,6 +1795,13 @@ class nc2asc_CL():
             'ti=': lambda ln: setattr(self, 'ti', ln[3:].strip()),
             'avg=': lambda ln: setattr(self, 'avg', self._format_avg(ln[4:])),
             'Vars=': lambda ln: self._add_variable(ln),
+        }
+        set_vars = {
+            'hd=': self.header,
+            'dt=': self.date,
+            'tm=': self.time,
+            'sp=': self.delimiter,
+            'fv=': self.fillvalue,
         }
         
         with open(inputbatch_file, 'r') as fil:
@@ -1880,39 +1911,44 @@ class nc2asc_CL():
             print('OUTPUT_FILE:' + self.output_file)
             
         if self.inputbatch_file:
-            self.process_batch_file(self.inputbatch_file)
+            gui.process_batch_file(self,self.inputbatch_file)
+        #Make sure evyerhing is set to defaults even if batchfile is provided.
+        #Use ICARTT header by default
         else:
-            print('No batch file provided. Using defaults')
-            #Use ICARTT header by default
             try:
                 self.header2.setChecked(True)
             except:
+                print("Using default header format: ICARTT")
                 self.header = 'ICARTT'
             #Use yyyy-mm-dd by default
             try:
                 self.date1.setChecked(True)
             except Exception:
+                print("Using default date format: yyyy-mm-dd")
                 self.date = 'yyyy-mm-dd'
             #Use hh:mm:ss by default
             try:
                 self.time1.setChecked(True)
             except Exception:
+                print("Using default time format: hh:mm:ss")
                 self.time = 'hh:mm:ss'
             try:
                 self.comma.setChecked(True)
             except Exception:
+                print("Using default delimiter: comma")
                 self.delimiter = 'comma'
             try:
                 self.fillvalue2.setChecked(True)
             except Exception:
+                print("Using default fill value: blank")
                 self.fillvalue = 'blank'
-            self.variables_extract_batch =[]
-            self.asc_new_batch = pd.DataFrame()
-            self.version = 'RA'
+        self.variables_extract_batch =[]
+        self.asc_new_batch = pd.DataFrame()
+        self.version = 'RA'
 
-            # set default time and averaging: no averaging or time trimming
-            self.ti = 'X,X'
-            self.avg = ''
+        # set default time and averaging: no averaging or time trimming
+        self.ti = 'X,X'
+        self.avg = ''
             
         nc = xr.open_dataset(self.input_file,decode_times=False)
         # keep mixed_rate bool arg, to enter this as opposed to the full conversion.
