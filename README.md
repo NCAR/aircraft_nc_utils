@@ -50,11 +50,6 @@ The C utilities build and run on any Unix/Linux operating system, including Mac 
  * xerces-c (needed by vardb)
  * asciidoc (needed by nc_compare to generate man pages)
  
- As long as master runs against qt4:
- * brew tap cartr/qt4
- * brew tap-pin cartr/qt4
- * brew install qt@4
- 
  ### Python Dependencies ###
  * Specific dependencies for each python based utility is listed in the table above.
  
