@@ -57,8 +57,8 @@ generateReport(std::ostream& out, const ReportStyle& style)
     if (leftbegin == epoch && rightbegin == epoch)
     {
       out <<
-	" *** Both base_time's are 0, files must have identical start\n"
-	"     times or else merged data will be shifted in time.\n";
+        " *** Both base_time's are 0, files must have identical start\n"
+        "     times or else merged data will be shifted in time.\n";
     }
   }
 
@@ -79,11 +79,11 @@ generateReport(std::ostream& out, const ReportStyle& style)
       if (ileft != uniqueleft.end() && 
           (iright == uniqueright.end() || *ileft < *iright))
       {
-	out << style.derive(1, " - ") << *ileft++ << "\n";
+        out << style.derive(1, " - ") << *ileft++ << "\n";
       }
       else
       {
-	out << style.derive(1, " + ") << *iright++ << "\n";
+        out << style.derive(1, " + ") << *iright++ << "\n";
       }
     }
   }
@@ -131,27 +131,27 @@ computeDifferences()
     {
       if (iright < timesright.size())
       {
-	if (timesleft[ileft] == timesright[iright])
-	{
-	  ++noverlap;
-	  ++ileft;
-	  ++iright;
-	}
-	else if (timesleft[ileft] < timesright[iright])
-	{
-	  uniqueleft.push_back(timesleft[ileft]);
-	  ++ileft;
-	}
-	else
-	{
-	  uniqueright.push_back(timesright[iright]);
-	  ++iright;
-	}
+        if (timesleft[ileft] == timesright[iright])
+        {
+          ++noverlap;
+          ++ileft;
+          ++iright;
+        }
+        else if (timesleft[ileft] < timesright[iright])
+        {
+          uniqueleft.push_back(timesleft[ileft]);
+          ++ileft;
+        }
+        else
+        {
+          uniqueright.push_back(timesright[iright]);
+          ++iright;
+        }
       }
       else
       {
-	uniqueleft.push_back(timesleft[ileft]);
-	++ileft;
+        uniqueleft.push_back(timesleft[ileft]);
+        ++ileft;
       }
     }
     else
@@ -185,7 +185,7 @@ run_comparisons(CompareNetcdf* ncf, L& left, L& right, T& comps, const F& ignore
   comps.clear();
   compare_lists(ncf, left, right, comps, ignore);
   for_each(comps.begin(), comps.end(),
-	   bind(mem_fn(&T::value_type::element_type::compare), _1));
+           bind(mem_fn(&T::value_type::element_type::compare), _1));
 }
 
 
@@ -203,7 +203,7 @@ CompareNetcdf::
 compareAttributes()
 {
   run_comparisons(this, _left->global_attributes, _right->global_attributes,
-		  atts, ignore_any_object());
+                  atts, ignore_any_object());
 }
 
 
@@ -212,13 +212,13 @@ CompareNetcdf::
 compareDimensions()
 {
   run_comparisons(this, _left->dimensions, _right->dimensions, dims,
-		  ignore_any_object());
+                  ignore_any_object());
 }
 
 
 bool
 compare_relative_error(shared_ptr<CompareVariables> x,
-		       shared_ptr<CompareVariables> y)
+                       shared_ptr<CompareVariables> y)
 {
   return x->relative_error > y->relative_error;
 }
@@ -238,7 +238,7 @@ CompareNetcdf::
 compareVariables()
 {
   run_comparisons(this, _left->variables, _right->variables, vars,
-		  ignore_variable());
+                  ignore_variable());
 }
 
 
@@ -277,8 +277,8 @@ report(std::ostream& out)
     {
       if (!header)
       {
-	cout << "global attributes:\n";
-	header = true;
+        cout << "global attributes:\n";
+        header = true;
       }
       atts[i]->generateReport(out, style.derive(1));
     }
@@ -290,8 +290,8 @@ report(std::ostream& out)
     {
       if (!header)
       {
-	cout << "variables:\n";
-	header = true;
+        cout << "variables:\n";
+        header = true;
       }
       vars[i]->generateReport(out, style.derive(1));
     }
@@ -411,11 +411,11 @@ countDifferences()
 {
   int count = 0;
   count = count_if(vars.begin(), vars.end(),
-		   bind(mem_fn(&CompareVariables::isDifferent), _1));
+                   bind(mem_fn(&CompareVariables::isDifferent), _1));
   count += count_if(dims.begin(), dims.end(),
-		    bind(mem_fn(&CompareDimensions::isDifferent), _1));
+                    bind(mem_fn(&CompareDimensions::isDifferent), _1));
   count += count_if(atts.begin(), atts.end(),
-		    bind(mem_fn(&CompareAttributes::isDifferent), _1));
+                    bind(mem_fn(&CompareAttributes::isDifferent), _1));
   count += _warnings.size();
   count += times.isDifferent();
   return count;
@@ -446,7 +446,7 @@ computeDifferences()
     if (getRight())
     {
       return (getLeft()->textSummary() == getRight()->textSummary()) ?
-	Equal : Different;
+        Equal : Different;
     }
     return Deleted;
   }
@@ -534,7 +534,7 @@ compareObjects()
 
 CompareDimensions::
 CompareDimensions(CompareNetcdf* ncf,
-		  nc_dimension* left_, nc_dimension* right_):
+                  nc_dimension* left_, nc_dimension* right_):
   CompareObjects(ncf, left_, right_)
 {
 }
@@ -729,9 +729,9 @@ computeDifferences()
 
   // Check for attribute differences.
   run_comparisons(this->_ncf, left->attributes, right->attributes,
-		  atts, ignore_any_object());
+                  atts, ignore_any_object());
   int ndiff = count_if(atts.begin(), atts.end(),
-		       bind(mem_fn(&CompareAttributes::isDifferent), _1));
+                       bind(mem_fn(&CompareAttributes::isDifferent), _1));
   equal = equal && (ndiff == 0);
   // if there are any ranges where data differs, the variables are not equal.
   if (ranges.size()) equal = false;
@@ -752,7 +752,7 @@ generateReport(std::ostream& out, const ReportStyle& style)
   }
   // Dump attribute differences next, if any.
   int ndiff = count_if(atts.begin(), atts.end(),
-		       bind(mem_fn(&CompareAttributes::isDifferent), _1));
+                       bind(mem_fn(&CompareAttributes::isDifferent), _1));
   if ((ndiff || !dimsequal ||
        (style.getShowIndex() && ranges.size()) ||
        style.getShowEqual()) && !header)
@@ -771,15 +771,15 @@ generateReport(std::ostream& out, const ReportStyle& style)
     {
       if (i < (unsigned int)style.getReportLimit())
       {
-	out << style.derive(1, " - ") << left->rangeSummary(ranges[i]) << "\n";
-	out << style.derive(1, " + ") << right->rangeSummary(ranges[i]) << "\n";
+        out << style.derive(1, " - ") << left->rangeSummary(ranges[i]) << "\n";
+        out << style.derive(1, " + ") << right->rangeSummary(ranges[i]) << "\n";
       }
     }
     // Report on the total number of different points.
     if (total_differences)
     {
       out << style.derive(1, "==>") << ranges.size() << " ranges differ, "
-	  << total_differences << " points differ out of " << left->npoints << ".\n";
+          << total_differences << " points differ out of " << left->npoints << ".\n";
     }
   }
 
@@ -804,10 +804,10 @@ namespace
    **/
   std::string
   format_stats(const ReportStyle& style,
-	       nc_variable* var,
-	       const std::string& meantitle="",
-	       const std::string& minmaxtitle="",
-	       const std::string& pointstitle="")
+               nc_variable* var,
+               const std::string& meantitle="",
+               const std::string& minmaxtitle="",
+               const std::string& pointstitle="")
   {
     std::string minmax;
     if (style.getShowMinMax())
@@ -815,7 +815,7 @@ namespace
       minmax = minmaxtitle;
       if (var)
       {
-	minmax = str(format("{%.2f, %.2f}") % var->getMin() % var->getMax());
+        minmax = str(format("{%.2f, %.2f}") % var->getMin() % var->getMax());
       }
       minmax = str(format(" %15s") % minmax);
     }
@@ -866,7 +866,7 @@ reportStatistics(std::ostream& out, const ReportStyle& style)
   out << format_stats(style, left);
   out << format_stats(style, right);
   out << (left && right ? str(format("%12.8f %12.2f %11d")
-			      % absolute_error % relative_error % total_differences) : "");
+                              % absolute_error % relative_error % total_differences) : "");
   out << "\n";
   return out;
 }
@@ -888,8 +888,8 @@ meansNearEqual()
 template <typename T>
 bool
 compare_attribute_values(CompareNetcdf* ncf,
-			 nc_attribute* attleft,
-			 nc_attribute* attright)
+                         nc_attribute* attleft,
+                         nc_attribute* attright)
 {
   nc_att<T>* left = dynamic_cast<nc_att<T>*>(attleft);
   nc_att<T>* right = dynamic_cast<nc_att<T>*>(attright);

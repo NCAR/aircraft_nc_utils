@@ -156,7 +156,7 @@ public:
   generateReport(std::ostream& out, const ReportStyle& style)
   {
     throw CompareNetcdfException("FileComparison does not implement "
-				 "generateReport()");
+                                 "generateReport()");
   }
 
 protected:
@@ -238,7 +238,7 @@ class CompareDimensions : public CompareObjects<nc_dimension>
 {
 public:
   CompareDimensions(CompareNetcdf* ncf,
-		    nc_dimension* left, nc_dimension* right);
+                    nc_dimension* left, nc_dimension* right);
 
   virtual Result
   computeDifferences();
