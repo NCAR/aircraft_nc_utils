@@ -45,7 +45,7 @@ The aircraft NC utilities are a mix of C programs and python scripts.  Newer pro
 The C utilities build and run on any Unix/Linux operating system, including Mac OS X.  asc2cdf has no GUI, so it should compile anywhere.
 
 ### C Dependencies ###
- * netcdf-cxx-devel (on linux, will pull in netcdf-cxx, netcdf-devel, and netcdf; may just need "brew install netcdf" on a mac)  [What uses netcdf-cxx in nc_utils?  --cjw]
+ * netcdf (on linux netcdf-devel will pull in netcdf; may just need "brew install netcdf" on a mac)
  * log4cpp (needed by vardb)
  * xerces-c (needed by vardb)
  * asciidoc (needed by nc_compare to generate man pages)
