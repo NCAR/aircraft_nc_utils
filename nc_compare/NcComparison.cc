@@ -68,10 +68,29 @@ generateReport(std::ostream& out, const ReportStyle& style)
       << "Right file time period: " << rightbegin << " - " << rightend << "\n";
   out << style
       << "Number of times in common: " << noverlap << "\n";
+  if (style.getShowIndex())
+  {
+    auto ileft = uniqueleft.begin();
+    auto iright = uniqueright.begin();
+    int n = 0;
+    while (ileft != uniqueleft.end() && iright != uniqueright.end() &&
+           ++n <= style.getReportLimit())
+    {
+      if (ileft != uniqueleft.end() && 
+          (iright == uniqueright.end() || *ileft < *iright))
+      {
+	out << style.derive(1, " - ") << *ileft++ << "\n";
+      }
+      else
+      {
+	out << style.derive(1, " + ") << *iright++ << "\n";
+      }
+    }
+  }
   out << style
-      << "Number of unique times in left file: " << nuniqueleft << "\n";
+      << "Unique times in left: " << uniqueleft.size() << "\n";
   out << style
-      << "Number of unique times in right file: " << nuniqueright << "\n";
+      << "Unique times in right: " << uniqueright.size() << "\n";
   out << style
       << format("Percentage of overlap: %3.1f%%\n") % percent_overlap;
   return out;
@@ -101,8 +120,8 @@ computeDifferences()
   }
 
   noverlap = 0;
-  nuniqueleft = 0;
-  nuniqueright = 0;
+  uniqueleft.clear();
+  uniqueright.clear();
 
   unsigned int ileft = 0;
   unsigned int iright = 0;
@@ -120,38 +139,38 @@ computeDifferences()
 	}
 	else if (timesleft[ileft] < timesright[iright])
 	{
-	  ++nuniqueleft;
+	  uniqueleft.push_back(timesleft[ileft]);
 	  ++ileft;
 	}
 	else
 	{
-	  ++nuniqueright;
+	  uniqueright.push_back(timesright[iright]);
 	  ++iright;
 	}
       }
       else
       {
-	++nuniqueleft;
+	uniqueleft.push_back(timesleft[ileft]);
 	++ileft;
       }
     }
     else
     {
-      ++nuniqueright;
+      uniqueright.push_back(timesright[iright]);
       ++iright;
     }
   }
-  int ntotal = noverlap + nuniqueleft + nuniqueright;
+  unsigned int ntotal = noverlap + uniqueleft.size() + uniqueright.size();
   if (ntotal)
   {
     percent_overlap = 100.0 * float(noverlap) / float(ntotal);
   }
 
-  if (ntotal == nuniqueright)
+  if (ntotal == uniqueright.size())
   {
     return Comparison::Added;
   }
-  if (ntotal == nuniqueleft)
+  if (ntotal == uniqueleft.size())
   {
     return Comparison::Deleted;
   }
