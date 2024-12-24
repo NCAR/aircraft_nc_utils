@@ -41,7 +41,8 @@ NcCache(const std::string& path) :
 
 nc_time
 basetime_from_units(const std::string& units,
-		    const std::string& strptime_format)
+                    const std::string& strptime_format,
+                    boost::posix_time::time_duration& timestep)
 {
   int year, month, day, hour, minute, second, tz_offset;
 
@@ -63,8 +64,8 @@ basetime_from_units(const std::string& units,
   }
   else
   {
-    sscanf(units.c_str(), "seconds since %d-%d-%d %d:%d:%d %d",
-	   &year, &month, &day, &hour, &minute, &second, &tz_offset);
+    sscanf(units.c_str(), "%*s since %d-%d-%d %d:%d:%d %d",
+           &year, &month, &day, &hour, &minute, &second, &tz_offset);
   }
   // Sanity check.
   if (year == 0) year = 1970;
@@ -74,8 +75,16 @@ basetime_from_units(const std::string& units,
   if (minute < 0 || minute > 59) minute = 0;
   if (second < 0 || second > 59) second = 0;
 
+  // Handle units of seconds or microseconds.
+  if (units.find("seconds") == 0)
+    timestep = boost::posix_time::seconds(1);
+  else if (units.find("microseconds") == 0)
+    timestep = boost::posix_time::microseconds(1);
+  else
+    throw std::runtime_error("time units must be seconds or microseconds");
+
   return nc_time(boost::gregorian::date(year, month, day), 
-		 boost::posix_time::time_duration(hour, minute, second));
+                 boost::posix_time::time_duration(hour, minute, second));
 }
 
 
@@ -103,7 +112,9 @@ loadTimes()
   {
     strptime_format = att->as_string();
   }
-  _basetime = basetime_from_units(units->as_string(), strptime_format);
+  boost::posix_time::time_duration timestep;
+  _basetime = basetime_from_units(units->as_string(), strptime_format,
+                                  timestep);
 
   std::vector<double> dtimes(_vtime->npoints);
 
@@ -112,7 +123,7 @@ loadTimes()
   _times.resize(dtimes.size());
   for (unsigned int i = 0; i < dtimes.size(); ++i)
   {
-    _times[i] = _basetime + time_duration(0, 0, dtimes[i]);
+    _times[i] = _basetime + (timestep * dtimes[i]);
   }
 }
 
@@ -321,6 +332,10 @@ loadVariables()
     {
       vp = make_shared< nc_var<int> >(this, name, varid);
     }
+    else if (datatype == NC_INT64)
+    {
+      vp = make_shared< nc_var<int64_t> >(this, name, varid);
+    }
     else if (datatype == NC_SHORT)
     {
       vp = make_shared< nc_var<short> >(this, name, varid);
@@ -333,7 +348,7 @@ loadVariables()
     {
       for (int d = 0; d < ndims; ++d)
       {
-	vp->addDimension(dimensions[dimids[d]].get());
+      	vp->addDimension(dimensions[dimids[d]].get());
       }
       loadAttributes(vp->attributes, varid);
       variables.push_back(vp);

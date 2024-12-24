@@ -156,7 +156,7 @@ public:
   generateReport(std::ostream& out, const ReportStyle& style)
   {
     throw CompareNetcdfException("FileComparison does not implement "
-				 "generateReport()");
+                                 "generateReport()");
   }
 
 protected:
@@ -191,16 +191,16 @@ protected:
   nc_time rightend;
 
   /// Number of times which are in common between the two files.
-  int noverlap;
+  unsigned int noverlap;
 
   /// Percentage of times in common out of union of all times.
   float percent_overlap;
 
-  /// Number of times on left side which are unique.
-  int nuniqueleft;
+  /// Times on left side which are unique.
+  std::vector<nc_time> uniqueleft;
 
-  /// Number of times on right side which are unique.
-  int nuniqueright;
+  /// Times on right side which are unique.
+  std::vector<nc_time> uniqueright;
 
 };
 
@@ -238,7 +238,7 @@ class CompareDimensions : public CompareObjects<nc_dimension>
 {
 public:
   CompareDimensions(CompareNetcdf* ncf,
-		    nc_dimension* left, nc_dimension* right);
+                    nc_dimension* left, nc_dimension* right);
 
   virtual Result
   computeDifferences();
