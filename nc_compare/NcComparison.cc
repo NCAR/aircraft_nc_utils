@@ -68,22 +68,24 @@ generateReport(std::ostream& out, const ReportStyle& style)
       << "Right file time period: " << rightbegin << " - " << rightend << "\n";
   out << style
       << "Number of times in common: " << noverlap << "\n";
-  if (style.getShowIndex())
+  if (style.getShowTimes())
   {
+    auto rleft = style.derive(1, " - ");
+    auto rright = style.derive(1, " + " + std::string(40, ' '));
     auto ileft = uniqueleft.begin();
     auto iright = uniqueright.begin();
     int n = 0;
-    while (ileft != uniqueleft.end() && iright != uniqueright.end() &&
+    while ((ileft != uniqueleft.end() || iright != uniqueright.end()) &&
            ++n <= style.getReportLimit())
     {
       if (ileft != uniqueleft.end() && 
           (iright == uniqueright.end() || *ileft < *iright))
       {
-        out << style.derive(1, " - ") << *ileft++ << "\n";
+        out << rleft << *ileft++ << "\n";
       }
       else
       {
-        out << style.derive(1, " + ") << *iright++ << "\n";
+        out << rright << *iright++ << "\n";
       }
     }
   }
@@ -123,41 +125,37 @@ computeDifferences()
   uniqueleft.clear();
   uniqueright.clear();
 
-  unsigned int ileft = 0;
-  unsigned int iright = 0;
-  while (ileft < timesleft.size() || iright < timesright.size())
+  auto ileft = timesleft.begin();
+  auto iright = timesright.begin();
+  while (ileft != timesleft.end() || iright != timesright.end())
   {
-    if (ileft < timesleft.size())
+    if (ileft != timesleft.end())
     {
-      if (iright < timesright.size())
+      if (iright != timesright.end())
       {
-        if (timesleft[ileft] == timesright[iright])
+        if (*ileft == *iright)
         {
           ++noverlap;
           ++ileft;
           ++iright;
         }
-        else if (timesleft[ileft] < timesright[iright])
+        else if (*ileft < *iright)
         {
-          uniqueleft.push_back(timesleft[ileft]);
-          ++ileft;
+          uniqueleft.push_back(*ileft++);
         }
         else
         {
-          uniqueright.push_back(timesright[iright]);
-          ++iright;
+          uniqueright.push_back(*iright++);
         }
       }
       else
       {
-        uniqueleft.push_back(timesleft[ileft]);
-        ++ileft;
+        uniqueleft.push_back(*ileft++);
       }
     }
     else
     {
-      uniqueright.push_back(timesright[iright]);
-      ++iright;
+      uniqueright.push_back(*iright++);
     }
   }
   unsigned int ntotal = noverlap + uniqueleft.size() + uniqueright.size();

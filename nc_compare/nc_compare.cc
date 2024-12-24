@@ -30,6 +30,7 @@ nc_compare(int argc, char *argv[])
     ("showequal", "Show equal objects as well as different.")
     ("showindex",
      "For vector values, report the indexes of the differences.")
+    ("showtimes", "Report different time coordinates.")
     ("ignore", po::value<std::vector<std::string> >()->composing(),
      "Ignore attributes and variables with the given name.  "
      "Add * as suffix or prefix to match a substring.  "
@@ -123,6 +124,7 @@ nc_compare(int argc, char *argv[])
   ReportStyle& style = ncdiff.style();
   style.showEqual(vm.count("showequal") > 0);
   style.showIndex(vm.count("showindex") > 0);
+  style.showTimes(vm.count("showtimes") > 0);
   style.useRightBlanks(vm.count("use-right-blanks") > 0);
   style.showMinMax(vm.count("minmax") > 0);
 
