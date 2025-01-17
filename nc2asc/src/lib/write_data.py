@@ -21,7 +21,7 @@ def formatData(instance):
         instance.long_name = {}
         instance.variables = {}
         instance.fileheader = {}
-        instance.project_manager = 'Patrick Veres, Pavel Romashkin'
+        instance.project_manager = 'Patrick Veres, Pavel Romashkin, Peisang Tsai'
         try:
             instance.tail_number = nc.attrs['Platform']
         except KeyError:
@@ -92,7 +92,7 @@ def writeData(instance):
                 pass
 ################################################################################################
     # determine which output file to use based on mode
-    try:
+    try: 
         instance.output_file = os.path.join(instance.outputdirbox.text(), instance.outputfilebox.text())
         start = instance.start.text()
         end = instance.end.text()
@@ -101,10 +101,16 @@ def writeData(instance):
         instance.fillvalue = -32767 if instance.fillvalue1.isChecked() else 'Blank' if instance.fillvalue2.isChecked() else 'Replicate'
         instance.delimiter = 'comma' if instance.comma.isChecked() else 'space'
         instance.header = 'Plain' if instance.header1.isChecked() else 'ICARTT' if instance.header2.isChecked() else 'AMES'
-    except Exception as e:
-        instance._log_exception(e)
+    except:
+        #not gui mode
+        pass
+    try:
         start = instance.start_time
         end = instance.end_time
+        
+    except Exception as e:
+        instance._log_exception(e)
+        
     try:
         os.remove(str(instance.output_file))
     except Exception:
@@ -123,14 +129,6 @@ def writeData(instance):
     print('Continuing...')
         # gui fields
         
-    # Confirm formatting-- set from batchfile or defaults if using CLI
-    # print('Date Format: ' + instance.date)            
-    # print('Time Format: ' + instance.time)
-    # print('Delimiter Format: ' + instance.delimiter)
-    # print('FillValue Format: ' + str(instance.fillvalue))
-    # print('Header Format: ' + instance.header)
-
-        # get averaging information from window then batchfile
     instance.averaging_window = getattr(instance, 'averagingbox', None)
     if instance.averaging_window:
         instance.averaging_window = instance.averaging_window.text()
@@ -186,13 +184,24 @@ def PLAINHeader(instance, dataframe):
     if instance.fillvalue == 'Replicate':
         dataframe = dataframe.fillna(method='ffill')
         na_rep = None
-    instance.write = add_fills(instance.write, na_fill)
+    # Drop levels until there is only one level left in the columns
+    while isinstance(dataframe.columns, pd.MultiIndex):
+        try:
+            dataframe.columns = dataframe.columns.droplevel(1)
+        except IndexError:
+            break
+    dataframe = add_fills(dataframe, na_fill)
     sep = ',' if instance.delimiter == 'comma' else ' '
     cellsizes_lines = []
     if instance.histo:
+        print(dataframe.columns)
         for var in instance.cellsize_dict:
-            cellsizes_lines.append(f'{var} Cellsizes: {", ".join(map(str, instance.cellsize_dict[var].flatten()))}\n')
-        
+            print(var)
+            cellsize_len=0
+            if var in dataframe.columns:
+                print(var)
+                cellsizes_lines.append(f'{var} Cellsizes: {", ".join(map(str, instance.cellsize_dict[var].flatten()))}\n')
+                cellsize_len+=1     
     # Write the Cellsizes information to the file
         with open(instance.output_file, 'w') as f:
             f.writelines(cellsizes_lines)
@@ -248,23 +257,29 @@ def ICARTTHeader(instance, dataframe):
                 if line.startswith('<YYYY, MM, DD,>'):
                     lines[i] = f'{instance.data_date}, {instance.today}\n'
                 if line.startswith('<varNumber>'):
+                    print(instance.varNumber)
                     lines[i] = f'{instance.varNumber}\n'
                 if line.startswith('<1.0>'):
                     lines[i] = '1.0,' * int(instance.varNumber)
                     lines[i] = lines[i].rstrip(',') + '\n'
                 if line.startswith('<-99999.0>'):
+                    print('Replacing fill values')
                     lines[i] = '-99999.0,' * int(instance.varNumber)
                     lines[i] = lines[i].rstrip(',') + '\n'
             f.seek(0)
             f.writelines(lines)
+            print(lines)
 
         with open('./header2.tmp', 'r+') as f:
             lines = f.readlines()
             cells_len=0
             if instance.histo:
                 for var in instance.cellsize_dict:
-                    lines.insert(3, f'{var} Cellsizes: {", ".join(map(str, instance.cellsize_dict[var].flatten()))}\n')
-                cells_len = len(instance.cellsize_dict)
+                    cellsize_len=0
+                    if var in dataframe.columns:
+                        lines.insert(3, f'{var} Cellsizes: {", ".join(map(str, instance.cellsize_dict[var].flatten()))}\n')
+                        cellsize_len+=1
+                cells_len = cellsize_len
             for i, line in enumerate(lines):
                 if line.startswith('18'):
                     lines[i] =str(cells_len+18) + '\n'
@@ -274,6 +289,7 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = line.replace('RA', instance.version)
             f.seek(0)
             f.writelines(lines)
+            print(lines)
 
         instance.columns = pd.DataFrame(dataframe.columns.values.tolist())
         instance.fileheader = instance.fileheader.loc[instance.fileheader[0].isin(instance.columns[0])]
@@ -288,6 +304,7 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = f'{count}\n'
                 f.seek(0)
                 f.writelines(lines)
+            #print(lines)
 
         instance.icartt_filename_date = instance.data_date.replace(', ', '')
         instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{instance.version}.ict'

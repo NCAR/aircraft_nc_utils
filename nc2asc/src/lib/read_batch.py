@@ -1,4 +1,8 @@
 ##WRITING BATCHFILE##
+import os 
+from os.path import exists
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QMessageBox, QFileDialog
 
 def saveBatchFile_GUI(instance):
 
@@ -109,7 +113,7 @@ def process_batch_file(instance, inputbatch_file):
         'version=': lambda ln: setattr(instance, 'version', ln.replace('version=', '').strip()),
         'ti=': lambda ln: setattr(instance, 'ti', ln[3:].strip()),
         'avg=': lambda ln: setattr(instance, 'avg', _format_avg(ln[4:])),
-        'Vars=': lambda ln: _add_variable(ln),
+        'Vars=': lambda ln: _add_variable(instance,ln),
     }
     
     with open(inputbatch_file, 'r') as fil:
@@ -245,7 +249,7 @@ def _handle_directive(instance, line, attr_name, directive_map):
     if line in directive_map:
         gui_attr, value = directive_map[line]
         try:
-            getattr(instance, gui_attr).setChecked(True)
+            getattr(instance, gui_attr).setChecked(True) ##TODO check this
             setattr(instance, attr_name, value)
         except AttributeError:
             setattr(instance, attr_name, value)

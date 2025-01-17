@@ -1,5 +1,12 @@
 # -*- python -*-
-
+import os
+# Define the source files
+support_files = [
+    './lib/write_data.py',
+    './lib/process_nc.py',
+    './lib/read_batch.py',
+    # Add any other new files here
+]
 tools  = ['default', 'prefixoptions']
 env = Environment(tools=tools)
 
@@ -8,3 +15,5 @@ env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header1.txt')
 env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header1_ames.txt')
 env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header2.txt')
 env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header2_ames.txt')
+for file in support_files:
+    env.Install('$INSTALL_PREFIX/lib/nc2asc', file)
