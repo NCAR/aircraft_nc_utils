@@ -40,6 +40,7 @@ gsl_stats_minmax(T* min, T* max, \
   GSL_STATS(double,)
   GSL_STATS(float,float_)
   GSL_STATS(int,int_)
+  GSL_STATS(int64_t,long_)
   GSL_STATS(unsigned int,uint_)
   GSL_STATS(short,short_)
   GSL_STATS(unsigned short,ushort_)

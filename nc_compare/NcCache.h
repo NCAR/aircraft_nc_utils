@@ -424,6 +424,9 @@ public:
   virtual void visit(nc_var<int>*)
   {};
 
+  virtual void visit(nc_var<int64_t>*)
+  {};
+
   virtual void visit(nc_var<unsigned int>*)
   {};
 
@@ -598,6 +601,7 @@ nc_datatype()
 DEFINE_TYPENAME(double,double,NC_DOUBLE)
 DEFINE_TYPENAME(float,float,NC_FLOAT)
 DEFINE_TYPENAME(int,int,NC_INT)
+DEFINE_TYPENAME(int64_t,int64_t,NC_INT64)
 DEFINE_TYPENAME(unsigned int,uint,NC_UINT)
 DEFINE_TYPENAME(short,short,NC_SHORT)
 DEFINE_TYPENAME(unsigned short,ushort,NC_USHORT)

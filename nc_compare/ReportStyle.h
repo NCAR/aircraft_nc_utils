@@ -41,6 +41,18 @@ public:
   }
 
   void
+  showTimes(bool flag)
+  {
+    _show_times = flag;
+  }
+
+  bool
+  getShowTimes() const
+  {
+    return _show_times;
+  }
+
+  void
   useRightBlanks(bool flag)
   {
     _use_right_blanks = flag;
@@ -136,6 +148,7 @@ private:
   bool _use_right_blanks;
   int _report_limit;
   bool _minmax;
+  bool _show_times;
 };
 
 
