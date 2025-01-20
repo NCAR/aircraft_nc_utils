@@ -15,7 +15,7 @@ env = Environment(GLOBAL_TOOLS = [NC_utils])
 
 env.Require('vardb')
 
-subdirs = ['nc2asc/src', 'asc2cdf', 'asc2cdf_HRT', 'flt_area', 'flt_time', 'mkcdf', 'nc2iwg1', 'ncav', 'nc_compare', 'nc_dips', 'ncextr', 'ncfillvar', 'nc_gap', 'ncmerge', 'nc_sane', 'ncstat', 'ncvarlist']
+subdirs = ['nc2asc/src', 'asc2cdf', 'asc2cdf_HRT', 'flt_area', 'flt_time', 'mkcdf', 'nc2iwg1', 'ncav', 'nc_compare', 'nc_dips', 'ncextr', 'ncfillvar', 'nc_gap', 'ncmerge', 'ncstat', 'ncvarlist']
 
 for subdir in subdirs:
         SConscript(os.path.join(subdir, 'SConscript'))
