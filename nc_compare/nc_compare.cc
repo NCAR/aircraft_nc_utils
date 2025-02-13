@@ -24,7 +24,17 @@ nc_compare(int argc, char *argv[])
 {
   // Declare the supported options.
   po::options_description
-    desc("nc_compare [options] primary_file secondary_file");
+    desc(
+R"(Usage: nc_compare [options] left_file right_file
+
+Compare two netCDF files and report the differences.  Differences can be
+reported between global attributes, dimensions, variables, variable
+attributes, and time coordinates, as well as statistical or per-element
+comparisons of variable data.  Variables with different types between the left
+and right file report the different types in the variable headings, and the
+variable values themselves are compared as doubles.
+
+Options)");
   desc.add_options()
     ("help", "Show this help message.")
     ("showequal", "Show equal objects as well as different.")
