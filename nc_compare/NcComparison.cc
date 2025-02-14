@@ -586,9 +586,17 @@ compare_variables(CompareNetcdf* ncf, nc_var<T>* left, nc_variable* _right)
   }
   do
   {
-    // If not blanked on the right and not near equal, add to a range.
-    if ((!blanks || !blanks->isMissing(coords.index)) &&
-        !ncf->near_equal(left->get(coords), right->get(coords)))
+    // If blanked on the right or near equal, then consider that a match.  Add
+    // to a range whatever coordinates do not match.  If the types are
+    // different, then compare the values cast to double.
+    bool matched = (blanks && blanks->isMissing(coords.index));
+    if (!matched && right)
+      matched = ncf->near_equal(left->get(coords), right->get(coords));
+    else if (!matched)
+      matched = ncf->near_equal(left->getDouble(coords), 
+                                _right->getDouble(coords));
+
+    if (!matched)
     {
       if (!inrange)
       {

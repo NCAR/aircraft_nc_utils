@@ -295,6 +295,9 @@ struct nc_variable : public nc_object
   virtual void
   loadValues() = 0;
 
+  virtual double
+  getDouble(const coordinates& where) = 0;
+
   virtual void
   computeStatistics(nc_variable* blanks = 0) = 0;
 
@@ -393,6 +396,12 @@ public:
   get(const coordinates& where)
   {
     return data[where.index];
+  }
+
+  virtual double
+  getDouble(const coordinates& where) override
+  {
+    return static_cast<double>(get(where));
   }
 
   virtual bool
