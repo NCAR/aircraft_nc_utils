@@ -10,6 +10,7 @@
 import os
 import sys
 import argparse
+import math
 from glob import glob
 from netCDF4 import Dataset
 
@@ -36,7 +37,9 @@ class FltArea():
         parser.add_argument('area_file_pattern', type=str, nargs='*',
                             help='file pattern to process e.g. ' +
                             '/scr/raf/Prod_Data/<PROJECT>rf0[1-4].nc')
-
+        # add optional argument to round the values
+        parser.add_argument('-R', '--round', action='store_true',
+                            help='round the values to the nearest integer')
         if len(sys.argv) == 1:
             parser.print_help(sys.stderr)
             sys.exit(1)
@@ -131,6 +134,13 @@ class FltArea():
             self.lat_min = min(self.lat)
             self.lon_min = min(self.lon)
             self.lon_max = max(self.lon)
+            ## add rounding option
+            if args.round:
+                #If rounding added, round the values to the nearest integer rounding down for min and up for max
+                self.lat_max = math.ceil(self.lat_max)
+                self.lat_min = math.floor(self.lat_min)
+                self.lon_min = math.floor(self.lon_min)
+                self.lon_max = math.ceil(self.lon_max)
 
             print("\nFLIGHT AREA:")
             print('Maximum Latitude: '+str(self.lat_max))
