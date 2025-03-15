@@ -19,7 +19,12 @@ if not conf.CheckLibWithHeader('netcdf', 'netcdf.h', 'C'):
     print('netCDF must be installed!')
     Exit(1)
 
-if not conf.CheckLibWithHeader('netcdf_c++4', 'netcdf', 'C++'):
+
+if env['PLATFORM'] == 'darwin':
+  if not conf.CheckLibWithHeader('netcdf-cxx4', 'netcdf', 'C++'):
+    print('netCDF C++ must be installed!')
+    Exit(1)
+elif not conf.CheckLibWithHeader('netcdf_c++4', 'netcdf', 'C++'):
     print('netCDF C++ must be installed!')
     Exit(1)
 
