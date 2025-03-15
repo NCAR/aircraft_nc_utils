@@ -1,6 +1,6 @@
 # -*- python -*-
 
-tools=['default', 'prefixoptions', 'netcdfcxx']
+tools=['default', 'prefixoptions', 'netcdfcxx4', 'raf']
 env = Environment(tools=tools)
 env.Append(CXXFLAGS='-g -Werror')
 
@@ -19,7 +19,7 @@ if not conf.CheckLibWithHeader('netcdf', 'netcdf.h', 'C'):
     print('netCDF must be installed!')
     Exit(1)
 
-if not conf.CheckLibWithHeader('netcdf_c++', 'netcdfcpp.h', 'C++'):
+if not conf.CheckLibWithHeader('netcdf_c++4', 'netcdf', 'C++'):
     print('netCDF C++ must be installed!')
     Exit(1)
 

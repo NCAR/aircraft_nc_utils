@@ -16,9 +16,8 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 2011
 #include <string>
 #include <cstring>
 
-#include <netcdfcpp.h>
+#include <netcdf>
 
-using namespace std;
 
 static bool checkWholeFile = false;	// Just check when speed above 25 m/s (take-off).
 static bool checkDerived = false;	// 
@@ -29,6 +28,10 @@ static int maxGap = 0;
 static int minGap = 0;
 
 void processArgs(char **argv);
+
+using namespace std;
+using namespace netCDF;
+
 
 /* -------------------------------------------------------------------- */
 void
@@ -44,7 +47,7 @@ usage()
 }
 
 time_t
-startTime(NcVar *var)
+startTime(NcVar &var)
 {
   static time_t st = 0;
 
@@ -52,8 +55,11 @@ startTime(NcVar *var)
   {
     // Get start time from Time units attribute.
     struct tm ft;
-    NcAtt *time_units = var->get_att("units");
-    strptime(time_units->as_string(0), "seconds since %F %T %z", &ft);
+    char frmt[128];
+    NcVarAtt time_units = var.getAtt("units");
+    time_units.getValues(frmt);
+    strptime(frmt, "seconds since %F %T %z", &ft);
+    ft.tm_isdst = -1;
     st = mktime(&ft);
   }
 
@@ -61,7 +67,7 @@ startTime(NcVar *var)
 }
 
 string
-formatTime(NcVar *var, float *data, size_t index)
+formatTime(NcVar &var, float *data, size_t index)
 {
   char buffer[128];
   // Get start time, add Time data offset, and generate an ascii timestamp.
@@ -73,32 +79,33 @@ formatTime(NcVar *var, float *data, size_t index)
 
 
 float *
-printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
+printStartTimes(NcFile *inFile, NcVar &timeVar, float *time_data)
 {
   cout	<< "File start time : " << formatTime(timeVar, time_data, 0) << ", "
-	<< timeVar->num_vals() << " seconds long.\n";
+	<< timeVar.getDim(0).getSize() << " seconds long.\n";
 
   if (checkWholeFile)
     return 0;
 
   // Get ground speed.
-  NcVar *gspdVar =  inFile.get_var("GSPD");	// New INS name for ground speed.
-  if (gspdVar == 0)
-    gspdVar =  inFile.get_var("GSF");	// Old INS name for ground speed.
-  if (gspdVar == 0)
-    gspdVar = inFile.get_var("TASX");
+  NcVar gspdVar =  inFile->getVar("GSPD");	// New INS name for ground speed.
+  if (gspdVar.isNull())
+    gspdVar =  inFile->getVar("GSF");	// Old INS name for ground speed.
+  if (gspdVar.isNull())
+    gspdVar = inFile->getVar("TASX");
 
-  if (gspdVar == 0)
+  if (gspdVar.isNull())
   {
     cerr << "GSPD, GSF, and TASX not found\n";
     return 0;
   }
 
-  float *gspd_data = new float[gspdVar->num_vals()];
-  gspdVar->get(gspd_data, gspdVar->edges());
+  int nValues = gspdVar.getDim(0).getSize();
+  float *gspd_data = new float[nValues];
+  gspdVar.getVar(gspd_data);
 
   size_t spd_indx;
-  for (spd_indx = 0; spd_indx < gspdVar->num_vals(); ++spd_indx)
+  for (spd_indx = 0; spd_indx < nValues; ++spd_indx)
   {
     if (gspd_data[spd_indx] > 5.0)
     {
@@ -108,7 +115,7 @@ printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
     gspd_data[spd_indx] = 0.0;	// zero out any pre-take-off missing data.
   }
 
-  for (; spd_indx < gspdVar->num_vals(); ++spd_indx)
+  for (; spd_indx < nValues; ++spd_indx)
   {
     if (gspd_data[spd_indx] > 25.0)
     {
@@ -116,7 +123,7 @@ printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
       break;
     }
   }
-  for (spd_indx = gspdVar->num_vals() - 1 ; spd_indx > 0; --spd_indx)
+  for (spd_indx = nValues - 1 ; spd_indx > 0; --spd_indx)
   {
     if (gspd_data[spd_indx] < 5.0)
       gspd_data[spd_indx] = 0.0;	// zero out an trailing missing values.
@@ -127,7 +134,7 @@ printStartTimes(NcFile & inFile, NcVar *timeVar, float *time_data)
       break;
     }
   }
-  cout	<< "File end time   : " << formatTime(timeVar, time_data, timeVar->num_vals()-1) << endl;
+  cout	<< "File end time   : " << formatTime(timeVar, time_data, nValues-1) << endl;
 
   return gspd_data;
 }
@@ -140,43 +147,46 @@ main(int argc, char *argv[])
 
   processArgs(argv);
 
-  NcFile inFile(argv[argc-1]);
+  NcFile * inFile = new NcFile(argv[argc-1], NcFile::read);
 
-  if (!inFile.is_valid())
+  if (inFile->isNull())
   {
     cerr << "nc_gap: Failed to open input file, exiting.\n";
     return 1;
   }
 
   putenv((char *)"TZ=UTC");     // Perform all time calculations at UTC.
-  NcError * ncErr = new NcError(NcError::silent_nonfatal);
 
   // Get time variable and data.
-  NcVar *timeVar =  inFile.get_var("Time");
-  float *time_data = new float[timeVar->num_vals()];
-  timeVar->get(time_data, timeVar->edges());
+  NcVar timeVar =  inFile->getVar("Time");
+  float *time_data = new float[timeVar.getDim(0).getSize()];
+  timeVar.getVar(time_data);
 
   float *speed_data = printStartTimes(inFile, timeVar, time_data);
 
-  for (int i = 0; i < inFile.num_vars(); ++i)
+  std::multimap<std::string, NcVar> vars = inFile->getVars();
+  for (auto it = vars.begin(); it != vars.end(); ++it)
   {
-    NcVar *var = inFile.get_var(i);
+    NcVar var = it->second;
 
-    if (!var || !var->is_valid())
-      continue;
-
-    if (var->num_dims() > 1)	// Stick to time-series scalars for the time being.
+    if (var.getDimCount() > 1)	// Stick to time-series scalars for the time being.
       continue;
 
     // Are we skipping derived?
-    if (checkDerived == false && var->get_att("Dependencies"))
-      continue;
+    if (checkDerived == false)
+    {
+      try {
+        NcVarAtt att = var.getAtt("Dependencies");
+        continue;
+      } catch (netCDF::exceptions::NcException& e) { }
+    }
 
 
-    float *data = new float[var->num_vals()];
-    var->get(data, var->edges());
+    int numValues = var.getDim(0).getSize();
+    float *data = new float[numValues];
+    var.getVar(data);
 
-    for (int j = 0; j < var->num_vals(); ++j)
+    for (int j = 0; j < numValues; ++j)
     {
       if (speed_data && speed_data[j] >= 0.0 && speed_data[j] < 20.0)
         continue;
@@ -184,17 +194,17 @@ main(int argc, char *argv[])
       if (data[j] == -32767.0)	// Get missing value first.
       {
         int start = j;
-        for (; j < var->num_vals() && data[j] == -32767.0; ++j)
+        for (; j < numValues && data[j] == -32767.0; ++j)
           ;
 
         int gap = j-start;
         if ((gapLessThan && gap > maxGap) || (gapGreaterThan && gap < minGap))
           continue;
 
-        cout << left << setw(20) << var->name();
+        cout << left << setw(20) << var.getName();
         cout << formatTime(timeVar, time_data, start);
         cout << " - " << formatTime(timeVar, time_data, (j-1)) << " : ";
-        if (gap == var->num_vals())
+        if (gap == numValues)
           cout << " whole flight.\n";
         else
           cout << setw(6) << gap << " seconds\n";
