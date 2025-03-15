@@ -5,39 +5,35 @@
 #include <ctime>
 #include <cstring>
 
-#include <netcdfcpp.h>
+#include <netcdf>
 
 using namespace std;
+using namespace netCDF;
 
 
-NcValues *
-getData(NcFile * file, const char * name, long int * step)
+float *
+getData(NcFile * file, const char * name, size_t * step)
 {
-  NcDim * dim;
-  NcVar * var = file->get_var(name);
-  *step =1;
+  NcDim dim;
+  NcVar var = file->getVar(name);
+  *step = 1;
 
-  if (var == 0)		// Variable does not exist.
-    return 0;
-
-  // Figure out how many dimensions variable has
-  int ndims=var->num_dims();
-  if (ndims > 1)
-  {
-    for (int i=1; i < ndims; ++i)
-    {
-      dim = var->get_dim(i);
-      *step *= dim->size();
-    }
-  }
-
-  if (var == 0 || var->is_valid() == false)
+  if (var.isNull())		// Variable does not exist.
   {
     cerr << "No variable " << name << "?" << endl;
     return 0;
   }
 
-  NcValues * data = var->values();
+  // Figure out how many dimensions variable has
+  int ndims = var.getDimCount();
+  if (ndims > 1)
+  {
+    for (int i = 1; i < ndims; ++i)
+      *step *= var.getDim(i).getSize();
+  }
+
+  float *data = new float[var.getDim(0).getSize() * *step];
+  var.getVar(data);
 
   if (data == 0)
   {
@@ -50,26 +46,33 @@ getData(NcFile * file, const char * name, long int * step)
 
 
 time_t
-getStartTime(NcVar * time_var)
+getStartTime(NcVar & time_var)
 {
-  NcAtt * unit_att = time_var->get_att("units");
-  NcAtt * frmt_att = time_var->get_att("strptime_format");
-
-  if (unit_att == 0 || unit_att->is_valid() == false)
+  NcVarAtt unit_att, frmt_att;
+  try {
+    unit_att = time_var.getAtt("units");
+  } catch (netCDF::exceptions::NcException& e)
   {
-    cerr << "Units not present for time variable.\n";
+    cerr << "Units attribute not present for time variable.\n";
     return 0;
   }
 
-  char format[1000];
-  if (frmt_att == 0 || frmt_att->is_valid() == false)
+  try {
+    frmt_att = time_var.getAtt("strptime_format");
+  } catch (netCDF::exceptions::NcException& e) { }
+
+
+  char units[128], format[128];
+  unit_att.getValues(units);
+  if (frmt_att.isNull())
     strcpy(format, "seconds since %F %T %z");
   else
-    strcpy(format, frmt_att->as_string(0));
+    frmt_att.getValues(format);
 
   struct tm StartFlight;
   memset(&StartFlight, 0, sizeof(struct tm));
-  strptime(unit_att->as_string(0), format, &StartFlight);
+  StartFlight.tm_isdst = -1;
+  strptime(units, format, &StartFlight);
 
   time_t start_t = mktime(&StartFlight);
   if (start_t <= 0)
@@ -86,7 +89,7 @@ main(int argc, char *argv[])
   float	speed_cutoff = 25.0;	// Default.
   char	variable[32] = "GSPD";
   float	delta = 1.0;
-  long int step;
+  size_t step;
   bool	nimbus_output = false;
   bool	debug = false;
 
@@ -134,44 +137,49 @@ main(int argc, char *argv[])
     }
   }
 
-  // keep program from exiting, if netCDF API doesn't find something.
-  NcError * ncErr = new NcError(NcError::silent_nonfatal);
 
   putenv((char *)"TZ=UTC");     // Force all time routines to work in UTC.
 
   // Open NetCDF file
-  NcFile * ncFile = new NcFile(argv[indx], NcFile::ReadOnly);
-  if (ncFile->is_valid() == false)
+  NcFile *ncFile;
+  try
+  {
+    ncFile = new NcFile(argv[indx], NcFile::read);
+  } catch (netCDF::exceptions::NcException& e)
   {
     cerr << "Could not open NetCDF file '" << argv[indx] << "' for reading.\n";
     return 1;
   }
 
-  NcAtt * project = ncFile->get_att("project");
-  if (project == 0 || project->is_valid() == false)
+  NcGroupAtt project = ncFile->getAtt("project");
+  if (project.isNull())
   {
     // If :project not present, look for :ProjectName
-    project = ncFile->get_att("ProjectName");
-    if (project == 0 || project->is_valid() == false)
+    project = ncFile->getAtt("ProjectName");
+    if (project.isNull())
     {
       cerr << "Neither global variable :project nor :ProjectName present in file.\n";
       return 0;
     }
   }
 
-  NcAtt * flight = ncFile->get_att("FlightNumber");
-  if (flight == 0 || flight->is_valid() == false)
+  NcGroupAtt flight = ncFile->getAtt("FlightNumber");
+  if (flight.isNull())
   {
     cerr << "Global variable :FlightNumber not present in file.\n";
     return 0;
   }
 
   if (!nimbus_output)
+  {
+    std::string proj, fl;
+    project.getValues(proj);
+    flight.getValues(fl);
     cout	<< argv[indx] << ":"
-		<< project->as_string(0) << ":"
-		<< flight->as_string(0) << ":\n";
+		<< proj << ":" << fl << ":\n";
+  }
 
-  NcValues * time_data = getData(ncFile, "Time", &step);
+  float *time_data = getData(ncFile, "Time", &step);
   if (time_data == 0)
   {
     cerr << "Variable Time not present in file.\n";
@@ -180,10 +188,12 @@ main(int argc, char *argv[])
 
   // If user specified variable, use that.
   // Try ground speed first, otherwise airspeed.
-  NcValues * speed_data = getData(ncFile, variable, &step);
+  float *speed_data = getData(ncFile, variable, &step);
   if (speed_data == 0)
-    strncpy(variable,"TASX",5);
+  {
+    strcpy(variable, "TASX");
     speed_data = getData(ncFile, variable, &step);
+  }
 
   if (!nimbus_output)
     cout << "Using variable " << variable << "\n";
@@ -192,8 +202,8 @@ main(int argc, char *argv[])
     return 1;
 
   // Get flight start time. = FileStartTime + first Time[Offset] value.
-  NcVar * time_var = ncFile->get_var("Time");
-  time_t start_t = getStartTime(time_var) + time_data->as_int(0);
+  NcVar time_var = ncFile->getVar("Time");
+  time_t start_t = getStartTime(time_var) + (int)time_data[0];
   time_t start = 0, end = 0;	// What come up with.
 
   if (start_t <= 0)
@@ -205,14 +215,15 @@ main(int argc, char *argv[])
   // Locate Start of Flight
   long i;
   long j=0;
-  for (i = 0; i < time_var->num_vals(); ++i)
+  long nValues = time_var.getDim(0).getSize();
+  for (i = 0; i < nValues; ++i)
   {
     j += step;
 
     if (debug)
-      cerr << i << " " << j << " " << speed_data->as_float(j) << "\n";
+      cerr << i << " " << j << " " << speed_data[j] << "\n";
 
-    if (((delta > 0.0 && speed_data->as_float(j) > speed_cutoff) || (delta < 0.0 && speed_data->as_float(j) < speed_cutoff)) && speed_data->as_float(j) != -32767.0)
+    if (((delta > 0.0 && speed_data[j] > speed_cutoff) || (delta < 0.0 && speed_data[j] < speed_cutoff)) && speed_data[j] != -32767.0)
     {
       start = start_t + i;
 
@@ -229,11 +240,11 @@ main(int argc, char *argv[])
   j += 60*step;
 
   // Locate End of Flight
-  for (; i < time_var->num_vals(); ++i)
+  for (; i < nValues; ++i)
   {
     j += step;
 
-    if (((delta > 0.0 && speed_data->as_float(j) < speed_cutoff) || (delta < 0.0 && speed_data->as_float(j) > speed_cutoff)) && speed_data->as_float(j) != -32767.0)
+    if (((delta > 0.0 && speed_data[j] < speed_cutoff) || (delta < 0.0 && speed_data[j] > speed_cutoff)) && speed_data[j] != -32767.0)
     {
       end = start_t + i;
 
@@ -267,12 +278,12 @@ main(int argc, char *argv[])
   }
 
 
-  if (speed_data->as_float(0) > 80.0)
-    cout	<< endl << " First TAS value is " << speed_data->as_float(0)
+  if (speed_data[0] > 80.0)
+    cout	<< endl << " First TAS value is " << speed_data[0]
 		<< "m/s, incomplete netCDF file?" << endl;
 
-  if (speed_data->as_float(time_var->num_vals()*step-1) > 80.0)
-    cout << endl << " Last TAS value is " << speed_data->as_float(time_var->num_vals()-1)
+  if (speed_data[nValues * step-1] > 80.0)
+    cout << endl << " Last TAS value is " << speed_data[nValues-1]
 	<< "m/s, incomplete netCDF file?" << endl;
 
   delete time_data;

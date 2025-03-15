@@ -158,10 +158,7 @@ int main(int argc, char *argv[])
         notLastRec = false;
 	break;
       }
-      // I am not sure why this test is here. I can imagine good data in seconds since midnight with 1
-      // column of time and one of data, so "1,23". It would be rare, but is it bad data?? Is this there
-      // to catch something else??
-      if (strlen(buffer) < 5)
+      if (strlen(buffer) < 3)
         continue;
 
       p = strtok(buffer, ", \t");	// Parse the first value (Time) out of the buffer
