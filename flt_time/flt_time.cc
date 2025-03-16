@@ -175,8 +175,7 @@ main(int argc, char *argv[])
     std::string proj, fl;
     project.getValues(proj);
     flight.getValues(fl);
-    cout	<< argv[indx] << ":"
-		<< proj << ":" << fl << ":\n";
+    cout << argv[indx] << ":" << proj << ":" << fl << ":\n";
   }
 
   float *time_data = getData(ncFile, "Time", &step);

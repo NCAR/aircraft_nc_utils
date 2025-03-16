@@ -4,7 +4,8 @@ OBJECT NAME:	ncvarlist.cc
 
 FULL NAME:	netCDF Variable List
 
-DESCRIPTION:	Output list of variables, names, units, and titles, from a netCDF file.
+DESCRIPTION:	Output list of variables, names, units, and titles, from
+		a netCDF file.
 
 COPYRIGHT:	University Corporation for Atmospheric Research, 2011
 -------------------------------------------------------------------------
@@ -15,9 +16,10 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 2011
 #include <iomanip>
 #include <vector>
 
-#include <netcdfcpp.h>
+#include <netcdf>
 
 using namespace std;
+using namespace netCDF;
 
 static bool csv = false;
 
@@ -41,26 +43,27 @@ main(int argc, char *argv[])
 
   processArgs(argv);
 
-  NcFile inFile(argv[argc-1]);
-
-  if (!inFile.is_valid())
+  NcFile *inFile = new NcFile(argv[argc-1], NcFile::read);
+  if (inFile->isNull())
   {
-    cerr << "ncvarlist: Failed to open input file, exiting.\n";
+    cerr << "ncvarlist: Failed to open input file [" << argv[argc-1] << "], exiting.\n";
     return 1;
   }
 
-  NcError * ncErr = new NcError(NcError::silent_nonfatal);
-
-  NcAtt *att;
   cout << argv[argc-1] << endl;
-  
+
   // Output some basic info about the file.
-  att = inFile.get_att("project");
-  if (att) cout << att->as_string(0);
-  att = inFile.get_att("FlightNumber");
-  if (att) cout << ", " << att->as_string(0);
-  att = inFile.get_att("FlightDate");
-  if (att) cout << ", " << att->as_string(0);
+  NcGroupAtt att;
+  std::string s;
+  att = inFile->getAtt("project");
+  att.getValues(s);
+  if (s.size() > 0) cout << s;
+  att = inFile->getAtt("FlightNumber");
+  att.getValues(s);
+  if (s.size() > 0) cout << ", " << s;
+  att = inFile->getAtt("FlightDate");
+  att.getValues(s);
+  if (s.size() > 0) cout << ", " << s;
   cout << endl;
 
   size_t longestName = 0, longestUnits = 0;
@@ -68,44 +71,50 @@ main(int argc, char *argv[])
   // Go through var list and determine longest name and units for pretty print.
   if (!csv)
   {
-    for (int i = 0; i < inFile.num_vars(); ++i)
+    std::multimap<std::string, NcVar> varList = inFile->getVars();
+    for (auto it = varList.begin(); it != varList.end(); ++it)
     {
-      NcVar *var = inFile.get_var(i);
+      NcVar var = it->second;
 
-      if (i > 0 && var)
+      longestName = max(longestName, var.getName().size());
+      NcVarAtt att = var.getAtt("units");
+      if (!att.isNull())
       {
-        longestName = max(longestName, strlen(var->name()));
-        att = var->get_att("units");
-        if (att) longestUnits = max(longestUnits, strlen(att->as_string(0)));
+        std::string s;
+        att.getValues(s);
+        longestUnits = max(longestUnits, s.size());
       }
     }
   }
 
 
   // Output.
-  for (int i = 0; i < inFile.num_vars(); ++i)
+  std::multimap<std::string, NcVar> varList = inFile->getVars();
+  for (auto it = varList.begin(); it != varList.end(); ++it)
   {
-    NcVar *var = inFile.get_var(i);
-    NcAtt *units = var->get_att("units");
-    NcAtt *long_name = var->get_att("long_name");
+    NcVar var = it->second;
+    NcVarAtt att;
+    std::string units, long_name;
 
-    if (var)
+    att = var.getAtt("units");
+    att.getValues(units);
+    att = var.getAtt("long_name");
+    att.getValues(long_name);
+
+    if (csv)
     {
-      if (csv)
-      {
-        cout << "\"" << var->name() << "\",\"";
-        if (units) cout << units->as_string(0);
-        cout << "\",\"";
-        if (long_name) cout << long_name->as_string(0);
-        cout << "\"" << endl;
-      }
-      else
-      {
-        cout << left << setw (longestName+3) << var->name();
-        if (units) cout << left << setw (longestUnits+3) << units->as_string(0);
-        if (long_name) cout << long_name->as_string(0);
-        cout << endl;
-      }
+      cout << "\"" << var.getName() << "\",\"";
+      if (units.size() > 0) cout << units;
+      cout << "\",\"";
+      if (long_name.size() > 0) cout << long_name;
+      cout << "\"" << endl;
+    }
+    else
+    {
+      cout << left << setw (longestName+3) << var.getName();
+      if (units.size() > 0) cout << left << setw (longestUnits+3) << units;
+      if (long_name.size() > 0) cout << long_name;
+      cout << endl;
     }
   }
 }

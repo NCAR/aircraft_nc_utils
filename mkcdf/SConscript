@@ -1,6 +1,6 @@
 # -*- python -*-
 
-tools  = ['default', 'prefixoptions', 'netcdfcxx']
+tools  = ['default', 'prefixoptions', 'netcdfcxx4']
 env = Environment(tools=tools)
 env.Append(CXXFLAGS='-g -Werror')
 

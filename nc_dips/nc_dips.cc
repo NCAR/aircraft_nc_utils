@@ -1,9 +1,10 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <netcdfcpp.h>
+#include <netcdf>
 
 using namespace std;
+using namespace netCDF;
 
 // Command line options.
 bool verbose = false;
@@ -12,18 +13,19 @@ float upper_alt = 8800.0;	// Default.
 float lower_alt = 4500.0;	// Default.
 char fileName[1024];
 
-NcValues *
-getData(NcFile * file, const char * name)
+float *
+getData(NcFile *file, const char * name)
 {
-  NcVar * var = file->get_var(name);
+  NcVar var = file->getVar(name);
 
-  if (var == 0 || var->is_valid() == false)
+  if (var.isNull())
   {
     cerr << "No variable " << name << "?" << endl;
     return 0;
   }
 
-  NcValues * data = var->values();
+  float * data = new float[var.getDim(0).getSize()];
+  var.getVar(data);
 
   if (data == 0)
   {
@@ -81,38 +83,33 @@ processArgs(char **argv)
 int
 main(int argc, char *argv[])
 {
-  int indx = 1;
-
-
   if (argc < 2)
     usage();
 
   processArgs(argv);
 
 
-  // keep program from exiting, if netCDF API doesn't find something.
-  NcError * ncErr = new NcError(NcError::silent_nonfatal);
-
 
   // Open NetCDF file
-  NcFile * ncFile = new NcFile(fileName, NcFile::ReadOnly);
-  if (ncFile->is_valid() == false)
+  NcFile *ncFile = new NcFile(fileName, NcFile::read);
+  if (ncFile->isNull())
   {
-    cerr << "Could not open NetCDF file '" << argv[indx] << "' for reading.\n";
+    cerr << "Could not open NetCDF file '" << fileName << "' for reading.\n";
     return 1;
   }
-  
+
   if (verbose)
   {
-    NcAtt * project = ncFile->get_att("project");
-    NcAtt * flight = ncFile->get_att("FlightNumber");
-    cout	<< argv[indx] << ":"
-		<< project->as_string(0) << ":"
-		<< flight->as_string(0) << ":\n";
+    std::string proj, fl;
+    NcGroupAtt project = ncFile->getAtt("project");
+    NcGroupAtt flight = ncFile->getAtt("FlightNumber");
+    project.getValues(proj);
+    flight.getValues(fl);
+    cout << fileName << ":" << proj << ":" << fl << ":\n";
   }
 
   // Try GPS alt first, otherwise pressure alt.
-  NcValues * alt_data = getData(ncFile, "GGALT");
+  float *alt_data = getData(ncFile, "GGALT");
   if (alt_data == 0)
     alt_data = getData(ncFile, "PALT");
 
@@ -120,14 +117,14 @@ main(int argc, char *argv[])
     return 1;
 
   // Get flight start time. = FileStartTime + first Time[Offset] value.
-  NcVar * time_var = ncFile->get_var("Time");
+  NcVar time_var = ncFile->getVar("Time");
 
   // Locate Start of Flight
   long i, ndips = 0;
   bool high_alt = false;
-  for (i = 0; i < time_var->num_vals(); ++i)
+  for (i = 0; i < time_var.getDim(0).getSize(); ++i)
   {
-    float alt = alt_data->as_float(i);
+    float alt = alt_data[i];
 
     if (alt < 0)
       continue;
@@ -148,7 +145,7 @@ main(int argc, char *argv[])
   if (hours)
   {
     if (verbose) cout << "Number of flight hours = ";
-    cout << (float)time_var->num_vals() / 3600 << endl;
+    cout << (float)time_var.getDim(0).getSize() / 3600 << endl;
   }
   else
   {
