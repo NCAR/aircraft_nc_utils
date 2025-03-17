@@ -133,7 +133,7 @@ XtPointer call;
 
 	if (!Interactive)
 		{
-		snprintf(buffer, "%s - %s, Flight #%d\n", 128,
+		snprintf(buffer, 128, "%s - %s, Flight #%d\n",
 				ProjectName,
 				ProjectNumber,
 				atoi(FlightNumber));
@@ -146,7 +146,7 @@ XtPointer call;
 
 		FillListWidget();
 
-		snprintf(buffer, "%s - %s, Flight #%d", 128,
+		snprintf(buffer, 128, "%s - %s, Flight #%d",
 				ProjectName,
 				ProjectNumber,
 				atoi(FlightNumber));
@@ -228,9 +228,9 @@ void StopProcessing()
 	x = (float)(finish - start) / 60.0;
 
 	if (x > 60.0)
-		snprintf(buffer, "Processing took %.2f hour(s).\n", 64, x / 60.0);
+		snprintf(buffer, 64, "Processing took %.2f hour(s).\n", x / 60.0);
 	else
-		snprintf(buffer, "Processing took %.1f minutes.\n", 64, x);
+		snprintf(buffer, 64, "Processing took %.1f minutes.\n", x);
 
 	LogMessage(buffer);
 
@@ -312,7 +312,7 @@ VARTBL	*vp;
 {
 	static char	*list1lineFrmt = "%-13s  %c   %4d    %4d";
 
-	snprintf(buffer, list1lineFrmt, 200,
+	snprintf(buffer, 200, list1lineFrmt,
 				vp->name,
 				vp->Output ? 'Y' : 'N',
 				vp->SampleRate,
