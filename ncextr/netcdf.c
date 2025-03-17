@@ -54,7 +54,7 @@ char  fileName[];
    */
   if ((InputFile = ncopen(fileName, NC_NOWRITE)) == ERR)
     {
-    sprintf(buffer, "Can't open %s.\n", fileName);
+    snprintf(buffer, 80, "Can't open %s.\n", fileName);
     HandleError(buffer);
     return(ERR);
     }
@@ -278,7 +278,7 @@ char  file_name[];
         break;
 
       default:
-        sprintf(buffer, "Variable %s has unsupported output rate of %d, setting to 1.\n", vp->name, vp->OutputRate);
+        snprintf(buffer, 128, "Variable %s has unsupported output rate of %d, setting to 1.\n", vp->name, vp->OutputRate);
         LogMessage(buffer);
         vp->OutputRate = 1;
         ndims = 1;

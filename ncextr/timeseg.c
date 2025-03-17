@@ -122,7 +122,7 @@ char	*buff;
 		if (i > 0)
 			strcat(buff, ", ");
 
-		sprintf(temp, "%02d:%02d:%02d-%02d:%02d:%02d",
+		snprintf(temp, 32, "%02d:%02d:%02d-%02d:%02d:%02d",
 			(int)BtimeInt[i][0],
 			(int)BtimeInt[i][1],
 			(int)BtimeInt[i][2],

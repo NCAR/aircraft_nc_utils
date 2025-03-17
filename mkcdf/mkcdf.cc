@@ -89,11 +89,11 @@ void makeLRTfile()
   for (size_t i = 0; i < nVariables; ++i)
   {
     char name[64];
-    sprintf(name, "VAR%lu", i);
+    snprintf(name, 64, "VAR%lu", i);
     vars[i] = file->addVar(name, NcType::nc_FLOAT, time_d);
     vars[i].putAtt("_FillValue", NcType::nc_FLOAT, (float)-32767.0);
     vars[i].putAtt("units", "test_units");
-    sprintf(name, "Title for variable %lu", i);
+    snprintf(name, 64, "Title for variable %lu", i);
     vars[i].putAtt("long_name", name);
     varData[i] = new float[nRecords];
   }
@@ -151,7 +151,7 @@ void makeHRTfile()
   for (size_t i = 0; i < nVariables; ++i)
   {
     char name[64];
-    sprintf(name, "VAR%lu", i);
+    snprintf(name, 64, "VAR%lu", i);
 
     std::vector<NcDim> dims;
     dims.push_back(time_d);
@@ -169,7 +169,7 @@ void makeHRTfile()
 
     vars[i].putAtt("_FillValue", NcType::nc_FLOAT, (float)-32767.0);
     vars[i].putAtt("units", "test_units");
-    sprintf(name, "Title for variable %lu", i);
+    snprintf(name, 64, "Title for variable %lu", i);
     vars[i].putAtt("long_name", name);
     varData[i] = new float[nRecords * rates[i]];
   }
