@@ -104,6 +104,7 @@ void CreatePlainNetCDF(FILE *fp)
   struct tm	tm;
 
   memset(&tm, 0, sizeof(struct tm));
+  tm.tm_isdst = -1;
   t = time(0);
   tm = *gmtime(&t);
   strftime(buffer, 128, "%h %d %R GMT %Y", &tm);
