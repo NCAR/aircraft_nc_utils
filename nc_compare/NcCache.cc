@@ -121,9 +121,17 @@ loadTimes()
   // Now that we have a base time, fill the times vector.
   nc_get_var_double(ncid, _vtime->id, &(dtimes[0]));
   _times.resize(dtimes.size());
-  for (unsigned int i = 0; i < dtimes.size(); ++i)
+  for (unsigned long i = 0; i < dtimes.size(); ++i)
   {
-    _times[i] = _basetime + (timestep * dtimes[i]);
+    // When timestep is microseconds, it can overflow and become negative when
+    // multiplied by large time coordinates, resulting in times prior to
+    // basetime.  Mitigate this by incrementing from the previous time
+    // coordinate, since usually the step from one time coordinate to the next
+    // is small.
+    if (i == 0)
+      _times[i] = _basetime + (timestep * dtimes[i]);
+    else
+      _times[i] = _times[i-1] + (timestep * (dtimes[i] - dtimes[i-1]));
   }
 }
 
