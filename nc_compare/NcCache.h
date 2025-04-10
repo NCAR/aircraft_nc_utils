@@ -58,6 +58,8 @@ struct nc_object
   NcCache* ncc;
   std::string name;
   int id;
+
+  virtual ~nc_object() {}
 };
 
 
@@ -359,37 +361,37 @@ public:
   nc_var(NcCache* ncc, const std::string& name_in, int id_in);
 
   double
-  getMean()
+  getMean() override
   {
     return mean;
   }
 
   double
-  getMax()
+  getMax() override
   {
     return max;
   }
 
   double
-  getMin()
+  getMin() override
   {
     return min;
   }
 
   void
-  loadValues();
+  loadValues() override;
 
   void
-  computeStatistics(nc_variable* blanks = 0);
+  computeStatistics(nc_variable* blanks = 0) override;
 
   virtual std::string
-  textSummary();
+  textSummary() override;
 
   virtual std::string
-  rangeSummary(const variable_range& range);
+  rangeSummary(const variable_range& range) override;
 
   virtual void
-  visit(variable_visitor*);
+  visit(variable_visitor*) override;
 
   inline T
   get(const coordinates& where)
@@ -404,7 +406,7 @@ public:
   }
 
   virtual bool
-  isMissing(unsigned int i)
+  isMissing(unsigned int i) override
   {
     return data[i] == missing_value;
   }

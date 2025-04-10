@@ -3,31 +3,33 @@
 from SCons.Script import Environment, Builder
 import eol_scons
 
+test_clang = False
+
 
 def asciidoc(env):
+    a2x = "a2x --doctype manpage"
     if env['PLATFORM'] == 'darwin':
-        man = Builder(action='a2x --no-xmllint --doctype manpage --format manpage $SOURCE',
+        a2x = f'{a2x} --no-xmllint'
+    env['A2X'] = a2x
+    man = Builder(action='$A2X --format manpage $SOURCE',
                   src_suffix='.1.txt', suffix='.1')
-        html = Builder(action='a2x --no-xmllint --doctype manpage --format xhtml $SOURCE',
+    html = Builder(action='$A2X --format xhtml $SOURCE',
                    src_suffix='.1.txt', suffix='.1.html')
-    else:
-        man = Builder(action='a2x --doctype manpage --format manpage $SOURCE',
-                  src_suffix='.1.txt', suffix='.1')
-        html = Builder(action='a2x --doctype manpage --format xhtml $SOURCE',
-                   src_suffix='.1.txt', suffix='.1.html')
-
     env['BUILDERS']['AsciidocMan'] = man
     env['BUILDERS']['AsciidocHTML'] = html
 
 
 tools = ['default', 'netcdf', 'prefixoptions', 'buildmode', 'gsl',
-         'boost_program_options', asciidoc]
+         'boost_program_options', 'boost_date_time', asciidoc]
 env = Environment(tools=tools)
+if test_clang:
+    env['CXX'] = 'clang++'
 
 # nc_compare now requires C++11
 env.AppendUnique(CXXFLAGS=['-std=c++11'])
 
-objs = env.StaticObject(env.Split("""NcCache.cc NcComparison.cc ReportStyle.cc"""))
+srcs = env.Split("NcCache.cc NcComparison.cc ReportStyle.cc")
+objs = env.StaticObject(srcs)
 
 nccompare = env.Program(["nc_compare.cc"] + objs)
 
@@ -41,9 +43,12 @@ env.Install('$INSTALL_PREFIX/man/man1', manpage)
 # gtest now requires C++14
 env = Environment(tools=tools+['testing', 'gtest_main'])
 env.AppendUnique(CXXFLAGS=['-std=c++14'])
+if test_clang:
+    env['CXX'] = 'clang++'
 
 test_sources = env.Split("test_nccache.cc")
 
 nt = env.Program('nc_compare_tests', test_sources + objs)
 
-env.Alias('test', env.Test(nt, "cd ${SOURCE.dir} && ./${SOURCE.file} ${GTESTS}"))
+env.Alias('test',
+          env.Test(nt, "cd ${SOURCE.dir} && ./${SOURCE.file} ${GTESTS}"))

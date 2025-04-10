@@ -105,6 +105,8 @@ public:
   virtual nc_object*
   getRight() = 0;
 
+  virtual ~Comparison() {}
+
 protected:
 
   /**

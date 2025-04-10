@@ -626,14 +626,14 @@ computeStatistics(nc_variable* blanks)
 /*
  * Explicit instantiations of nc_var for netcdf data types.
  */
-template class nc_var<double>;
-template class nc_var<float>;
-template class nc_var<int>;
-template class nc_var<unsigned int>;
-template class nc_var<char>;
-template class nc_var<unsigned char>;
-template class nc_var<short>;
-template class nc_var<unsigned short>;
+template struct nc_var<double>;
+template struct nc_var<float>;
+template struct nc_var<int>;
+template struct nc_var<unsigned int>;
+template struct nc_var<char>;
+template struct nc_var<unsigned char>;
+template struct nc_var<short>;
+template struct nc_var<unsigned short>;
 
 
 nc_attribute::
@@ -793,11 +793,10 @@ get_att(char* values)
 }
 
 
-template class nc_att<double>;
-template class nc_att<float>;
-template class nc_att<int>;
-template class nc_att<short>;
-template class nc_att<std::string>;
+template struct nc_att<double>;
+template struct nc_att<float>;
+template struct nc_att<int>;
+template struct nc_att<short>;
 
 
 unsigned int

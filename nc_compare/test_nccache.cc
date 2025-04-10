@@ -380,8 +380,8 @@ TEST(compare_floating_point, compare)
   EXPECT_FALSE(cfp.near_equal(1.0000001f, 1.000002f));
   cfp.setDelta(1.0);
   EXPECT_TRUE(cfp.near_equal(1.1f, 1.4f));
-  EXPECT_TRUE(cfp.near_equal(1.1d, 1.4d));
-  EXPECT_FALSE(cfp.near_equal(1.1d, 5.0d));
+  EXPECT_TRUE(cfp.near_equal(1.1, 1.4));
+  EXPECT_FALSE(cfp.near_equal(1.1, 5.0));
 }
 
 
