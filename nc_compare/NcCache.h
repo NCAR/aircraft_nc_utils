@@ -159,12 +159,7 @@ public:
   inline bool
   next()
   {
-    if (index < npoints)
-    {
-      ++index;
-      return true;
-    }
-    return false;
+    return ++index < npoints;
   }
 
   coordinates&

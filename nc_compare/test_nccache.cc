@@ -112,6 +112,9 @@ TEST(NcCache, coordinates)
 
   coords.set(1, 2, 3);
   EXPECT_EQ(256*88+515, coords.index);
+  coords.index = coords.npoints-2;
+  EXPECT_EQ(coords.next(), true);
+  EXPECT_EQ(coords.next(), false);
 }
 
 
