@@ -1,9 +1,9 @@
 # -*- python -*-
 
-from SCons.Script import Environment, Builder
+from SCons.Script import Environment, Builder, ARGUMENTS
 import eol_scons
 
-test_clang = False
+test_clang = int(ARGUMENTS.get('test_clang', 0))
 
 
 def asciidoc(env):

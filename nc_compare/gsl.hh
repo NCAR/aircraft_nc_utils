@@ -3,11 +3,6 @@
 #define _gsl_hh_
 
 #include <gsl/gsl_statistics.h>
-#include <gsl/gsl_statistics_float.h>
-#include <gsl/gsl_statistics_int.h>
-#include <gsl/gsl_statistics_uint.h>
-#include <gsl/gsl_statistics_char.h>
-#include <gsl/gsl_statistics_uchar.h>
 
 
 /**
@@ -40,7 +35,7 @@ gsl_stats_minmax(T* min, T* max, \
   GSL_STATS(double,)
   GSL_STATS(float,float_)
   GSL_STATS(int,int_)
-  GSL_STATS(int64_t,long_)
+  GSL_STATS(long,long_)
   GSL_STATS(unsigned int,uint_)
   GSL_STATS(short,short_)
   GSL_STATS(unsigned short,ushort_)
