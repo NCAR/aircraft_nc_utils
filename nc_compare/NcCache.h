@@ -404,7 +404,7 @@ public:
     return data[i] == missing_value;
   }
 
-  std::shared_ptr<T[]> data;
+  std::vector<T> data;
   T missing_value;
   T mean;
   T min;

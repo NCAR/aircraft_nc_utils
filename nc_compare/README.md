@@ -20,8 +20,7 @@ There is an alias `test` which builds and runs unit tests:
     scons -f SConscript test
 
 The [SConscript](SConscript) file recognizes two command-line arguments, one
-to compile with `clang++` instead of the default compiler, and one to set the
-`valgrind` command and use it to run the tests.  This example uses both
-arguments:
+to set the CXX compiler, and one to set the `valgrind` command and use it to
+run the tests.  This example uses both arguments:
 
-    scons -f SConscript test_clang=1 valgrind=valgrind .
+    scons -f SConscript cxx=clang++ valgrind=valgrind .

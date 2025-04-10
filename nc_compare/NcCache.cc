@@ -577,7 +577,7 @@ void
 nc_var<T>::
 loadValues()
 {
-  if (data.get())
+  if (!data.empty())
   {
     return;
   }
@@ -588,8 +588,8 @@ loadValues()
   nc_inq_var(ncid, id, name, &datatype, 0, 0, 0);
 
   npoints = coordinates(dimensions).npoints;
-  data.reset(new T[npoints]);
-  nc_get_var(ncid, id, data.get());
+  data.resize(npoints);
+  nc_get_var(ncid, id, data.data());
   nc_get_att(ncid, id, "_FillValue", &missing_value);
 }
 
