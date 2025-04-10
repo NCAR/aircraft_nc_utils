@@ -1,6 +1,8 @@
 # -*- python -*-
 
 from SCons.Script import Environment, Builder
+import eol_scons
+
 
 def asciidoc(env):
     if env['PLATFORM'] == 'darwin':
@@ -33,7 +35,7 @@ manpage = env.AsciidocMan('nc_compare.1.txt')
 env.AsciidocHTML('nc_compare.1.txt')
 
 env.Default(nccompare)
-env.Install('$INSTALL_PREFIX/bin', nccompare)
+env.Alias('install.nc_compare', env.Install('$INSTALL_PREFIX/bin', nccompare))
 env.Install('$INSTALL_PREFIX/man/man1', manpage)
 
 # gtest now requires C++14
