@@ -122,7 +122,7 @@ TEST(NcCache, Attributes)
   {
     nc_att<float> att(&ncc, "geospatial_lat_min", NC_GLOBAL);
     att.load_values();
-    EXPECT_EQ(att.as_string(), "39.9126701");
+    EXPECT_EQ(att.as_string(), "39.912670");
     EXPECT_EQ(att.datatype, NC_FLOAT);
   }
   {
@@ -153,7 +153,7 @@ TEST(NcCache, GlobalAttributes)
 	    "NCAR Research Aviation Facility");
   nc_attribute* att = ncc.getGlobalAttribute("geospatial_lat_min");
   ASSERT_TRUE(att);
-  EXPECT_EQ(att->as_string(), "39.9126701");
+  EXPECT_EQ(att->as_string(), "39.912670");
 }
 
 

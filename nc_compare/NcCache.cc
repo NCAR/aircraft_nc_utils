@@ -711,7 +711,7 @@ as_string()
     {
       text += ", ";
     }
-    text += boost::lexical_cast<std::string>(values[i]);
+    text += std::to_string(values[i]);
   }
   return text;
 }
