@@ -4,6 +4,7 @@ from SCons.Script import Environment, Builder, ARGUMENTS
 import eol_scons
 
 test_clang = int(ARGUMENTS.get('test_clang', 0))
+valgrind = ARGUMENTS.get('valgrind', '')
 
 
 def asciidoc(env):
@@ -19,7 +20,7 @@ def asciidoc(env):
     env['BUILDERS']['AsciidocHTML'] = html
 
 
-tools = ['default', 'netcdf', 'prefixoptions', 'buildmode', 'gsl',
+tools = ['default', 'netcdf', 'prefixoptions', 'buildmode',
          'boost_program_options', 'boost_date_time', asciidoc]
 env = Environment(tools=tools)
 if test_clang:
@@ -27,6 +28,7 @@ if test_clang:
 
 # nc_compare now requires C++11
 env.AppendUnique(CXXFLAGS=['-std=c++11'])
+# env.AppendUnique(CCFLAGS=['-O0'])
 
 srcs = env.Split("NcCache.cc NcComparison.cc ReportStyle.cc")
 objs = env.StaticObject(srcs)
@@ -43,12 +45,11 @@ env.Install('$INSTALL_PREFIX/man/man1', manpage)
 # gtest now requires C++14
 env = Environment(tools=tools+['testing', 'gtest_main'])
 env.AppendUnique(CXXFLAGS=['-std=c++14'])
+env['VALGRIND'] = valgrind
 if test_clang:
     env['CXX'] = 'clang++'
 
 test_sources = env.Split("test_nccache.cc")
-
 nt = env.Program('nc_compare_tests', test_sources + objs)
-
-env.Alias('test',
-          env.Test(nt, "cd ${SOURCE.dir} && ./${SOURCE.file} ${GTESTS}"))
+test_cmd = "cd ${SOURCE.dir} && ${VALGRIND} ./${SOURCE.file} ${GTESTS}"
+env.Alias('test', env.Test(nt, test_cmd))

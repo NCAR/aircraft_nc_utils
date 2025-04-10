@@ -27,10 +27,10 @@ struct comparison_type<nc_attribute>
 };
 
 template <typename T>
-inline boost::shared_ptr<typename comparison_type<T>::result>
+inline std::shared_ptr<typename comparison_type<T>::result>
 make_comparison(CompareNetcdf* ncf, T* left, T* right)
 {
-  return boost::make_shared<
+  return std::make_shared<
     typename comparison_type<T>::result>(ncf, left, right);
 }
 
