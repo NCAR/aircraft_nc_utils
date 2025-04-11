@@ -12,7 +12,7 @@ mean_min_max(T* mean, T* min, T* max, const T* begin, size_t n)
   {
     return;
   }
-  T sum = *min = *max = *begin;
+  double sum = *min = *max = *begin;
   for (const T* p = begin+1; p != begin+n; ++p)
   {
     if (*p < *min)
