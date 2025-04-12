@@ -2,6 +2,8 @@
 #ifndef _statistics_hh_
 #define _statistics_hh_
 
+#include <cmath>
+
 namespace statistics {
 
 template <typename T>
@@ -15,9 +17,9 @@ mean_min_max(T* mean, T* min, T* max, const T* begin, size_t n)
   double sum = *min = *max = *begin;
   for (const T* p = begin+1; p != begin+n; ++p)
   {
-    if (*p < *min)
+    if (std::isnan(*min) || *p < *min)
       *min = *p;
-    if (*p > *max)
+    if (std::isnan(*max) || *p > *max)
       *max = *p;
     sum += *p;
   }

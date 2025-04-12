@@ -525,6 +525,14 @@ TEST(calling_statistics, empty)
   EXPECT_EQ(2.5, mean);
   EXPECT_EQ(0, min);
   EXPECT_EQ(5, max);
+
+  // introducing nans changes the mean but not min or max.
+  min = max = mean = -99;
+  v[0] = v[2] = NAN;
+  statistics::mean_min_max(&mean, &min, &max, v.data(), v.size());
+  EXPECT_EQ(std::isnan(mean), true);
+  EXPECT_EQ(0, min);
+  EXPECT_EQ(5, max);
 }
 
 
