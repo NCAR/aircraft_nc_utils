@@ -17,7 +17,7 @@ using boost::placeholders::_1;
 #endif
 using boost::mem_fn;
 using boost::format;
-using boost::shared_ptr;
+using std::shared_ptr;
 using std::cout;
 using std::cerr;
 using std::string;
@@ -299,7 +299,7 @@ report(std::ostream& out)
   // error.  Do not report a variable if the differences in the mean are
   // beneath the threshold, regardless of the comparison result.
   // If showIndex is on, show statistics for variables with index differences.
-  std::vector< boost::shared_ptr<CompareVariables> > evars(vars);
+  std::vector< shared_ptr<CompareVariables> > evars(vars);
   std::sort(evars.begin(), evars.end(), compare_relative_error);
 
   header = false;

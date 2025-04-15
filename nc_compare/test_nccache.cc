@@ -5,7 +5,7 @@
 #include "NcCache.h"
 #include "NcComparison.h"
 #include "compare_lists.h"
-#include "gsl.hh"
+#include "statistics.h"
 
 const bool PRINT_DEBUG = false;
 
@@ -14,8 +14,8 @@ const bool PRINT_DEBUG = false;
 using std::cerr;
 using std::endl;
 
-using boost::make_shared;
-using boost::shared_ptr;
+using std::make_shared;
+using std::shared_ptr;
 
 TEST(NcCache, ReadFirstTime)
 {
@@ -112,6 +112,9 @@ TEST(NcCache, coordinates)
 
   coords.set(1, 2, 3);
   EXPECT_EQ(256*88+515, coords.index);
+  coords.index = coords.npoints-2;
+  EXPECT_EQ(coords.next(), true);
+  EXPECT_EQ(coords.next(), false);
 }
 
 
@@ -495,13 +498,41 @@ TEST(compare_floating_point, ulps)
 }
 
 
-TEST(calling_gsl, empty)
+TEST(calling_statistics, empty)
 {
   double value = 10;
+  double mean{-1}, min{-2}, max{3};
 
   // Make sure it's ok to call gsl with 0 values.
-  EXPECT_EQ(0, gsl::gsl_stats_mean(&value, 1, 0));
-  EXPECT_EQ(10, gsl::gsl_stats_mean(&value, 1, 1));
+  statistics::mean_min_max(&mean, &min, &max, &value, 0);
+  EXPECT_EQ(-1, mean);
+  EXPECT_EQ(-2, min);
+  EXPECT_EQ(3, max);
+
+  statistics::mean_min_max(&mean, &min, &max, &value, 1);
+  EXPECT_EQ(value, mean);
+  EXPECT_EQ(value, min);
+  EXPECT_EQ(value, max);
+
+  std::vector<double> v{1, 2, 3, 4, 5};
+  statistics::mean_min_max(&mean, &min, &max, v.data(), v.size());
+  EXPECT_EQ(3, mean);
+  EXPECT_EQ(1, min);
+  EXPECT_EQ(5, max);
+
+  v.push_back(0);
+  statistics::mean_min_max(&mean, &min, &max, v.data(), v.size());
+  EXPECT_EQ(2.5, mean);
+  EXPECT_EQ(0, min);
+  EXPECT_EQ(5, max);
+
+  // introducing nans changes the mean but not min or max.
+  min = max = mean = -99;
+  v[0] = v[2] = NAN;
+  statistics::mean_min_max(&mean, &min, &max, v.data(), v.size());
+  EXPECT_EQ(std::isnan(mean), true);
+  EXPECT_EQ(0, min);
+  EXPECT_EQ(5, max);
 }
 
 

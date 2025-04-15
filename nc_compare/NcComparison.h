@@ -301,7 +301,7 @@ public:
   double relative_error;
   // total number of points that differ
   int total_differences;
-  std::vector< boost::shared_ptr<CompareAttributes> > atts;
+  std::vector< std::shared_ptr<CompareAttributes> > atts;
   bool dimsequal;
   variable_ranges ranges;
 };
@@ -407,11 +407,11 @@ private:
   std::vector<std::string> _ignores;
   std::vector<std::string> _selects;
 
-  std::vector< boost::shared_ptr<CompareDimensions> > dims;
-  std::vector< boost::shared_ptr<CompareVariables> > vars;
+  std::vector< std::shared_ptr<CompareDimensions> > dims;
+  std::vector< std::shared_ptr<CompareVariables> > vars;
 
   // Global attribute comparisons.
-  std::vector< boost::shared_ptr<CompareAttributes> > atts;
+  std::vector< std::shared_ptr<CompareAttributes> > atts;
 
   CompareTimes times;
 

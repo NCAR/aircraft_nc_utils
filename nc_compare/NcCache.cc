@@ -4,22 +4,21 @@
 #include <time.h>
 #include <string.h>
 #include <iostream>
-
-using std::string;
-
+#include <memory>
 #include <stdexcept>
-using std::runtime_error;
 
-using boost::shared_array;
-using boost::shared_ptr;
-using boost::make_shared;
+using std::unique_ptr;
+using std::shared_ptr;
+using std::make_shared;
+using std::runtime_error;
+using std::string;
 using boost::posix_time::time_duration;
 
 #ifdef MO_MINGW32
 char* strptime(const char *buf, const char *fmt, struct tm *tm);
 #endif
 
-#include "gsl.hh"
+#include "statistics.h"
 
 NcCache::
 NcCache(const std::string& path) :
@@ -586,7 +585,7 @@ void
 nc_var<T>::
 loadValues()
 {
-  if (data.get())
+  if (!data.empty())
   {
     return;
   }
@@ -597,8 +596,8 @@ loadValues()
   nc_inq_var(ncid, id, name, &datatype, 0, 0, 0);
 
   npoints = coordinates(dimensions).npoints;
-  data.reset(new T[npoints]);
-  nc_get_var(ncid, id, data.get());
+  data.resize(npoints);
+  nc_get_var(ncid, id, data.data());
   nc_get_att(ncid, id, "_FillValue", &missing_value);
 }
 
@@ -624,9 +623,8 @@ computeStatistics(nc_variable* blanks)
       cleaned_data.push_back(data[i]);
   }
   ngoodpoints = cleaned_data.size();
-  mean = gsl::gsl_stats_mean(&cleaned_data[0], 1, cleaned_data.size());
-  if (cleaned_data.size())
-    gsl::gsl_stats_minmax(&min, &max, &cleaned_data[0], 1, cleaned_data.size());
+  statistics::mean_min_max(&mean, &min, &max,
+                           cleaned_data.data(), cleaned_data.size());
 }
 
 
@@ -742,7 +740,7 @@ nc_att<std::string>::
 load_values()
 {
   nc_inq_att(ncc->ncid, id, name.c_str(), &datatype, &len);
-  boost::shared_array<char> buf(new char[len+1]);
+  unique_ptr<char[]> buf(new char[len+1]);
   nc_get_att_text(ncc->ncid, id, name.c_str(), buf.get());
   buf[len] = '\0';
   value = std::string(buf.get());

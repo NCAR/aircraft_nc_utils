@@ -8,10 +8,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include <netcdf.h>
-#include <boost/shared_array.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -161,12 +159,7 @@ public:
   inline bool
   next()
   {
-    if (index < npoints)
-    {
-      ++index;
-      return true;
-    }
-    return false;
+    return ++index < npoints;
   }
 
   coordinates&
@@ -333,7 +326,7 @@ struct nc_variable : public nc_object
   // The variable owns its attributes because they are not shared with
   // anything else.  Dimensions belong to the file, but can be referenced
   // in multiple variables.
-  std::vector<boost::shared_ptr<nc_attribute> > attributes;
+  std::vector<std::shared_ptr<nc_attribute> > attributes;
   std::vector<nc_dimension*> dimensions;
 
   /**
@@ -411,7 +404,7 @@ public:
     return data[i] == missing_value;
   }
 
-  boost::shared_array<T> data;
+  std::vector<T> data;
   T missing_value;
   T mean;
   T min;
@@ -472,10 +465,10 @@ operator==(const nc_dimension& left, const nc_dimension& right)
 
 template <class T>
 inline T*
-find_nc_object(std::vector<boost::shared_ptr<T> >& objects,
+find_nc_object(std::vector<std::shared_ptr<T> >& objects,
 	       const std::string& name)
 {
-  typename std::vector<boost::shared_ptr<T> >::iterator it;
+  typename std::vector<std::shared_ptr<T> >::iterator it;
   for (it = objects.begin(); it != objects.end(); ++it)
   {
     if ((*it)->name == name)
@@ -551,13 +544,13 @@ public:
     return _basetime;
   }
 
-  typedef std::vector< boost::shared_ptr<nc_dimension> > dimension_vector_t;
+  typedef std::vector< std::shared_ptr<nc_dimension> > dimension_vector_t;
   dimension_vector_t dimensions;
 
-  typedef std::vector< boost::shared_ptr<nc_variable> > variable_vector_t;
+  typedef std::vector< std::shared_ptr<nc_variable> > variable_vector_t;
   variable_vector_t variables;
 
-  typedef std::vector< boost::shared_ptr<nc_attribute> > attribute_vector_t;
+  typedef std::vector< std::shared_ptr<nc_attribute> > attribute_vector_t;
   attribute_vector_t global_attributes;
 
   int ncid;
@@ -567,7 +560,7 @@ private:
   void
   loadAttributes(attribute_vector_t& atts, int varid);
 
-  boost::shared_ptr<nc_attribute>
+  std::shared_ptr<nc_attribute>
   makeAttribute(int ncid, int varid, int attnum);
 
   std::string _path;
