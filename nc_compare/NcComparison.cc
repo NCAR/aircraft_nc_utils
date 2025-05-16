@@ -21,7 +21,8 @@ using std::shared_ptr;
 using std::cout;
 using std::cerr;
 using std::string;
-
+using std::fabs;
+using std::isnan;
 
 CompareNetcdf::
 CompareNetcdf(NcCache* left, NcCache* right):

@@ -2,7 +2,8 @@
 #ifndef _compare_numbers_h_
 #define _compare_numbers_h_
 
-#include <math.h>
+#include <cmath>
+
 
 /**
  * The compare_floating_point class parameterizes floating point comparison
@@ -234,8 +235,8 @@ public:
     // steps for the ulps and delta comparisons.
     if (left == right)
       result = true;
-    else if (_nans_equal && isnan(left) && isnan(right))
-      result = (signbit(left) == signbit(right));
+    else if (_nans_equal && std::isnan(left) && std::isnan(right))
+      result = (std::signbit(left) == std::signbit(right));
     else
       return false;
     return true;
