@@ -22,7 +22,6 @@ using std::cout;
 using std::cerr;
 using std::string;
 using std::fabs;
-using std::isnan;
 
 CompareNetcdf::
 CompareNetcdf(NcCache* left, NcCache* right):
@@ -729,7 +728,7 @@ computeDifferences()
     relative_error = fabs(absolute_error / right->getMean());
   else
     relative_error = fabs(absolute_error / left->getMean());
-  if (isnan(relative_error))
+  if (std::isnan(relative_error))
     relative_error = 1.0;
   relative_error *= 100.0;
   bool equal = meansNearEqual();
