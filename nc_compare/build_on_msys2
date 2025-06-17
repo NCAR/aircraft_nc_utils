@@ -1,8 +1,10 @@
 #!/usr/bin/sh
 
 # Stand alone build and install nc_compare on a mingw-w64 msys2
+# Usage: ./build_on_msys2 [install directory], or installs to /mingw64/bin if none provided
 set -x
 
 g++ -c -O2 -DMO_MINGW32 strptime.c nc_compare.cc NcCache.cc NcComparison.cc ReportStyle.cc
 g++ -o nc_compare -O2 -DMO_MINGW32 strptime.o nc_compare.o NcCache.o NcComparison.o ReportStyle.o -lboost_program_options-mt -lnetcdf -lgsl
-cp nc_compare /mingw64/bin
+
+cp nc_compare ${1:-/mingw64/bin}
