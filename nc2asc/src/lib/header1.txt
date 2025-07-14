@@ -1,5 +1,5 @@
 <ROWCOUNT>
-<PROJECT MANAGER>
+Patrick Veres, Cory Wolff
 NCAR Research Aviation Facility
 RAF instruments on
 <PROJECT>

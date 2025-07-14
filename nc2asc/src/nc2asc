@@ -41,8 +41,6 @@ from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBox
 
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 filterwarnings(action='ignore', category=DeprecationWarning, message='`np.bool` is a deprecated alias')
-
-
 class gui(QMainWindow):
 
     def __init__(self):
@@ -647,7 +645,7 @@ class gui(QMainWindow):
     #########################################################################
     # Define function to format ICARTT header
     # Note: if used outside of this script, multiple vars needed
-    # self.dtime, self.platform, self.project_manager, self.project_name,
+    # self.dtime, self.platform, self.project_name,
     # self.today, self.varNumber, self.output_file
     # also need header1.txt and header2.txt as templates
     #########################################################################
@@ -998,7 +996,6 @@ class nc2asc_CL():
             self.long_name = {}
             self.variables = {}
             self.fileheader = {}
-            self.project_manager = 'Patrick Veres, Pavel Romashkin'
             try:
                 self.tail_number = nc.attrs['Platform']
             except KeyError:

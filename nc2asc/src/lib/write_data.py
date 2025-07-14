@@ -21,7 +21,6 @@ def formatData(instance):
         instance.long_name = {}
         instance.variables = {}
         instance.fileheader = {}
-        instance.project_manager = 'Patrick Veres, Pavel Romashkin, Peisang Tsai'
         try:
             instance.tail_number = nc.attrs['Platform']
         except KeyError:
@@ -250,8 +249,6 @@ def ICARTTHeader(instance, dataframe):
             for i, line in enumerate(lines):
                 if line.startswith('RAF instruments on'):
                     lines[i] = f'{line.strip()} {instance.platform}\n'
-                if line.startswith('<PROJECT MANAGER>'):
-                    lines[i] = f'{instance.project_manager}\n'
                 if line.startswith('<PROJECT>'):
                     lines[i] = f'{instance.project_name}\n'
                 if line.startswith('<YYYY, MM, DD,>'):
@@ -360,8 +357,6 @@ def AMESHeader(instance, ames_header):
             for i, line in enumerate(lines):
                 if line.startswith('Flight data from:'):
                     lines[i] = lines[i].strip() + ' ' + instance.platform + '\n'
-                if line.startswith('<PROJECT MANAGER>'):
-                    lines[i] = instance.project_manager + '\n'
                 if line.startswith('<PROJECT>'):
                     lines[i] = instance.project_name + '\n'
                 if line.startswith('<YYYY, MM, DD,>'):

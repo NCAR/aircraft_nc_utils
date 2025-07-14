@@ -1,5 +1,5 @@
 <ROWCOUNT> 1001 
-<PROJECT MANAGER> 
+Patrick Veres, Cory Wolff
 NCAR Research Aviation Facility (raf-apo@ucar.edu)
 Flight data from:
 <PROJECT>
