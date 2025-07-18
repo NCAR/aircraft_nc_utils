@@ -34,13 +34,11 @@ def formatData(instance):
         instance.today = instance.today.replace('-', ', ')
 
         instance.parse_vars(nc)
-        print(instance.variables_extract)
-        print('##########################')
         if instance.variables_extract.to_list():
             instance.dims = nc[instance.variables_extract.to_list()].dims
-            print(instance.dims)
         # concatenate
         instance.asc = pd.concat(instance.asc, axis=1, ignore_index=False)
+        instance.secofday = nc['Time'].values ##Save second of day
         # create an object to store the NetCDF variable time
         instance.dtime = nc.variables['Time']
         # use num2date to setup dtime object
@@ -82,6 +80,8 @@ def writeData(instance):
             instance.write = instance.asc_new_batch
         except Exception:
             instance.write = instance.asc
+    if instance.header == 'ICARTT':
+        instance.write.insert(0, 'Time_Start', instance.secofday)
 ################################################################################################
     for columnName,columnData in instance.write.items():
             #print(columnName)
@@ -100,6 +100,10 @@ def writeData(instance):
         instance.fillvalue = -32767 if instance.fillvalue1.isChecked() else 'Blank' if instance.fillvalue2.isChecked() else 'Replicate'
         instance.delimiter = 'comma' if instance.comma.isChecked() else 'space'
         instance.header = 'Plain' if instance.header1.isChecked() else 'ICARTT' if instance.header2.isChecked() else 'AMES'
+        instance.time = 'hh:mm:ss' if instance.time1.isChecked() else 'hh mm ss' if instance.time2.isChecked() else 'SecOfDay'
+        if instance.header == 'ICARTT':
+            instance.date= 'NoDate'
+            instance.time='SecOfDay'
     except:
         #not gui mode
         pass
@@ -193,7 +197,6 @@ def PLAINHeader(instance, dataframe):
     sep = ',' if instance.delimiter == 'comma' else ' '
     cellsizes_lines = []
     if instance.histo:
-        print(dataframe.columns)
         for var in instance.cellsize_dict:
             print(var)
             cellsize_len=0
@@ -204,7 +207,7 @@ def PLAINHeader(instance, dataframe):
     # Write the Cellsizes information to the file
         with open(instance.output_file, 'w') as f:
             f.writelines(cellsizes_lines)
-    dataframe.to_csv(instance.output_file, mode='a', header=True, index=False, na_rep=na_rep, sep=sep)
+    dataframe.to_csv(instance.output_file, header=True, index=False, na_rep=na_rep, sep=sep)
 
     
 def ICARTTHeader(instance, dataframe):
@@ -234,7 +237,7 @@ def ICARTTHeader(instance, dataframe):
     # Rename the time var to Time_Start
     dataframe = dataframe.rename(columns={'Time': 'Time_Start', 'DateTime': 'Time_Start'})
     # Convert columns to float
-    dataframe = add_fills(dataframe,-9999.0)
+    dataframe = add_fills(dataframe,-99999)
     dataframe.to_csv(instance.output_file, header=True, index=False)
     instance.varNumber = str(len(dataframe.columns) - 1)
     try:
@@ -254,7 +257,6 @@ def ICARTTHeader(instance, dataframe):
                 if line.startswith('<YYYY, MM, DD,>'):
                     lines[i] = f'{instance.data_date}, {instance.today}\n'
                 if line.startswith('<varNumber>'):
-                    print(instance.varNumber)
                     lines[i] = f'{instance.varNumber}\n'
                 if line.startswith('<1.0>'):
                     lines[i] = '1.0,' * int(instance.varNumber)
@@ -265,7 +267,6 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = lines[i].rstrip(',') + '\n'
             f.seek(0)
             f.writelines(lines)
-            print(lines)
 
         with open('./header2.tmp', 'r+') as f:
             lines = f.readlines()
@@ -286,28 +287,56 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = line.replace('RA', instance.version)
             f.seek(0)
             f.writelines(lines)
-            print(lines)
 
         instance.columns = pd.DataFrame(dataframe.columns.values.tolist())
         instance.fileheader = instance.fileheader.loc[instance.fileheader[0].isin(instance.columns[0])]
-        instance.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
+        ordered_fileheader = []
+        for col in dataframe.columns:
+            matching_rows = instance.fileheader[instance.fileheader[0] == col]
+            if not matching_rows.empty:
+                ordered_fileheader.append(matching_rows)
+        if ordered_fileheader:
+            instance.fileheader = pd.concat(ordered_fileheader, ignore_index=True)
+        #instance.fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
+        csv_string = instance.fileheader.to_csv(header=False, index=False)
+
+        # Append to file manually
+        with open('./header1.tmp', 'a', newline='') as f:
+            f.write(csv_string)
         os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
 
         with open('./header.tmp', 'r+') as f:
             lines = f.readlines()
-            count = f'{len(lines) + 1}, 1001, V02_2016'
+            #if there is a trailing line with just 'a' remove it
+            if lines[-1].strip() == 'a':
+                lines.pop(-1)
+            count = f'{len(lines) + 1}, 1001'
             for i, line in enumerate(lines):
                 if line.startswith('<ROWCOUNT>'):
                     lines[i] = f'{count}\n'
                 f.seek(0)
                 f.writelines(lines)
-            #print(lines)
-
+            
         instance.icartt_filename_date = instance.data_date.replace(', ', '')
         instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{instance.version}.ict'
         print(f'Overwriting Output Filename, since ICARTT file has strict format: {instance.icartt_filename}')
         os.system(f'mv {instance.output_file} {instance.output_file}.tmp')
-        os.system(f'cat ./header.tmp {instance.output_file}.tmp >> {instance.output_file}')
+        #os.system(f'cat ./header.tmp {instance.output_file}.tmp >> {instance.output_file}')
+        # Use Python file operations for more control
+        with open(instance.output_file, 'w') as outfile:
+            # Copy header
+            with open('./header.tmp', 'r') as header_file:
+                header_content = header_file.read()
+                # Remove any trailing 'a' lines
+                header_lines = header_content.split('\n')
+                header_lines = [line for line in header_lines if line.strip() != 'a']
+                outfile.write('\n'.join(header_lines))
+                if header_lines and header_lines[-1].strip():  # Add newline if needed
+                    outfile.write('\n')
+            
+            # Copy data
+            with open(f'{instance.output_file}.tmp', 'r') as data_file:
+                outfile.write(data_file.read())
         os.system(f'mv {instance.output_file} {os.path.abspath(os.path.dirname(instance.output_file))}/{instance.icartt_filename}')
         os.system(f'rm header.tmp header1.tmp header2.tmp {instance.output_file}.tmp')
     except Exception:
@@ -373,7 +402,7 @@ def AMESHeader(instance, ames_header):
             for line in lines:
                 f.write(line)
         # combine and perform replacement on the combined header file
-        instance.fileheader.to_csv(lib_path + '/header1_ames.tmp', mode='a', header=False, index=False)
+        instance.fileheader.to_csv(lib_path + '/header1_ames.tmp', header=False, index=False)
         os.system('cat ' + lib_path + '/header1_ames.tmp ' + lib_path + '/header2_ames.tmp > ' + lib_path + '/header_ames.tmp')
         with open(lib_path + '/header_ames.tmp', 'r+') as f:
             lines = f.readlines()
@@ -395,6 +424,7 @@ def add_fills(dataframe, fill):
     for column in dataframe.columns:
         try:
             dataframe[column] = dataframe[column].astype(float)
+            dataframe[column] = dataframe[column].where(np.isfinite(dataframe[column]), fill)
         except Exception:
             if column == 'Time_Start' or column == 'Date':
                 pass

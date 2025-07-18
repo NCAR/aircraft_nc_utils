@@ -34,9 +34,9 @@ if os.path.exists(nc2asc_lib):
     sys.path.append(nc2asc_lib)
 
 # Now import the modules directly (without lib prefix)
-from write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader
-from process_nc import process_date_time
-from read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
+from lib.write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader
+from lib.process_nc import process_date_time
+from lib.read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -894,14 +894,14 @@ class nc2asc_CL():
             try:
                 self.date1.setChecked(True)
             except Exception:
-                print("Using default date format: yyyy-mm-dd")
-                self.date = 'yyyy-mm-dd'
+                print("Using default date format: NoDate")
+                self.date = 'NoDate'
             #Use hh:mm:ss by default
             try:
                 self.time1.setChecked(True)
             except Exception:
-                print("Using default time format: hh:mm:ss")
-                self.time = 'hh:mm:ss'
+                print("Using default time format: SecOfDay")
+                self.time = 'SecOfDay'
             try:
                 self.comma.setChecked(True)
             except Exception:
@@ -919,8 +919,9 @@ class nc2asc_CL():
         # set default time and averaging: no averaging or time trimming
         self.ti = 'X,X'
         self.avg = ''
-            
+        
         nc = xr.open_dataset(self.input_file,decode_times=False)
+        self.secofday = nc['Time'].values
         # keep mixed_rate bool arg, to enter this as opposed to the full conversion.
         if args.mixed_rate:
 
@@ -1005,10 +1006,33 @@ class nc2asc_CL():
             elif self.tail_number == 'N130AR':
                 self.platform = 'C130'
             self.project_name = nc.attrs['project']
+            # After line 1008 where you set self.dtime = nc['Time'], add this section:
+            if self.header == 'ICARTT':
+                # Add Time_Start column as the first column for ICARTT format
+                if not self.variables_extract_batch:
+                    # Insert Time_Start at the beginning of the dataframe
+                    self.asc_new_batch = self.asc.copy()
+                    self.asc_new_batch.insert(0, 'Time_Start', self.secofday)
+                    print('Added Time_Start column for ICARTT format')
+                else:
+                    # For batch processing, insert Time_Start at the beginning
+                    self.asc_new_batch.insert(0, 'Time_Start', self.secofday)
+                    print('Added Time_Start column for ICARTT format')
+            else:
+                # For non-ICARTT formats, proceed as normal
+                if not self.variables_extract_batch:
+                    print('Using all variables')
+                    self.variables_extract_batch = list(nc.variables)  
+                    self.asc_new_batch = self.asc
+                else:
+                    for x, var in enumerate(self.variables_extract_batch):
+                        if var not in self.asc.columns:
+                            print('***WARNING***Var '+str(var)+' not in netCDF file!!! Continuing with conversion****')
+                    self.variables_extract_batch = [var for var in self.variables_extract_batch if var in self.asc.columns]
+                    self.asc_new_batch = self.asc[self.variables_extract_batch]
             self.today = str(datetime.today().strftime('%Y, %m, %d'))
             self.today = self.today.replace('-', ', ')
-            
-            
+
             gui.parse_vars(self,nc)
 
 
@@ -1024,6 +1048,7 @@ class nc2asc_CL():
                     break
             
             # create an object to store the netCDF variable time
+            
             self.dtime = xr.coding.times.decode_cf_datetime(nc['Time'], nc['Time'].attrs['units'])
             self.dtime = pd.Series(self.dtime).astype(str)
             self.dtime_sep = self.dtime.str.split(' ', expand=True)
