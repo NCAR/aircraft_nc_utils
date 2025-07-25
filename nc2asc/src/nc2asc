@@ -34,9 +34,9 @@ if os.path.exists(nc2asc_lib):
     sys.path.append(nc2asc_lib)
 
 # Now import the modules directly (without lib prefix)
-from write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader
-from process_nc import process_date_time
-from read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
+from lib.write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader
+from lib.process_nc import process_date_time
+from lib.read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -445,6 +445,7 @@ class gui(QMainWindow):
                     self.units[i] = pd.Series([''])
                 # append self.long_name with netcdf attribute long_name
                 long_name = nc[i].attrs['long_name']
+                long_name = nc[i].attrs['long_name'].replace(',', '')
                 self.long_name[i] = pd.Series([long_name])
                 # append self.variables with netcdf variable names
                 variables = i
@@ -460,7 +461,7 @@ class gui(QMainWindow):
                 units = nc[i].attrs['units']
                 self.units[i] = pd.Series([units])
                 # append self.long_name with netcdf attribute long_name
-                long_name = nc[i].attrs['long_name']
+                long_name = nc[i].attrs['long_name'].replace(',', '')
                 self.long_name[i] = pd.Series([long_name])
                 # append self.variables with netcdf variable names
                 variables = i
@@ -478,7 +479,6 @@ class gui(QMainWindow):
                     ## Add the bin number to variable name
                 except KeyError:
                     var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
-                
             else:
                 pass
     # Define function to format the data loaded
