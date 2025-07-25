@@ -34,9 +34,9 @@ if os.path.exists(nc2asc_lib):
     sys.path.append(nc2asc_lib)
 
 # Now import the modules directly (without lib prefix)
-from lib.write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader
-from lib.process_nc import process_date_time
-from lib.read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
+from write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader
+from process_nc import process_date_time
+from read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
 
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
