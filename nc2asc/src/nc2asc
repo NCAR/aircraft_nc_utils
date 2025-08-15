@@ -914,7 +914,6 @@ class nc2asc_CL():
                 self.fillvalue = 'blank'
         
         self.asc_new_batch = pd.DataFrame()
-        self.version = 'RA'
 
         # set default time and averaging: no averaging or time trimming
         self.ti = 'X,X'
