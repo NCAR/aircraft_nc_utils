@@ -285,6 +285,9 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = f'PLATFORM: NSF/NCAR {instance.platform} {instance.tail_number}\n'
                 if line.startswith('REVISION: RA'):
                     lines[i] = line.replace('RA', instance.version)
+                if line.startswith('RA:'):
+                    lines[i] = line.replace('RA', instance.version) 
+                    #TODO: This versioning section needs to be cumulative in an icartt config file so that changes can be tracked within one file. (e.g. RA: Field Data; RB: Field Data trimmed to flight time)
             f.seek(0)
             f.writelines(lines)
 
