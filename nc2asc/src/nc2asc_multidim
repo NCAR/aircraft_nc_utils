@@ -1,0 +1,301 @@
+import traceback
+import xarray as xr
+import numpy as np
+import pandas as pd
+from datetime import datetime
+import os 
+
+class NetCDFtoICARTT:
+    """
+    A class to convert specific NetCDF aerosol size distribution data
+    to the ICARTT FFI 2110 format.
+    """
+    def __init__(self, netcdf_file_path, output_icartt_file_path):
+        """
+        Initializes the converter with input and output file paths.
+        
+        Args:
+            netcdf_file_path (str): Path to the input NetCDF file.
+            output_icartt_file_path (str): Path for the output ICARTT file.
+        """
+        self.netcdf_file_path = netcdf_file_path
+        self.output_icartt_file_path = output_icartt_file_path
+        self.ds = None
+        self.time_data = None
+        self.uhsas_midpoint_diameters = None
+        self.uhsas_bounds = None
+        self.auhsas_ro_data = None
+        self.num_time_points = 0
+        self.num_uhsas_bins = 0
+        self.missing_value_primary = int(-99999)
+        self.flight_date_utc = None
+
+    def _load_data(self):
+        """Loads and validates data from the NetCDF file."""
+        try:
+            self.ds = xr.open_dataset(self.netcdf_file_path, decode_times=False)
+        except FileNotFoundError:
+            print(f"Error: NetCDF file not found at {self.netcdf_file_path}")
+            return False
+        except Exception as e:
+            print(f"Error opening NetCDF file: {e}")
+            return False
+
+        try:
+            self.time_data = self.ds['Time'].values
+            self.uhsas_midpoint_diameters = self.ds['UHSAS059'].values
+            self.uhsas_bounds = self.ds['UHSAS059_bnds'].values
+            self.auhsas_ro_data = self.ds['AUHSAS_RO'].squeeze().values
+            
+            self.num_time_points = len(self.time_data)
+            self.num_uhsas_bins = len(self.uhsas_midpoint_diameters)
+            
+            flight_date_str = self.ds.attrs['FlightDate']
+            self.flight_date_utc = datetime.strptime(flight_date_str, "%m/%d/%Y")
+            self.platform = "C130" if self.ds.attrs.get('Platform') == 'N130' else "GV" if self.ds.attrs.get('Platform') == 'N1677F' else "Unknown"
+            self.project_name = self.ds.attrs.get('project', 'Unknown')
+
+        except KeyError as e:
+            print(f"Error: Missing expected variable or dimension in NetCDF: {e}")
+            print("Please ensure your NetCDF file contains 'Time', 'UHSAS059', 'UHSAS059_bnds', and 'AUHSAS_RO'.")
+            return False
+        
+        return True
+    def ICARTTHeader(self):
+        lib_path = str(os.path.abspath(os.path.dirname(__file__)))
+        if lib_path == '/opt/local/bin':
+            try:
+                lib_path = lib_path.replace("bin", "lib")
+            except Exception as e:
+                print(e)
+                print(traceback.format_exc())
+        else:
+            try:
+                if 'lib' not in lib_path:
+                    lib_path = str(lib_path) + '/lib/'
+            except Exception as e:
+                print(e)
+                print(traceback.format_exc())
+
+        try:
+            data_date = str(ddate).replace('-', ', ')
+            os.system(f'cp {lib_path}/header1.txt ./header1.tmp')
+            os.system("ex -s -c '5i' -c x ./header1.tmp")
+            os.system(f'cp {lib_path}/header2.txt ./header2.tmp')
+            today = datetime.today().strftime('%Y, %m, %d')
+            data_date = f"{self.flight_date_utc.year:04d}, {self.flight_date_utc.month:02d}, {self.flight_date_utc.day:02d}"
+
+            with open('./header1.tmp', 'r+') as f:
+                lines = f.readlines()
+                for i, line in enumerate(lines):
+                    if line.startswith('RAF instruments on'):
+                        lines[i] = f'{line.strip()} {platform}\n'
+                    if line.startswith('<PROJECT>'):
+                        lines[i] = f'{project_name}\n'
+                    if line.startswith('<YYYY, MM, DD,>'):
+                        lines[i] = f'{data_date}, {today}\n'
+                    if line.startswith('<varNumber>'):
+                        lines[i] = f'{varNumber}\n'
+                    if line.startswith('<1.0>'):
+                        lines[i] = '1.0,' * int(varNumber)
+                        lines[i] = lines[i].rstrip(',') + '\n'
+                    if line.startswith('<-99999.0>'):
+                        print('Replacing fill values')
+                        lines[i] = '-99999.0,' * int(varNumber)
+                        lines[i] = lines[i].rstrip(',') + '\n'
+                f.seek(0)
+                f.writelines(lines)
+
+            with open('./header2.tmp', 'r+') as f:
+                lines = f.readlines()
+                cells_len=0
+                if histo:
+                    for var in cellsize_dict:
+                        cellsize_len=0
+                        if var in dataframe.columns:
+                            lines.insert(3, f'{var} Cellsizes: {", ".join(map(str, cellsize_dict[var].flatten()))}\n')
+                            cellsize_len+=1
+                    cells_len = cellsize_len
+                for i, line in enumerate(lines):
+                    if line.startswith('18'):
+                        lines[i] =str(cells_len+18) + '\n'
+                    if line.startswith('<PLATFORM>'):
+                        lines[i] = f'PLATFORM: NSF/NCAR {platform} {tail_number}\n'
+                    if line.startswith('REVISION: RA'):
+                        lines[i] = line.replace('RA', version)
+                f.seek(0)
+                f.writelines(lines)
+
+            columns = pd.DataFrame(dataframe.columns.values.tolist())
+            fileheader = fileheader.loc[fileheader[0].isin(columns[0])]
+            ordered_fileheader = []
+            for col in dataframe.columns:
+                matching_rows = fileheader[fileheader[0] == col]
+                if not matching_rows.empty:
+                    ordered_fileheader.append(matching_rows)
+            if ordered_fileheader:
+                fileheader = pd.concat(ordered_fileheader, ignore_index=True)
+            #fileheader.to_csv('./header1.tmp', mode='a', header=False, index=False)
+            csv_string = fileheader.to_csv(header=False, index=False)
+
+            # Append to file manually
+            with open('./header1.tmp', 'a', newline='') as f:
+                f.write(csv_string)
+            os.system('cat ./header1.tmp ./header2.tmp > ./header.tmp')
+
+            with open('./header.tmp', 'r+') as f:
+                lines = f.readlines()
+                #if there is a trailing line with just 'a' remove it
+                if lines[-1].strip() == 'a':
+                    lines.pop(-1)
+                count = f'{len(lines) + 1}, 1001'
+                for i, line in enumerate(lines):
+                    if line.startswith('<ROWCOUNT>'):
+                        lines[i] = f'{count}\n'
+                    f.seek(0)
+                    f.writelines(lines)
+                
+            icartt_filename_date = data_date.replace(', ', '')
+            icartt_filename = f'{project_name}-CORE_{platform}_{icartt_filename_date}_{version}.ict'
+            print(f'Overwriting Output Filename, since ICARTT file has strict format: {icartt_filename}')
+            os.system(f'mv {output_file} {output_file}.tmp')
+            #os.system(f'cat ./header.tmp {output_file}.tmp >> {output_file}')
+            # Use Python file operations for more control
+            with open(output_file, 'w') as outfile:
+                # Copy header
+                with open('./header.tmp', 'r') as header_file:
+                    header_content = header_file.read()
+                    # Remove any trailing 'a' lines
+                    header_lines = header_content.split('\n')
+                    header_lines = [line for line in header_lines if line.strip() != 'a']
+                    outfile.write('\n'.join(header_lines))
+                    if header_lines and header_lines[-1].strip():  # Add newline if needed
+                        outfile.write('\n')
+                
+                # Copy data
+                with open(f'{output_file}.tmp', 'r') as data_file:
+                    outfile.write(data_file.read())
+            os.system(f'mv {output_file} {os.path.abspath(os.path.dirname(output_file))}/{icartt_filename}')
+            os.system(f'rm header.tmp header1.tmp header2.tmp {output_file}.tmp')
+        except Exception:
+            print(traceback.format_exc())
+            print('ICARTT header was not created or appended to output file')
+
+
+    def _generate_header(self):
+        """Generates the ICARTT header lines."""
+        header_lines = []
+        # Header generation logic from the original function
+        header_lines.append("NLHEAD_PLACEHOLDER, 2110")
+        header_lines.append("Patrick Veres, Cory Wolff")
+        header_lines.append("NCAR Research Aviation Facility")
+        header_lines.append("RAF instruments on C130")
+        header_lines.append("GOTHAAM")
+        header_lines.append("1, 1")
+
+        revision_date = datetime.now()
+        header_lines.append(f"{self.flight_date_utc.year:04d}, {self.flight_date_utc.month:02d}, {self.flight_date_utc.day:02d}, {revision_date.year:04d}, {revision_date.month:02d}, {revision_date.day:02d}")
+        header_lines.append("1.0")
+        header_lines.append("UHSAS059[], um, arithmetic midpoint bin size in diameter")
+        header_lines.append("UTC, seconds since midnight on flight_date")
+        header_lines.append(str(1))
+        header_lines.append("1.0")
+        header_lines.append(str(self.missing_value_primary))
+        header_lines.append("AUHSAS_RO[], count, UHSAS Raw Count Histogram")
+
+        aux_vars_list = [
+            {"name": "NumBins", "units": "none", "description": "Number_of_UHSAS_bins_reported"},
+        ]
+        header_lines.append(str(len(aux_vars_list)))
+        header_lines.append(", ".join([str(1.0) for _ in aux_vars_list]))
+        header_lines.append(", ".join([str(self.missing_value_primary) for _ in aux_vars_list]))
+        
+        for aux_var in aux_vars_list:
+            header_lines.append(f"{aux_var['name']}, {aux_var['units']}, {aux_var['description']}")
+
+        header_lines.append("0") # NSCOML placeholder
+
+        uhsas_bounds_comment_lines = ["UHSAS059_BOUNDS: Lower_Bound, Upper_Bound (um)"]
+        for i, (lower, upper) in enumerate(self.uhsas_bounds):
+            uhsas_bounds_comment_lines.append(f"BIN_{i+1}: {lower:.4f}, {upper:.4f}")
+
+        general_normal_comments = [
+            "PI_CONTACT_INFO: 303-497-1030, 1850 Table Mesa Dr, Boulder, CO, raf-pm@ucar.edu",
+            "PLATFORM: NSF/NCAR C130 N130AR",
+            "LOCATION: Aircraft location data is given in nav data file",
+            "ASSOCIATED_DATA: Full data in NetCDF file.",
+            "INSTRUMENT_INFO: Ultra-High Sensitivity Aerosol Spectrometer (UHSAS-059). Measures aerosol number size distributions. Refer to [citation or documentation] for details.",
+            "DATA_INFO: Raw particle counts converted to number concentration per diameter bin. UHSAS059 represents the arithmetic midpoint diameter of each bin.",
+            "UNCERTAINTY: contact RSIG Manager Patrick Veres (pveres@ucar.edu).",
+            "ULOD_FLAG: -7777",
+            "ULOD_VALUE: N/A",
+            "LLOD_FLAG: -8888",
+            "LLOD_VALUE: N/A",
+            "DM_CONTACT_INFO: Sara Runkel, srunkel@ucar.edu",
+            "PROJECT_INFO: ",
+            "STIPULATIONS_ON_USE: Field data not for publication use.",
+            "OTHER_COMMENTS: N/A",
+            "REVISION: R0;",
+            "R0: Initial conversion from NetCDF to ICARTT FFI 2110 for AUHSAS_RO. Added UHSAS059_bnds to header comments."
+        ]
+        
+        all_normal_comments = uhsas_bounds_comment_lines + general_normal_comments
+        nncoml = len(all_normal_comments) +1 # +1 for the header line itself
+        header_lines.append(str(nncoml))
+        header_lines.extend(all_normal_comments)
+        
+        data_column_header_parts = ["UTC"]
+        for aux_var in aux_vars_list:
+            data_column_header_parts.append(aux_var['name'])
+        data_column_header_parts.append("UHSAS059[]")
+        data_column_header_parts.append("AUHSAS_RO[]")
+        header_lines.append(", ".join(data_column_header_parts))
+
+        nlhead = len(header_lines)
+        header_lines[0] = f"{nlhead}, 2110"
+        return header_lines
+
+    def _generate_data_rows(self):
+        """Generates the ICARTT data rows."""
+        data_rows = []
+        for i in range(self.num_time_points):
+            current_utc = self.time_data[i]
+            current_auhsas_ro_array = self.auhsas_ro_data[i, :]
+
+            main_data_line_parts = [f"{current_utc:.0f}"]
+            main_data_line_parts.append(str(self.num_uhsas_bins))
+            data_rows.append(", ".join(main_data_line_parts))
+
+            for j in range(self.num_uhsas_bins):
+                uhsas_diameter_val = self.uhsas_midpoint_diameters[j]
+                auhsas_ro_val = current_auhsas_ro_array[j]
+                if np.isnan(auhsas_ro_val):
+                    auhsas_ro_val = self.missing_value_primary
+                
+                data_rows.append(f"   {uhsas_diameter_val:.6f}, {auhsas_ro_val:.0f}")
+        return data_rows
+
+    def convert(self):
+        """Performs the full conversion from NetCDF to ICARTT."""
+        if not self._load_data():
+            return
+
+        header_lines = self._generate_header()
+        data_rows = self._generate_data_rows()
+
+        with open(self.output_icartt_file_path, 'w') as f:
+            for line in header_lines:
+                f.write(line + "\n")
+            for row in data_rows:
+                f.write(row + "\n")
+
+        print(f"Successfully converted NetCDF to ICARTT FFI 2110: {self.output_icartt_file_path}")
+
+# Example of how to use the new class
+if __name__ == "__main__":
+    # Create a dummy NetCDF file reflecting the specified structure
+    input_netcdf = "/Users/srunkel/Downloads/GOTHAAMrf08.nc"
+    output_icartt_path = "GOTHAAM-CORE_C130_20250804_R0.ict"
+    # Instantiate the class and call the convert method
+    converter = NetCDFtoICARTT(input_netcdf, output_icartt_path)
+    converter.convert()
