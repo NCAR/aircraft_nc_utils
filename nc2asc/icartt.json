@@ -1,0 +1,34 @@
+{
+  "header": {
+    "ic_version": 1001,
+    "project_name": "GOTHAAM",
+    "datasource_desc": "RAF Instruments on ",
+    "platform": "C130",
+    "tail_number": "N130AR",
+    "missing_value": -99999.0,
+    "pi_name": "Patrick Veres, Cory Wolff",
+    "pi_organization": "NCAR Research Aviation Facility",
+    "data_interval": 1.0
+  },
+  "normal_comments": {
+    "pi_contact_info": "303-497-1030, 1850 Table Mesa Dr, Boulder, CO, raf-pm@ucar.edu",
+    "dm_contact_info": "NCAR/EOL Archive, eol-archive@ucar.edu",
+    "location": "Aircraft location data is given in nav data file",
+    "associated_data": "Full data in NetCDF file.",
+    "instrument_info": "",
+    "data_info": "data reported in ambient condition, ambient temperature and pressure are given for conversion to STP (273.15K and 1013 mb)",
+    "uncertainty": "contact RSIG Manager Patrick Veres (pveres@ucar.edu)",
+    "ulod_flag": -77777,
+    "ulod_value": "N/A",
+    "llod_flag": -88888,
+    "llod_value": "N/A",
+    "project_info": "",
+    "stipulations_on_use": "Field data not for publication use",
+    "other_comments": "none",
+    "revision": "RB",
+    "revision_comments": {
+      "RB": "Trimmed data to flight time",
+      "RA": "Field Data"
+    }
+  }
+}
