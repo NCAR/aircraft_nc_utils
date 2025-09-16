@@ -20,6 +20,7 @@ class NetCDFtoICARTT:
             netcdf_file_path (str): Path to the input NetCDF file.
             output_icartt_file_path (str): Path for the output ICARTT file.
         """
+        #TODO: generalize to take variable names as input parameters and read the metadata from the netcdf
         self.netcdf_file_path = netcdf_file_path
         self.output_icartt_file_path = output_icartt_file_path
         self.ds = None
@@ -54,9 +55,9 @@ class NetCDFtoICARTT:
             self.num_uhsas_bins = len(self.uhsas_midpoint_diameters)
             
             flight_date_str = self.ds.attrs['FlightDate']
-            # Adjust the format string below to match the actual format of flight_date_str, e.g. "%Y-%m-%d"
-            self.flight_date_utc = datetime.strptime(flight_date_str, "%d/%m/%Y").strftime('%Y, %m, %d')
-            self.platform = "C130" if self.ds.attrs.get('platform') == 'N130AR' else "GV" if self.ds.attrs.get('platform') == 'N1677F' else "Unknown"
+            # Flight date string format MM/DD/YYYY
+            self.flight_date_utc = datetime.strptime(flight_date_str, "%m/%d/%Y").strftime('%Y, %m, %d')
+            self.platform = "C130" if self.ds.attrs.get('platform') == 'N130AR' else "GV" if self.ds.attrs.get('platform') == 'N677F' else "Unknown"
             self.project_name = self.ds.attrs.get('project', 'Unknown')
             self.replace_dict = {"DATA_DATE": self.flight_date_utc,
                                 "REVISION_DATE": datetime.today().strftime('%Y, %m, %d'),
