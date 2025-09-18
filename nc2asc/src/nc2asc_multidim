@@ -12,7 +12,7 @@ class NetCDFtoICARTT:
     A class to convert specific NetCDF aerosol size distribution data
     to the ICARTT FFI 2110 format.
     """
-    def __init__(self, netcdf_file_path, output_icartt_file_path):
+    def __init__(self, netcdf_file_path):
         """
         Initializes the converter with input and output file paths.
         
@@ -22,7 +22,7 @@ class NetCDFtoICARTT:
         """
         #TODO: generalize to take variable names as input parameters and read the metadata from the netcdf
         self.netcdf_file_path = netcdf_file_path
-        self.output_icartt_file_path = output_icartt_file_path
+    
         self.ds = None
         self.time_data = None
         self.uhsas_midpoint_diameters = None
@@ -32,6 +32,8 @@ class NetCDFtoICARTT:
         self.num_uhsas_bins = 0
         self.missing_value_primary = int(-99999)
         self.flight_date_utc = None
+        self.project_name = None
+        self.platform = None
         
 
     def _load_data(self):
@@ -70,7 +72,13 @@ class NetCDFtoICARTT:
             return False
         
         return True
-    
+    def _ICARTTName(self):
+        """Generates a default ICARTT filename based on metadata."""
+        if not self.flight_date_utc or not self.platform:
+            print("Error: Flight date or platform information is missing.")
+            return None
+        date_str = self.flight_date_utc.replace(", ", "").replace(" ", "")
+        return f"{self.project_name}-CORE_{self.platform}_{date_str}_R0.ict"
     def _generate_header_base(self, config):
         """
         Helper function to generate the base header content from a template
@@ -250,7 +258,7 @@ class NetCDFtoICARTT:
         """Performs the full conversion from NetCDF to ICARTT."""
         if not self._load_data():
             return
-
+        self.output_icartt_file_path = self._ICARTTName()
         #header_lines = self.ICARTTHeader('../icartt.json')
         header_lines = self.generate_header('icartt.json')
         print(header_lines)
@@ -264,9 +272,11 @@ class NetCDFtoICARTT:
 
 # Example of how to use the new class
 if __name__ == "__main__":
-    # Create a dummy NetCDF file reflecting the specified structure
-    input_netcdf = "/Users/srunkel/Downloads/GOTHAAMrf08.nc"
-    output_icartt_path = "GOTHAAM-CORE_C130_20250804_R0.ict"
-    # Instantiate the class and call the convert method
-    converter = NetCDFtoICARTT(input_netcdf, output_icartt_path)
+    import argparse
+    parser = argparse.ArgumentParser(description="Convert NetCDF to ICARTT.")
+    parser.add_argument("input_netcdf", help="Path to the input NetCDF file")
+    args = parser.parse_args()
+    input_netcdf = args.input_netcdf
+
+    converter = NetCDFtoICARTT(input_netcdf)
     converter.convert()
