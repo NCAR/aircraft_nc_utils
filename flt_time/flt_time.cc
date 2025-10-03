@@ -86,9 +86,9 @@ int
 main(int argc, char *argv[])
 {
   int	indx = 1;
-  float	speed_cutoff = 25.0;	// Default.
-  char	variable[32] = "GSPD";
-  float	delta = 1.0;
+  float	speed_cutoff = 25.0;	// Default ground speed for takeoff/landing. WOW uses 0.5
+  char	variable[32] = "WOW_A";
+  float	delta = 1.0; //Default for speed variables. For WOW, we use -1.0
   size_t step;
   bool	nimbus_output = false;
   bool	debug = false;
@@ -97,9 +97,9 @@ main(int argc, char *argv[])
   // Check arguments / usage.
   if (argc < 2)
   {
-    cerr << "Print out take-off and landing times from a netCDF file.\nUses ground speed (use -v to change) above 25 m/s (use -t to change).\n\n";
-    cerr << "Usage: flt_time [-d] [-s] [-t value] [-v variable] netcdf_file\n";
-    cerr << "Currently takes -t or -v, but not both\n";
+    cerr << "Print out take-off and landing times from a netCDF file. Uses weight on wheels.\n Use -v to specify speed variable and take speed above 25 m/s.\n\n";
+    cerr << "Usage: flt_time [-d] [-s] [-v variable] netcdf_file\n";
+    cerr << "Currently takes cannot specify speed cutoff value\n";
     cerr << "-d debug output\n";
     cerr << "-s for nimbus setup file output ti=hh:mm:ss-hh:mm:ss\n";
     exit(1);
@@ -118,12 +118,13 @@ main(int argc, char *argv[])
       ++indx;
       nimbus_output = true;
     }
-    else
-    if (strcmp(argv[indx], "-t") == 0)
-    {
-      ++indx;
-      speed_cutoff = atof(argv[indx++]);
-    }
+    //Removing speed cutoff option until we can support -t and -v together
+    // else
+    // if (strcmp(argv[indx], "-t") == 0)
+    // {
+    //   ++indx;
+    //   speed_cutoff = atof(argv[indx++]);
+    // }
     else
     if (strcmp(argv[indx], "-v") == 0)
     {
@@ -186,14 +187,25 @@ main(int argc, char *argv[])
   }
 
   // If user specified variable, use that.
-  // Try ground speed first, otherwise airspeed.
+  // Try weight on wheels first, then ground speed, otherwise airspeed.
+  // Update speed_cutoff and delta if variable is WOW
   float *speed_data = getData(ncFile, variable, &step);
   if (speed_data == 0)
   {
-    strcpy(variable, "TASX");
+    strcpy(variable, "GSPD");
     speed_data = getData(ncFile, variable, &step);
+    if (speed_data == 0)
+    {
+      strcpy(variable, "TASX");
+      speed_data = getData(ncFile, variable, &step);
+    }
   }
-
+  // Set speed_cutoff and delta if variable is WOW
+  if (strncmp(variable, "WOW", 3) == 0)
+  {
+    speed_cutoff = .5;
+    delta = -1.0;
+  }
   if (!nimbus_output)
     cout << "Using variable " << variable << "\n";
 
