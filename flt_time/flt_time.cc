@@ -92,16 +92,18 @@ main(int argc, char *argv[])
   size_t step;
   bool	nimbus_output = false;
   bool	debug = false;
+  bool  no_round_time = false;
 
 
   // Check arguments / usage.
   if (argc < 2)
   {
     cerr << "Print out take-off and landing times from a netCDF file. Uses weight on wheels.\n Use -v to specify speed variable and take speed above 25 m/s.\n\n";
-    cerr << "Usage: flt_time [-d] [-s] [-v variable] netcdf_file\n";
-    cerr << "Currently takes cannot specify speed cutoff value\n";
+    cerr << "Usage: flt_time [-d] [-s] [-r] [-v variable] netcdf_file\n";
+    cerr << "Currently, cannot change cutoff value if selecting speed variable.\n";
     cerr << "-d debug output\n";
     cerr << "-s for nimbus setup file output ti=hh:mm:ss-hh:mm:ss\n";
+    cerr << "-r to turn of rounding of time in nimbus setupfile\n";
     exit(1);
   }
 
@@ -117,6 +119,12 @@ main(int argc, char *argv[])
     {
       ++indx;
       nimbus_output = true;
+    }
+    else
+    if (strcmp(argv[indx], "-r") == 0)
+    {
+      ++indx;
+      no_round_time = true;
     }
     //Removing speed cutoff option until we can support -t and -v together
     // else
@@ -136,6 +144,11 @@ main(int argc, char *argv[])
       delta = -1.0; // For Takeoff apply speed_cutoff when passes value decreasing
       }
     }
+  }
+  if (no_round_time && !nimbus_output)
+  {
+    cerr << "Option -r (no rounding) is only valid with -s (nimbus output).\n";
+    exit(1);
   }
 
 
@@ -269,18 +282,32 @@ main(int argc, char *argv[])
 
   if (nimbus_output)
   {
-    int shh, ehh, smm, emm;
+    int shh, ehh, smm, emm, sss, ess; //keep track of seconds for no rounding
     struct tm * tt = gmtime(&start);
-    shh = tt->tm_hour; smm = tt->tm_min;
+    shh = tt->tm_hour; smm = tt->tm_min; sss = tt->tm_sec;
     tt = gmtime(&end);
-    ehh = tt->tm_hour; emm = tt->tm_min + 1;
-    if (ehh < shh) ehh += 24;
-    if (emm > 59) { emm -= 60; ehh += 1; }
+    ehh = tt->tm_hour; emm = tt->tm_min; ess = tt->tm_sec;
+    if (!no_round_time)
+     { 
+      //round start time to nearest minute
+      emm =emm+1;
+      if (ehh < shh) ehh += 24;
+      if (emm > 59) { emm -= 60; ehh += 1; }
 
+      cout << "ti=" << setfill('0') << setw(2) << shh << ":";
+      cout << setfill('0') << setw(2) << smm << ":00-";
+      cout << setfill('0') << setw(2) << ehh << ":";
+      cout << setfill('0') << setw(2) << emm << ":00\n";
+    }
+   else{
+    if (ehh < shh) ehh += 24; // handle day wrap
     cout << "ti=" << setfill('0') << setw(2) << shh << ":";
-    cout << setfill('0') << setw(2) << smm << ":00-";
+    cout << setfill('0') << setw(2) << smm << ":";
+    cout << setfill('0') << setw(2) << sss << "-";
     cout << setfill('0') << setw(2) << ehh << ":";
-    cout << setfill('0') << setw(2) << emm << ":00\n";
+    cout << setfill('0') << setw(2) << emm << ":";
+    cout << setfill('0') << setw(2) << ess << "\n";
+   } 
   }
   else
   {
