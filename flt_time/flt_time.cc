@@ -103,7 +103,7 @@ main(int argc, char *argv[])
     cerr << "Currently, cannot change cutoff value if selecting speed variable.\n";
     cerr << "-d debug output\n";
     cerr << "-s for nimbus setup file output ti=hh:mm:ss-hh:mm:ss\n";
-    cerr << "-r to turn of rounding of time in nimbus setupfile\n";
+    cerr << "-r to turn off rounding of time from the -s option.\n";
     exit(1);
   }
 
