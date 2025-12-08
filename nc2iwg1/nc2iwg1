@@ -179,11 +179,11 @@ def buildIWG():
                         else:
                             output = var_data
                 elif i not in list(nc.variables.keys()):
-                    if (i == "GSF"):
+                    if (i == "GGSPD"):
                         try:
                             var_data = nc.variables["GSPD"][:]
-                            print("*********NOTICE: VARIABLE GSF NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
-                            # Handle highrate for GSF/GSPD
+                            print("*********NOTICE: VARIABLE GGSPD NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                            # Handle highrate for GGSPD
                             if is_highrate and len(var_data.shape) > 1:
                                 if var_data.shape[1] == max_sps:
                                     output = var_data.flatten()
@@ -197,10 +197,10 @@ def buildIWG():
                                     output = var_data
                         except Exception as e:
                             print(e)
-                    elif (i == "TTX"):
+                    elif (i == "RTX"):
                         try:
                             var_data = nc.variables["RTX"][:]
-                            print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
+                            print("**********NOTICE: Variable RTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
                             # Handle highrate for TTX/RTX
                             if is_highrate and len(var_data.shape) > 1:
                                 if var_data.shape[1] == max_sps:
@@ -234,7 +234,7 @@ def buildIWG():
                     df["NAVAIL"].astype(float).round(decimals=2),
                     df["PALTF"].astype(float).round(decimals=2),
                     df["HGM232"].astype(float).round(decimals=2),
-                    df["GSF"].astype(float).round(decimals=2),
+                    df["GGSPD"].astype(float).round(decimals=2),
                     df["TASX"].astype(float).round(decimals=2),
                     df["IAS"].astype(float).round(decimals=2),
                     df["MACH_A"].astype(float).round(decimals=2),
@@ -248,7 +248,7 @@ def buildIWG():
                     df["ATTACK"].astype(float).round(decimals=2),
                     df["ATX"].astype(float).round(decimals=2),
                     df["DPXC"].astype(float).round(decimals=2),
-                    df["TTX"].astype(float).round(decimals=2),
+                    df["RTX"].astype(float).round(decimals=2),
                     df["PSXC"].astype(float).round(decimals=2),
                     df["QCXC"].astype(float).round(decimals=2),
                     df["PCAB"].astype(float).round(decimals=2),
@@ -312,8 +312,10 @@ def main():
 
     buildIWG()
     if args.output_file is not None:
+        print("1")
         iwg.to_csv(args.output_file, header=False, index=False)
     elif args.UDP:
+        print("2")
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         iwg.to_csv("output.txt", header=False, index=False)
@@ -328,6 +330,7 @@ def main():
                 lines.pop(0)
                 time.sleep(float(interval))
     else:
+        print("3")
         input_path = os.path.splitext(input_file)
         iwg.to_csv(input_path[0]+".iwg1", header=False, index=False)
         if args.standard_out is not None:
@@ -338,7 +341,7 @@ def main():
                     message = MESSAGE.translate("[]'")
                     message = message.rstrip()
                     print(message)
-                    time.sleep(float(interval))
+#                    time.sleep(float(interval))
 #######################################################################
 # main
 #######################################################################
