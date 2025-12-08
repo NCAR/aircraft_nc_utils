@@ -122,16 +122,16 @@ def buildIWG():
     base_dtime = netCDF4.num2date(TIME[:], TIME.units)
 
     # For highrate or samplerate files, create subsecond timestamps
+    try:
+        base_ts = pd.to_datetime(base_dtime)  # works if not cftime
+    except TypeError:
+        base_ts = pd.to_datetime([d.isoformat() for d in base_dtime])
+
     if is_highrate and max_sps > 1:
-        # Create an array of subsecond offsets
-        subsec_offsets = [i / float(max_sps) for i in range(max_sps)]
-        # Expand time to include all subsecond samples
-        expanded_times = []
-        for base_time in base_dtime:
-            for offset in subsec_offsets:
-                expanded_times.append(base_time + pd.Timedelta(seconds=offset))
-        # Format with millisecond precision: YYYYMMDDThhmmss.fff
-        dtime = pd.Series([t.strftime('%Y%m%dT%H%M%S.%f')[:-3] for t in expanded_times])
+        offsets_ns = (np.arange(max_sps, dtype="int64") * 1_000_000_000) // max_sps ##convert to nanoseconds
+        offset_delta = offsets_ns.astype("timedelta64[ns]")
+        expanded_times = (base_ts.values[:, None] + offset_delta).reshape(-1)
+        dtime = pd.Series(expanded_times).dt.strftime("%Y%m%dT%H%M%S.%f").str[:-4] #2 decimal precision
     else:
         dtime = pd.Series(base_dtime).astype(str)
         dtime = dtime.str.replace(":", "")
