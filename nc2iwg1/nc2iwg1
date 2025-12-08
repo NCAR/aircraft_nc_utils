@@ -9,6 +9,7 @@
 
 import netCDF4
 import pandas as pd
+import numpy as np
 import sys
 import socket
 import argparse
@@ -103,20 +104,50 @@ def buildIWG():
                       "PCAB", "WSC", "WDC", "WIC", "SOLZE", "Solar_El_AC",
                       "SOLAZ", "Sun_Az_AC"]
 
+    # Detect if this is a highrate or samplerate file by checking for sps dimensions
+    highrate_dims = [dim for dim in nc.dimensions if dim.startswith('sps')]
+    is_highrate = len(highrate_dims) > 0
+
+    # Determine the maximum sample rate for expanding time
+    max_sps = 1
+    if is_highrate:
+        for dim in highrate_dims:
+            sps_value = nc.dimensions[dim].size
+            if sps_value > max_sps:
+                max_sps = sps_value
+
     # extract the time variable from the netCDF file
     df = {}
     TIME = nc.variables["Time"]
-    dtime = netCDF4.num2date(TIME[:], TIME.units)
-    dtime = pd.Series(dtime).astype(str)
-    dtime = dtime.str.replace(":", "")
-    dtime = dtime.str.replace("-", "")
-    dtime = dtime.str.replace(" ", "T")
+    base_dtime = netCDF4.num2date(TIME[:], TIME.units)
+
+    # For highrate or samplerate files, create subsecond timestamps
+    if is_highrate and max_sps > 1:
+        # Create an array of subsecond offsets
+        subsec_offsets = [i / float(max_sps) for i in range(max_sps)]
+        # Expand time to include all subsecond samples
+        expanded_times = []
+        for base_time in base_dtime:
+            for offset in subsec_offsets:
+                expanded_times.append(base_time + pd.Timedelta(seconds=offset))
+        # Format with millisecond precision: YYYYMMDDThhmmss.fff
+        dtime = pd.Series([t.strftime('%Y%m%dT%H%M%S.%f')[:-3] for t in expanded_times])
+    else:
+        dtime = pd.Series(base_dtime).astype(str)
+        dtime = dtime.str.replace(":", "")
+        dtime = dtime.str.replace("-", "")
+        dtime = dtime.str.replace(" ", "T")
     if args.output_file is None and args.UDP is None:
         dtime = dtime.iloc[-1:]
         for i in iwg1_vars_list:
             try:
                 if i in list(nc.variables.keys()):
-                    output = nc.variables[i].iloc[-1:]
+                    var_data = nc.variables[i]
+                    # Handle highrate variables
+                    if is_highrate and len(var_data.shape) > 1:
+                        output = var_data[-1, :]  # Get last time step, all subsecond samples
+                    else:
+                        output = var_data.iloc[-1:] if hasattr(var_data, 'iloc') else var_data[-1:]
                 elif i not in list(nc.variables.keys()):
                     output = pd.DataFrame(columns=[i]).iloc[-1:]
                 else:
@@ -130,22 +161,67 @@ def buildIWG():
         for i in iwg1_vars_list:
             try:
                 if i in list(nc.variables.keys()):
-                    output = nc.variables[i][:]
+                    var_data = nc.variables[i][:]
+                    # Handle highrate variables - flatten to one row per subsecond sample
+                    if is_highrate and len(var_data.shape) > 1:
+                        # Variable has subsecond dimension - reshape to flatten
+                        if var_data.shape[1] == max_sps:
+                            # This variable matches max sample rate - use as-is
+                            output = var_data.flatten()
+                        else:
+                            # This variable has fewer samples per second - repeat values
+                            sps_ratio = max_sps // var_data.shape[1]
+                            output = np.repeat(var_data.flatten(), sps_ratio)
+                    else:
+                        # 1Hz variable - repeat for each subsecond sample
+                        if is_highrate and max_sps > 1:
+                            output = np.repeat(var_data, max_sps)
+                        else:
+                            output = var_data
                 elif i not in list(nc.variables.keys()):
                     if (i == "GSF"):
                         try:
-                            output = nc.variables["GSPD"][:]
+                            var_data = nc.variables["GSPD"][:]
                             print("*********NOTICE: VARIABLE GSF NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                            # Handle highrate for GSF/GSPD
+                            if is_highrate and len(var_data.shape) > 1:
+                                if var_data.shape[1] == max_sps:
+                                    output = var_data.flatten()
+                                else:
+                                    sps_ratio = max_sps // var_data.shape[1]
+                                    output = np.repeat(var_data.flatten(), sps_ratio)
+                            else:
+                                if is_highrate and max_sps > 1:
+                                    output = np.repeat(var_data, max_sps)
+                                else:
+                                    output = var_data
                         except Exception as e:
                             print(e)
                     elif (i == "TTX"):
                         try:
-                            output = nc.variables["RTX"][:]
+                            var_data = nc.variables["RTX"][:]
                             print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
+                            # Handle highrate for TTX/RTX
+                            if is_highrate and len(var_data.shape) > 1:
+                                if var_data.shape[1] == max_sps:
+                                    output = var_data.flatten()
+                                else:
+                                    sps_ratio = max_sps // var_data.shape[1]
+                                    output = np.repeat(var_data.flatten(), sps_ratio)
+                            else:
+                                if is_highrate and max_sps > 1:
+                                    output = np.repeat(var_data, max_sps)
+                                else:
+                                    output = var_data
                         except Exception as e:
                             print(e)
                     else:
-                        output = pd.DataFrame(columns=[i])[:]
+                        # Missing variable - create empty array of correct length
+                        if is_highrate and max_sps > 1:
+                            output_len = len(base_dtime) * max_sps
+                            output = np.full(output_len, np.nan)
+                        else:
+                            output = pd.DataFrame(columns=[i])[:]
                 else:
                     pass
             except Exception:
