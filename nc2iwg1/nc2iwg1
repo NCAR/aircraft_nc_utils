@@ -98,9 +98,9 @@ def buildIWG():
     # read the input file to convert
     nc = netCDF4.Dataset(input_file, mode='r')
     iwg1_vars_list = ["GGLAT", "GGLON", "GGALT", "NAVAIL", "PALTF",
-                      "HGM232", "GSF", "TASX", "IAS", "MACH_A", "VSPD",
+                      "HGM232", "GGSPD", "TASX", "IAS", "MACH_A", "VSPD",
                       "THDG", "TKAT", "DRFTA", "PITCH", "ROLL", "SSLIP",
-                      "ATTACK", "ATX", "DPXC", "TTX", "PSXC", "QCXC",
+                      "ATTACK", "ATX", "DPXC", "RTX", "PSXC", "QCXC",
                       "PCAB", "WSC", "WDC", "WIC", "SOLZE", "Solar_El_AC",
                       "SOLAZ", "Sun_Az_AC"]
 
