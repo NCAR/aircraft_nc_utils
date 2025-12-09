@@ -188,17 +188,15 @@ def buildIWG():
                     var_data = nc.variables[i]
                     output = process_last_timestep(var_data, is_highrate, max_sps)
                 elif i not in list(nc.variables.keys()):
-                    if (i == "GSF"):
+                    if (i == "GGSPD"):
                         try:
-                            var_data = nc.variables["GSPD"]
-                            print("*********NOTICE: VARIABLE GSF NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                            var_data = nc.variables["GSF"]
                             output = process_last_timestep(var_data, is_highrate, max_sps)
                         except Exception as e:
                             print(e)
-                    elif (i == "TTX"):
+                    elif (i == "RTX"):
                         try:
                             var_data = nc.variables["RTX"]
-                            print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
                             output = process_last_timestep(var_data, is_highrate, max_sps)
                         except Exception as e:
                             print(e)
