@@ -9,6 +9,7 @@
 
 import netCDF4
 import pandas as pd
+import numpy as np
 import sys
 import socket
 import argparse
@@ -92,60 +93,154 @@ else:
 # define function to convert data to IWG1 format
 #######################################################################
 
+def process_last_timestep(var_data, is_highrate, max_sps):
+    """Process variable data for last timestep only (no output file mode)"""
+    if is_highrate and len(var_data.shape) > 1:
+        # Get last time step, all subsecond samples
+        last_step_data = var_data[-1, :]
+        if last_step_data.shape[0] == max_sps:
+            return last_step_data
+        else:
+            # Variable has fewer samples so repeat to match max_sps
+            sps_ratio = max_sps // last_step_data.shape[0]
+            return np.repeat(last_step_data, sps_ratio)
+    else:
+        # 1Hz variable
+        if is_highrate and max_sps > 1:
+            # Repeat the last value for all subsecond samples
+            return np.repeat(var_data[-1], max_sps)
+        else:
+            return var_data.iloc[-1:] if hasattr(var_data, 'iloc') else var_data[-1:]
+
+def process_full_data(var_data, is_highrate, max_sps):
+    """Process variable data for full file (output file mode)"""
+    if is_highrate and len(var_data.shape) > 1:
+        # Variable has subsecond dimension - reshape to flatten
+        if var_data.shape[1] == max_sps:
+            # This variable matches max sample rate - use as-is
+            return var_data.flatten()
+        else:
+            # This variable has fewer samples per second - repeat values
+            sps_ratio = max_sps // var_data.shape[1]
+            return np.repeat(var_data.flatten(), sps_ratio)
+    else:
+        # 1Hz variable - repeat for each subsecond sample
+        if is_highrate and max_sps > 1:
+            return np.repeat(var_data, max_sps)
+        else:
+            return var_data
+
 def buildIWG():
 
     # read the input file to convert
     nc = netCDF4.Dataset(input_file, mode='r')
     iwg1_vars_list = ["GGLAT", "GGLON", "GGALT", "NAVAIL", "PALTF",
-                      "HGM232", "GSF", "TASX", "IAS", "MACH_A", "VSPD",
+                      "HGM232", "GGSPD", "TASX", "IAS", "MACH_A", "VSPD",
                       "THDG", "TKAT", "DRFTA", "PITCH", "ROLL", "SSLIP",
-                      "ATTACK", "ATX", "DPXC", "TTX", "PSXC", "QCXC",
+                      "ATTACK", "ATX", "DPXC", "RTX", "PSXC", "QCXC",
                       "PCAB", "WSC", "WDC", "WIC", "SOLZE", "Solar_El_AC",
                       "SOLAZ", "Sun_Az_AC"]
+
+    # Detect if this is a highrate or samplerate file by checking for sps dimensions
+    highrate_dims = [dim for dim in nc.dimensions if dim.startswith('sps')]
+    is_highrate = len(highrate_dims) > 0
+
+    # Determine the maximum sample rate for expanding time
+    max_sps = 1
+    if is_highrate:
+        for dim in highrate_dims:
+            sps_value = nc.dimensions[dim].size
+            if sps_value > max_sps:
+                max_sps = sps_value
 
     # extract the time variable from the netCDF file
     df = {}
     TIME = nc.variables["Time"]
-    dtime = netCDF4.num2date(TIME[:], TIME.units)
-    dtime = pd.Series(dtime).astype(str)
-    dtime = dtime.str.replace(":", "")
-    dtime = dtime.str.replace("-", "")
-    dtime = dtime.str.replace(" ", "T")
+    base_dtime = netCDF4.num2date(TIME[:], TIME.units)
+
+    # For highrate or samplerate files, create subsecond timestamps
+    try:
+        base_ts = pd.to_datetime(base_dtime)  # works if not cftime
+    except TypeError:
+        base_ts = pd.to_datetime([d.isoformat() for d in base_dtime])
+
+    if is_highrate and max_sps > 1:
+        offsets_ns = (np.arange(max_sps, dtype="int64") * 1_000_000_000) // max_sps ##convert to nanoseconds
+        offset_delta = offsets_ns.astype("timedelta64[ns]")
+        expanded_times = (base_ts.values[:, None] + offset_delta).reshape(-1)
+        dtime = pd.Series(expanded_times).dt.strftime("%Y%m%dT%H%M%S.%f").str[:-4] #2 decimal precision
+    else:
+        dtime = pd.Series(base_dtime).astype(str)
+        dtime = dtime.str.replace(":", "")
+        dtime = dtime.str.replace("-", "")
+        dtime = dtime.str.replace(" ", "T")
     if args.output_file is None and args.UDP is None:
-        dtime = dtime.iloc[-1:]
+        # For highrate files, get all subsecond samples from the last second
+        if is_highrate and max_sps > 1:
+            # Get timestamps for the last second only
+            dtime = dtime.iloc[-max_sps:].reset_index(drop=True)
+        else:
+            dtime = dtime.iloc[-1:]
+
         for i in iwg1_vars_list:
             try:
                 if i in list(nc.variables.keys()):
-                    output = nc.variables[i].iloc[-1:]
+                    var_data = nc.variables[i]
+                    output = process_last_timestep(var_data, is_highrate, max_sps)
                 elif i not in list(nc.variables.keys()):
-                    output = pd.DataFrame(columns=[i]).iloc[-1:]
+                    if (i == "GGSPD"):
+                        try:
+                            var_data = nc.variables["GSF"]
+                            output = process_last_timestep(var_data, is_highrate, max_sps)
+                        except Exception as e:
+                            print(e)
+                    elif (i == "RTX"):
+                        try:
+                            var_data = nc.variables["RTX"]
+                            output = process_last_timestep(var_data, is_highrate, max_sps)
+                        except Exception as e:
+                            print(e)
+                    else:
+                        # Missing variable - create empty array
+                        if is_highrate and max_sps > 1:
+                            output = np.full(max_sps, np.nan)
+                        else:
+                            output = pd.DataFrame(columns=[i]).iloc[-1:]
                 else:
                     pass
             except Exception:
                 print(("Error in extracting variable "+i+" in "+input_file))
-            df[i] = pd.DataFrame(output)
+            df[i] = pd.DataFrame(output).reset_index(drop=True)
     else:
         dtime = dtime[:]
 
         for i in iwg1_vars_list:
             try:
                 if i in list(nc.variables.keys()):
-                    output = nc.variables[i][:]
+                    var_data = nc.variables[i][:]
+                    output = process_full_data(var_data, is_highrate, max_sps)
                 elif i not in list(nc.variables.keys()):
-                    if (i == "GSF"):
+                    if (i == "GGSPD"):
                         try:
-                            output = nc.variables["GSPD"][:]
-                            print("*********NOTICE: VARIABLE GSF NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                            var_data = nc.variables["GSPD"][:]
+                            print("*********NOTICE: VARIABLE GGSPD NOT FOUND IN NETCDF FILE, USING VARIABLE GSPD*********")
+                            output = process_full_data(var_data, is_highrate, max_sps)
                         except Exception as e:
                             print(e)
-                    elif (i == "TTX"):
+                    elif (i == "RTX"):
                         try:
-                            output = nc.variables["RTX"][:]
-                            print("**********NOTICE: Variable TTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
+                            var_data = nc.variables["RTX"][:]
+                            print("**********NOTICE: Variable RTX NOT FOUND IN NETCDF FILE, USING VARIABLE RTX*********")
+                            output = process_full_data(var_data, is_highrate, max_sps)
                         except Exception as e:
                             print(e)
                     else:
-                        output = pd.DataFrame(columns=[i])[:]
+                        # Missing variable - create empty array of correct length
+                        if is_highrate and max_sps > 1:
+                            output_len = len(base_dtime) * max_sps
+                            output = np.full(output_len, np.nan)
+                        else:
+                            output = pd.DataFrame(columns=[i])[:]
                 else:
                     pass
             except Exception:
@@ -158,7 +253,7 @@ def buildIWG():
                     df["NAVAIL"].astype(float).round(decimals=2),
                     df["PALTF"].astype(float).round(decimals=2),
                     df["HGM232"].astype(float).round(decimals=2),
-                    df["GSF"].astype(float).round(decimals=2),
+                    df["GGSPD"].astype(float).round(decimals=2),
                     df["TASX"].astype(float).round(decimals=2),
                     df["IAS"].astype(float).round(decimals=2),
                     df["MACH_A"].astype(float).round(decimals=2),
@@ -172,7 +267,7 @@ def buildIWG():
                     df["ATTACK"].astype(float).round(decimals=2),
                     df["ATX"].astype(float).round(decimals=2),
                     df["DPXC"].astype(float).round(decimals=2),
-                    df["TTX"].astype(float).round(decimals=2),
+                    df["RTX"].astype(float).round(decimals=2),
                     df["PSXC"].astype(float).round(decimals=2),
                     df["QCXC"].astype(float).round(decimals=2),
                     df["PCAB"].astype(float).round(decimals=2),
@@ -189,7 +284,9 @@ def buildIWG():
     except Exception:
         iwg.insert(loc=0, column='IWG1', value='IWG1')
     if args.output_file is None and args.UDP is None:
-        iwg[0] = iwg[0].shift(-1)
+        # Don't shift for highrate files - we want all subsecond samples
+        if not (is_highrate and max_sps > 1):
+            iwg[0] = iwg[0].shift(-1)
     else:
         pass
 
@@ -236,8 +333,10 @@ def main():
 
     buildIWG()
     if args.output_file is not None:
+        print("1")
         iwg.to_csv(args.output_file, header=False, index=False)
     elif args.UDP:
+        print("2")
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         iwg.to_csv("output.txt", header=False, index=False)
@@ -252,17 +351,18 @@ def main():
                 lines.pop(0)
                 time.sleep(float(interval))
     else:
+        print("3")
         input_path = os.path.splitext(input_file)
         iwg.to_csv(input_path[0]+".iwg1", header=False, index=False)
-        if args.standard_out is not None:
+        if args.standard_out:
             with io.open(input_path[0]+".iwg1", "r") as udp_packet:
-                lines = udp_packet.readlines()[-1]
-                while len(lines) != 0:
-                    MESSAGE = str(lines)
+                lines = udp_packet.readlines()
+                for line in lines:
+                    MESSAGE = str(line)
                     message = MESSAGE.translate("[]'")
                     message = message.rstrip()
                     print(message)
-                    time.sleep(float(interval))
+#                    time.sleep(float(interval))
 #######################################################################
 # main
 #######################################################################
