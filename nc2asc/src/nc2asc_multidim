@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 NetCDF to ASCII Converter with Multi-dimensional Support
 
@@ -6,21 +5,17 @@ Converts NetCDF files to various ASCII formats:
 - Plain ASCII (CSV or space-delimited)
 - ICARTT FFI 1001 (1D time-series data)
 - ICARTT FFI 2110 (multi-dimensional data)
-- AMES DEF
+- NASA Ames 1001
 
-Uses JSON configuration files for customizable headers and metadata.
+Uses YAML/JSON configuration files for customizable headers and metadata.
 
 Copyright University Corporation for Atmospheric Research (2021-2025)
 """
 
 import argparse
-import json
-import os
 import sys
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -28,166 +23,17 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-
-class OutputFormat(Enum):
-    """Supported output formats."""
-    PLAIN = "plain"
-    ICARTT_1001 = "icartt"
-    ICARTT_2110 = "icartt2110"
-    AMES = "ames"
-
-
-def parse_batch_file(batch_path: str) -> dict:
-    """
-    Parse a batch file and return settings as a dictionary.
-
-    Batch file format:
-        hd=ICARTT          # Header format: Plain, ICARTT, ICARTT2110, AMES
-        dt=NoDate          # Date format: yyyy-mm-dd, yyyy mm dd, NoDate
-        tm=SecOfDay        # Time format: hh:mm:ss, hh mm ss, SecOfDay
-        sp=comma           # Delimiter: comma, space
-        fv=-99999          # Fill value
-        version=RA         # Version string
-        avg=10             # Averaging window (optional)
-        ti=50000,70000     # Time interval start,end (optional)
-        if=/path/to/input.nc   # Input file (optional, overridden by -i)
-        of=/path/to/output.ict # Output file (optional, overridden by -o)
-        Vars=LATC          # Variables to include (one per line)
-        Vars=LONC
-        REM This is a comment
-
-    Args:
-        batch_path: Path to the batch file
-
-    Returns:
-        Dictionary with parsed settings
-    """
-    settings = {
-        'header': None,
-        'date_format': None,
-        'time_format': None,
-        'delimiter': None,
-        'fill_value': None,
-        'version': None,
-        'averaging': None,
-        'start_time': None,
-        'end_time': None,
-        'input_file': None,
-        'output_file': None,
-        'variables': [],
-    }
-
-    # Mapping from batch file values to internal values
-    header_map = {
-        'Plain': 'plain',
-        'ICARTT': 'icartt',
-        'ICARTT2110': 'icartt2110',
-        'icartt2110': 'icartt2110',
-        'AMES': 'ames',
-    }
-
-    date_map = {
-        'yyyy-mm-dd': 'yyyy-mm-dd',
-        'yyyy mm dd': 'yyyy mm dd',
-        'NoDate': 'NoDate',
-    }
-
-    time_map = {
-        'hh:mm:ss': 'hh:mm:ss',
-        'hh mm ss': 'hh mm ss',
-        'SecOfDay': 'SecOfDay',
-    }
-
-    with open(batch_path, 'r') as f:
-        print(f"Reading batch file: {batch_path}")
-        for line in f:
-            line = line.strip()
-
-            # Skip empty lines and comments
-            if not line or line.startswith('REM') or line.startswith('#'):
-                continue
-
-            # Parse key=value pairs
-            if '=' in line:
-                key, value = line.split('=', 1)
-                key = key.strip().lower()
-                value = value.strip()
-
-                if key == 'hd':
-                    settings['header'] = header_map.get(value, value.lower())
-                elif key == 'dt':
-                    settings['date_format'] = date_map.get(value, value)
-                elif key == 'tm':
-                    settings['time_format'] = time_map.get(value, value)
-                elif key == 'sp':
-                    settings['delimiter'] = value.lower()
-                elif key == 'fv':
-                    try:
-                        settings['fill_value'] = float(value)
-                    except ValueError:
-                        pass
-                elif key == 'version':
-                    settings['version'] = value
-                elif key == 'avg':
-                    try:
-                        settings['averaging'] = int(value)
-                    except ValueError:
-                        pass
-                elif key == 'ti':
-                    # Time interval: start,end or X,X for full file
-                    parts = value.split(',')
-                    if len(parts) == 2:
-                        start, end = parts
-                        if start.strip() != 'X':
-                            try:
-                                settings['start_time'] = float(start.strip())
-                            except ValueError:
-                                pass
-                        if end.strip() != 'X':
-                            try:
-                                settings['end_time'] = float(end.strip())
-                            except ValueError:
-                                pass
-                elif key == 'if':
-                    settings['input_file'] = value
-                elif key == 'of':
-                    settings['output_file'] = value
-                elif key == 'vars':
-                    # Handle variable - skip 'Time' as it's implicit
-                    if value and value != 'Time':
-                        settings['variables'].append(value)
-
-    print(f"Batch file settings: header={settings['header']}, "
-          f"date={settings['date_format']}, time={settings['time_format']}, "
-          f"vars={len(settings['variables'])} variables")
-
-    return settings
-
-
-@dataclass
-class ConversionOptions:
-    """Configuration options for the conversion process."""
-    date_format: str = "NoDate"  # 'yyyy-mm-dd', 'yyyy mm dd', 'NoDate'
-    time_format: str = "SecOfDay"  # 'hh:mm:ss', 'hh mm ss', 'SecOfDay'
-    delimiter: str = "comma"  # 'comma', 'space'
-    fill_value: float = -99999.0
-    output_format: OutputFormat = OutputFormat.ICARTT_1001
-    variables: list = field(default_factory=list)
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
-    averaging: Optional[int] = None
-    version: str = "RA"
-
-
-@dataclass
-class FlightMetadata:
-    """Metadata extracted from NetCDF file."""
-    project_name: str = ""
-    platform: str = ""
-    tail_number: str = ""
-    flight_date: str = ""
-    start_time: str = ""
-    end_time: str = ""
+# Import from library modules
+from lib.config_manager import (
+    ConfigManager,
+    ConversionOptions,
+    FlightMetadata,
+    MergedConfiguration,
+    OutputFormat,
+    parse_batch_file,
+)
+from lib.dimension_handler import DimensionHandler, HighRateHandler, categorize_variables
+from lib.formatters import FormatterFactory, OutputFormat as FmtOutputFormat
 
 
 class NetCDFConverter:
@@ -197,20 +43,19 @@ class NetCDFConverter:
     Supports 1D time-series and multi-dimensional data with various output formats.
     """
 
-    PLATFORM_MAP = {"N677F": "GV", "N130AR": "C130"}
+    PLATFORM_MAP = {"N677F": "GV", "N130AR": "C130", "N2UW": "KingAir"}
 
-    def __init__(self, netcdf_path: str, config_path: Optional[str] = None):
+    def __init__(self, netcdf_path: str, config: Optional[MergedConfiguration] = None):
         """
         Initialize the converter.
 
         Args:
             netcdf_path: Path to input NetCDF file
-            config_path: Optional path to JSON configuration file
+            config: Optional MergedConfiguration (if not provided, uses defaults)
         """
         self.netcdf_path = Path(netcdf_path)
-        self.config_path = Path(config_path) if config_path else None
-        self.config = {}
-        self.options = ConversionOptions()
+        self.config = config or MergedConfiguration.default()
+        self.options = self.config.options
         self.metadata = FlightMetadata()
 
         self.ds: Optional[xr.Dataset] = None
@@ -225,13 +70,9 @@ class NetCDFConverter:
         self.date_series: Optional[pd.Series] = None
         self.time_series: Optional[pd.Series] = None
 
-    def load_config(self) -> dict:
-        """Load configuration from JSON file if provided."""
-        if self.config_path and self.config_path.exists():
-            with open(self.config_path, 'r') as f:
-                self.config = json.load(f)
-            print(f"Loaded configuration from {self.config_path}")
-        return self.config
+        # Dimension handler (initialized after loading NetCDF)
+        self._dim_handler: Optional[DimensionHandler] = None
+        self._high_rate_handler: Optional[HighRateHandler] = None
 
     def load_netcdf(self) -> bool:
         """Load and parse the NetCDF file."""
@@ -247,6 +88,15 @@ class NetCDFConverter:
         self._extract_metadata()
         self._extract_time_data()
         self._parse_variables()
+
+        # Initialize handlers
+        self._dim_handler = DimensionHandler(
+            self.ds, self.units, self.long_names, self.cell_sizes
+        )
+        self._high_rate_handler = HighRateHandler(
+            self.config.options.high_rate_strategy
+        )
+
         return True
 
     def _extract_metadata(self):
@@ -255,7 +105,16 @@ class NetCDFConverter:
 
         self.metadata.project_name = attrs.get('project', 'Unknown')
         self.metadata.tail_number = attrs.get('Platform', attrs.get('platform', 'Unknown'))
-        self.metadata.platform = self.PLATFORM_MAP.get(self.metadata.tail_number, 'Unknown')
+
+        # Use config platform mapping if available
+        if self.config.platform_mapping:
+            self.metadata.platform = self.config.platform_mapping.get_platform(
+                self.metadata.tail_number
+            )
+        else:
+            self.metadata.platform = self.PLATFORM_MAP.get(
+                self.metadata.tail_number, 'Unknown'
+            )
 
         flight_date = attrs.get('FlightDate', attrs.get('TimeInterval', ''))
         if flight_date and '/' in flight_date:
@@ -311,14 +170,22 @@ class NetCDFConverter:
                 if 'CellSizes' in var.attrs:
                     self.cell_sizes[var_name] = var.attrs['CellSizes']
             elif len(dims) == 3 and 'Time' in dims and 'sps1' in str(dims):
-                # High-rate histogram data
-                self.data_multidim[var_name] = var[:, 0, :].values
+                # High-rate histogram data - process according to strategy
+                if self._high_rate_handler:
+                    self.data_multidim[var_name] = self._high_rate_handler.process(var.values)
+                else:
+                    self.data_multidim[var_name] = var[:, 0, :].values
                 if 'CellSizes' in var.attrs:
                     self.cell_sizes[var_name] = var.attrs['CellSizes']
 
     def _filter_variables(self) -> tuple:
-        """Filter variables based on options.variables list."""
-        if not self.options.variables:
+        """Filter variables based on options.variables list.
+
+        If options.variables is None, return all variables (no filter).
+        If options.variables is an empty list, return empty dicts (no variables selected).
+        """
+        # None means no filter (return all), empty list means no variables selected
+        if self.options.variables is None:
             return self.data_1d, self.data_multidim
 
         filtered_1d = {k: v for k, v in self.data_1d.items()
@@ -348,12 +215,20 @@ class NetCDFConverter:
         return df.reset_index(drop=True)
 
     def _build_dataframe_1d(self) -> pd.DataFrame:
-        """Build DataFrame from 1D variables."""
+        """Build DataFrame from 1D variables using xarray for performance."""
         data_1d, _ = self._filter_variables()
 
-        df = pd.DataFrame({'Time_Start': self.time_data})
-        for var_name, values in data_1d.items():
-            df[var_name] = values
+        # Build all columns at once using pd.concat to avoid fragmentation
+        columns = {'Time_Start': self.time_data}
+
+        # Include raw date/time columns so they get filtered/averaged correctly
+        if self.date_series is not None:
+            columns['_raw_date'] = self.date_series.values
+        if self.time_series is not None:
+            columns['_raw_time'] = self.time_series.values
+
+        columns.update(data_1d)
+        df = pd.DataFrame(columns)
 
         df = self._apply_time_filter(df)
         df = self._apply_averaging(df)
@@ -369,18 +244,37 @@ class NetCDFConverter:
         return df.fillna(fill)
 
     def _process_datetime_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Add date/time columns based on format options."""
-        if self.options.time_format != "SecOfDay":
-            time_col = self.time_series.copy()
+        """Process date/time columns based on format options.
+
+        Uses _raw_date and _raw_time columns that were included during
+        DataFrame construction to ensure correct filtering/averaging.
+        """
+        prepend_cols = {}
+
+        # Process time column from raw data
+        if self.options.time_format != "SecOfDay" and '_raw_time' in df.columns:
+            time_col = df['_raw_time'].copy()
             if self.options.time_format == 'hh mm ss':
                 time_col = time_col.str.replace(':', ' ')
-            df.insert(0, 'Time', time_col[:len(df)].values)
+            prepend_cols['Time'] = time_col.values
+            df = df.drop(columns=['_raw_time'])
+        elif '_raw_time' in df.columns:
+            df = df.drop(columns=['_raw_time'])
 
-        if self.options.date_format != "NoDate":
-            date_col = self.date_series.copy()
+        # Process date column from raw data
+        if self.options.date_format != "NoDate" and '_raw_date' in df.columns:
+            date_col = df['_raw_date'].copy()
             if self.options.date_format == 'yyyy mm dd':
                 date_col = date_col.str.replace('-', ' ')
-            df.insert(0, 'Date', date_col[:len(df)].values)
+            prepend_cols['Date'] = date_col.values
+            df = df.drop(columns=['_raw_date'])
+        elif '_raw_date' in df.columns:
+            df = df.drop(columns=['_raw_date'])
+
+        # Prepend date/time columns using concat to avoid fragmentation
+        if prepend_cols:
+            prepend_df = pd.DataFrame(prepend_cols, index=df.index)
+            df = pd.concat([prepend_df, df], axis=1)
 
         return df
 
@@ -391,7 +285,7 @@ class NetCDFConverter:
         if self.options.output_format in [OutputFormat.ICARTT_1001, OutputFormat.ICARTT_2110]:
             ext = ".ict"
             return f"{self.metadata.project_name}-CORE_{self.metadata.platform}_{date_str}_{self.options.version}{ext}"
-        elif self.options.output_format == OutputFormat.AMES:
+        elif self.options.output_format == OutputFormat.AMES_1001:
             return f"{self.metadata.project_name}_{self.metadata.platform}_{date_str}.ames"
         else:
             return f"{self.metadata.project_name}_{self.metadata.platform}_{date_str}.txt"
@@ -406,405 +300,22 @@ class NetCDFConverter:
         Returns:
             Path to the output file.
         """
-        self.load_config()
         if not self.load_netcdf():
             raise RuntimeError("Failed to load NetCDF file")
 
         if output_path is None:
             output_path = self.generate_output_filename()
 
-        formatter = self._get_formatter()
-        formatter.write(output_path)
+        # Get formatter from factory
+        formatter = FormatterFactory.create(
+            FmtOutputFormat(self.options.output_format.value),
+            self,
+            self.config
+        )
+        formatter.write(Path(output_path))
 
         print(f"Successfully wrote output to: {output_path}")
         return output_path
-
-    def _get_formatter(self) -> 'OutputFormatter':
-        """Get the appropriate formatter for the output format."""
-        formatters = {
-            OutputFormat.PLAIN: PlainFormatter,
-            OutputFormat.ICARTT_1001: ICARTT1001Formatter,
-            OutputFormat.ICARTT_2110: ICARTT2110Formatter,
-            OutputFormat.AMES: AMESFormatter,
-        }
-        formatter_class = formatters.get(self.options.output_format, PlainFormatter)
-        return formatter_class(self)
-
-
-class OutputFormatter(ABC):
-    """Abstract base class for output formatters."""
-
-    def __init__(self, converter: NetCDFConverter):
-        self.converter = converter
-        self.options = converter.options
-        self.config = converter.config
-        self.metadata = converter.metadata
-
-    @abstractmethod
-    def write(self, output_path: str):
-        """Write the output file."""
-        pass
-
-    def _get_delimiter(self) -> str:
-        """Get the delimiter character."""
-        return ',' if self.options.delimiter == 'comma' else ' '
-
-
-class PlainFormatter(OutputFormatter):
-    """Formatter for plain ASCII output."""
-
-    def write(self, output_path: str):
-        df = self.converter._build_dataframe_1d()
-        df = self.converter._process_datetime_columns(df)
-
-        # Handle multi-dimensional data by flattening
-        _, data_multi = self.converter._filter_variables()
-        for var_name, values in data_multi.items():
-            for i in range(values.shape[1]):
-                col_name = f"{var_name}_{i}"
-                df[col_name] = values[:len(df), i]
-
-        df = self.converter._apply_fill_values(df)
-
-        # Write cell sizes header if present
-        with open(output_path, 'w') as f:
-            for var_name, sizes in self.converter.cell_sizes.items():
-                if var_name in self.converter.data_multidim:
-                    f.write(f"{var_name} CellSizes: {', '.join(map(str, sizes.flatten()))}\n")
-
-        na_rep = str(int(self.options.fill_value)) if self.options.fill_value != '' else ''
-        mode = 'a' if self.converter.cell_sizes else 'w'
-        df.to_csv(output_path, mode=mode, index=False, sep=self._get_delimiter(), na_rep=na_rep)
-
-
-class ICARTT1001Formatter(OutputFormatter):
-    """Formatter for ICARTT FFI 1001 format (1D time-series data)."""
-
-    def write(self, output_path: str):
-        df = self.converter._build_dataframe_1d()
-
-        # Flatten multidim data into columns for FFI 1001
-        _, data_multi = self.converter._filter_variables()
-        for var_name, values in data_multi.items():
-            for i in range(values.shape[1]):
-                col_name = f"{var_name}_{i}"
-                df[col_name] = values[:len(df), i]
-
-        df = self.converter._apply_fill_values(df)
-
-        header = self._generate_header(df)
-
-        with open(output_path, 'w') as f:
-            f.write(header)
-            f.write('\n')
-
-        df.to_csv(output_path, mode='a', index=False, header=False)
-
-    def _generate_header(self, df: pd.DataFrame) -> str:
-        """Generate ICARTT FFI 1001 header."""
-        lines = []
-
-        # Get config values with defaults
-        header_cfg = self.config.get('header', {})
-        normal_cfg = self.config.get('normal_comments', {})
-
-        num_vars = len(df.columns) - 1  # Exclude Time_Start
-        fill_value = int(self.options.fill_value)
-        today = datetime.today().strftime('%Y, %m, %d')
-
-        # Build variable descriptions
-        var_descriptions = []
-        for col in df.columns[1:]:  # Skip Time_Start
-            # First try exact match, then try base name for flattened multidim vars (e.g., AUHSAS_RO_0)
-            if col in self.converter.units:
-                units = self.converter.units[col]
-                long_name = self.converter.long_names.get(col, col)
-            else:
-                # Try stripping trailing numeric suffix for flattened bin columns
-                base_name = col.rsplit('_', 1)[0] if '_' in col and col.rsplit('_', 1)[1].isdigit() else col
-                units = self.converter.units.get(base_name, '')
-                long_name = self.converter.long_names.get(base_name, col)
-            var_descriptions.append(f"{col}, {units}, {long_name}")
-
-        # Header line 1: NLHEAD, FFI
-        nlhead_placeholder = "NLHEAD"  # Will be replaced
-
-        # Build header content
-        lines.append(f"{nlhead_placeholder}, 1001")
-        lines.append(header_cfg.get('pi_name', 'Patrick Veres, Cory Wolff'))
-        lines.append(header_cfg.get('pi_organization', 'NCAR Research Aviation Facility'))
-        lines.append(f"{header_cfg.get('datasource_desc', 'RAF Instruments on')} {self.metadata.platform}")
-        lines.append(self.metadata.project_name)
-        lines.append(f"1, 1")
-        lines.append(f"{self.metadata.flight_date}, {today}")
-        lines.append(str(header_cfg.get('data_interval', 1.0)))
-        lines.append("Time_Start, seconds, UTC seconds from midnight on flight date")
-        lines.append(str(num_vars))
-        lines.append(", ".join(["1.0"] * num_vars))
-        lines.append(", ".join([str(fill_value)] * num_vars))
-        lines.extend(var_descriptions)
-
-        # Special comments
-        special_comments = self.config.get('special_comments', [])
-        lines.append(str(len(special_comments)))
-        lines.extend(special_comments)
-
-        # Normal comments
-        normal_comment_lines = self._build_normal_comments(normal_cfg)
-        lines.append(str(len(normal_comment_lines)))
-        lines.extend(normal_comment_lines)
-
-        # Column header
-        lines.append(", ".join(df.columns))
-
-        # Update NLHEAD
-        nlhead = len(lines)
-        lines[0] = f"{nlhead}, 1001"
-
-        return '\n'.join(lines)
-
-    def _build_normal_comments(self, cfg: dict) -> list:
-        """Build normal comment lines from config."""
-        comment_fields = [
-            ('pi_contact_info', 'PI_CONTACT_INFO'),
-            ('platform', 'PLATFORM'),
-            ('location', 'LOCATION'),
-            ('associated_data', 'ASSOCIATED_DATA'),
-            ('instrument_info', 'INSTRUMENT_INFO'),
-            ('data_info', 'DATA_INFO'),
-            ('uncertainty', 'UNCERTAINTY'),
-            ('ulod_flag', 'ULOD_FLAG'),
-            ('ulod_value', 'ULOD_VALUE'),
-            ('llod_flag', 'LLOD_FLAG'),
-            ('llod_value', 'LLOD_VALUE'),
-            ('dm_contact_info', 'DM_CONTACT_INFO'),
-            ('project_info', 'PROJECT_INFO'),
-            ('stipulations_on_use', 'STIPULATIONS_ON_USE'),
-            ('other_comments', 'OTHER_COMMENTS'),
-            ('revision', 'REVISION'),
-        ]
-
-        lines = []
-        for key, label in comment_fields:
-            value = cfg.get(key, '')
-            if key == 'platform':
-                value = f"NSF/NCAR {self.metadata.platform} {self.metadata.tail_number}"
-            lines.append(f"{label}: {value}")
-
-        # Add revision comments
-        rev_comments = cfg.get('revision_comments', {})
-        for version, comment in rev_comments.items():
-            lines.append(f"{version}: {comment}")
-
-        return lines
-
-
-class ICARTT2110Formatter(OutputFormatter):
-    """Formatter for ICARTT FFI 2110 format (multi-dimensional data)."""
-
-    def write(self, output_path: str):
-        # Get the first multidim variable for structure
-        _, data_multi = self.converter._filter_variables()
-
-        if not data_multi:
-            print("Warning: No multi-dimensional data found, falling back to FFI 1001")
-            ICARTT1001Formatter(self.converter).write(output_path)
-            return
-
-        # Use first multidim variable as primary
-        primary_var = list(data_multi.keys())[0]
-        primary_data = data_multi[primary_var]
-
-        # Get associated dimension variable (e.g., UHSAS059 for bins)
-        dim_var_name = self._find_dimension_variable(primary_var)
-        dim_values = self.converter.ds[dim_var_name].values if dim_var_name else np.arange(primary_data.shape[1])
-
-        header = self._generate_header(primary_var, dim_var_name, dim_values, primary_data)
-        data_rows = self._generate_data_rows(primary_data, dim_values)
-
-        with open(output_path, 'w') as f:
-            f.write(header)
-            f.write('\n')
-            for row in data_rows:
-                f.write(row + '\n')
-
-        print(f"Successfully wrote ICARTT FFI 2110: {output_path}")
-
-    def _find_dimension_variable(self, var_name: str) -> Optional[str]:
-        """Find the dimension variable associated with a multidim variable."""
-        var = self.converter.ds[var_name]
-        for dim in var.dims:
-            if dim != 'Time' and dim in self.converter.ds:
-                return dim
-        return None
-
-    def _generate_header(self, primary_var: str, dim_var: str,
-                         dim_values: np.ndarray, data: np.ndarray) -> str:
-        """Generate ICARTT FFI 2110 header."""
-        lines = []
-
-        header_cfg = self.config.get('header', {})
-        normal_cfg = self.config.get('normal_comments', {})
-
-        fill_value = int(self.options.fill_value)
-        today = datetime.today().strftime('%Y, %m, %d')
-        num_bins = len(dim_values)
-
-        # Placeholder for NLHEAD
-        lines.append("NLHEAD, 2110")
-        lines.append(header_cfg.get('pi_name', 'Patrick Veres, Cory Wolff'))
-        lines.append(header_cfg.get('pi_organization', 'NCAR Research Aviation Facility'))
-        lines.append(f"{header_cfg.get('datasource_desc', 'RAF Instruments on')} {self.metadata.platform}")
-        lines.append(self.metadata.project_name)
-        lines.append("1, 1")
-        lines.append(f"{self.metadata.flight_date}, {today}")
-        lines.append(str(header_cfg.get('data_interval', 1.0)))
-        lines.append("Time_Start, seconds, UTC seconds from midnight on flight date")
-
-        # Number of dependent variables (the multidim array variable)
-        lines.append("1")  # One dependent variable
-
-        # Scale factor for independent bound variable
-        lines.append("1.0")
-
-        # Independent bound variable description
-        dim_units = self.converter.units.get(dim_var, 'units')
-        lines.append(f"{dim_var}[], {dim_units}, bin midpoint values")
-
-        # Primary independent variable
-        lines.append("UTC, seconds since midnight on flight_date")
-
-        # Number of elements in bounded independent variable
-        lines.append("1")
-        lines.append("1.0")
-        lines.append(str(fill_value))
-
-        # Dependent variable description
-        var_units = self.converter.units.get(primary_var, '')
-        var_long = self.converter.long_names.get(primary_var, primary_var)
-        lines.append(f"{primary_var}[], {var_units}, {var_long}")
-
-        # Auxiliary variables
-        aux_vars = [("NumBins", "none", "Number of bins reported")]
-        lines.append(str(len(aux_vars)))
-        lines.append(", ".join(["1.0"] * len(aux_vars)))
-        lines.append(", ".join([str(fill_value)] * len(aux_vars)))
-        for aux in aux_vars:
-            lines.append(f"{aux[0]}, {aux[1]}, {aux[2]}")
-
-        # Special comments
-        special_comments = self.config.get('special_comments', [])
-        lines.append(str(len(special_comments)))
-        lines.extend(special_comments)
-
-        # Normal comments
-        normal_comment_lines = self._build_normal_comments(normal_cfg)
-        lines.append(str(len(normal_comment_lines)))
-        lines.extend(normal_comment_lines)
-
-        # Data column headers
-        lines.append(f"UTC, NumBins, {dim_var}[], {primary_var}[]")
-
-        # Update NLHEAD
-        nlhead = len(lines)
-        lines[0] = f"{nlhead}, 2110"
-
-        return '\n'.join(lines)
-
-    def _build_normal_comments(self, cfg: dict) -> list:
-        """Build normal comment lines from config."""
-        return ICARTT1001Formatter._build_normal_comments(self, cfg)
-
-    def _generate_data_rows(self, data: np.ndarray, dim_values: np.ndarray) -> list:
-        """Generate FFI 2110 data rows."""
-        rows = []
-        fill = int(self.options.fill_value)
-        num_bins = len(dim_values)
-
-        for i, time_val in enumerate(self.converter.time_data):
-            # Main data line: UTC, NumBins
-            rows.append(f"{time_val:.0f}, {num_bins}")
-
-            # Bin data lines: dim_value, data_value
-            for j in range(num_bins):
-                dim_val = dim_values[j]
-                data_val = data[i, j]
-                if np.isnan(data_val):
-                    data_val = fill
-                rows.append(f"   {dim_val:.6f}, {data_val:.0f}")
-
-        return rows
-
-
-class AMESFormatter(OutputFormatter):
-    """Formatter for AMES DEF format."""
-
-    def write(self, output_path: str):
-        df = self.converter._build_dataframe_1d()
-        df = df.rename(columns={'Time_Start': 'UTs'})
-
-        # Flatten multidim data
-        _, data_multi = self.converter._filter_variables()
-        for var_name, values in data_multi.items():
-            for i in range(values.shape[1]):
-                col_name = f"{var_name}_{i}"
-                df[col_name] = values[:len(df), i]
-
-        df = self.converter._apply_fill_values(df)
-
-        header = self._generate_header(df)
-
-        with open(output_path, 'w') as f:
-            f.write(header)
-            f.write('\n')
-
-        df.to_csv(output_path, mode='a', index=False, header=False, na_rep='99999')
-
-    def _generate_header(self, df: pd.DataFrame) -> str:
-        """Generate AMES DEF header."""
-        lines = []
-
-        num_vars = len(df.columns) - 1
-        today = datetime.today().strftime('%Y, %m, %d')
-
-        lines.append("NLHEAD, 1001")
-        lines.append("NCAR Research Aviation Facility")
-        lines.append("NSF/NCAR EOL Research Aviation Facility")
-        lines.append(f"Flight data from: {self.metadata.platform}")
-        lines.append(self.metadata.project_name)
-        lines.append("1, 1")
-        lines.append(f"{self.metadata.flight_date}, {today}")
-        lines.append("1.0")
-        lines.append("UTs, seconds, UTC seconds from midnight")
-        lines.append(str(num_vars))
-        lines.append(", ".join(["0.1"] * num_vars))
-        lines.append(", ".join(["9999"] * num_vars))
-
-        # Variable descriptions
-        for col in df.columns[1:]:
-            # First try exact match, then try base name for flattened multidim vars (e.g., AUHSAS_RO_0)
-            if col in self.converter.units:
-                units = self.converter.units[col]
-                long_name = self.converter.long_names.get(col, col)
-            else:
-                # Try stripping trailing numeric suffix for flattened bin columns
-                base_name = col.rsplit('_', 1)[0] if '_' in col and col.rsplit('_', 1)[1].isdigit() else col
-                units = self.converter.units.get(base_name, '')
-                long_name = self.converter.long_names.get(base_name, col)
-            lines.append(f"{col}, {units}, {long_name}")
-
-        # Special/normal comments (simplified for AMES)
-        lines.append("0")  # No special comments
-        lines.append("0")  # No normal comments
-
-        # Column header
-        lines.append(", ".join(df.columns))
-
-        # Update NLHEAD
-        nlhead = len(lines)
-        lines[0] = f"{nlhead}, 1001"
-
-        return '\n'.join(lines)
 
 
 def parse_arguments():
@@ -817,7 +328,7 @@ Output formats:
   plain       Plain ASCII (CSV or space-delimited)
   icartt      ICARTT FFI 1001 (1D time-series)
   icartt2110  ICARTT FFI 2110 (multi-dimensional)
-  ames        AMES DEF format
+  ames        NASA Ames 1001 format
 
 Batch file format:
   hd=ICARTT          # Header format: Plain, ICARTT, ICARTT2110, AMES
@@ -833,16 +344,18 @@ Batch file format:
 
 Examples:
   %(prog)s input.nc -o output.ict -f icartt
-  %(prog)s input.nc -c config.json -f icartt2110
+  %(prog)s input.nc -c config.yaml -f icartt2110
   %(prog)s input.nc -b batch.bat
   %(prog)s input.nc -v ATMP PSX -f plain --delimiter space
+  %(prog)s --gui                    # Launch GUI
+  %(prog)s input.nc --gui           # Launch GUI with file pre-loaded
         """
     )
 
     parser.add_argument('input', nargs='?', help='Input NetCDF file (can also be specified in batch file)')
     parser.add_argument('-b', '--batch', help='Batch file with conversion settings')
     parser.add_argument('-o', '--output', help='Output file path')
-    parser.add_argument('-c', '--config', help='JSON configuration file')
+    parser.add_argument('-c', '--config', help='YAML or JSON configuration file')
     parser.add_argument('-f', '--format',
                         choices=['plain', 'icartt', 'icartt2110', 'ames'],
                         default=None,
@@ -867,27 +380,63 @@ Examples:
                         help='Start time (seconds since midnight)')
     parser.add_argument('--end-time', type=float,
                         help='End time (seconds since midnight)')
+    parser.add_argument('--high-rate-strategy',
+                        choices=['first', 'average', 'expand'],
+                        default=None,
+                        help='Strategy for 3D high-rate data')
+    parser.add_argument('--validate', action='store_true',
+                        help='Validate output after writing')
+    parser.add_argument('--gui', action='store_true',
+                        help='Launch graphical user interface')
 
     return parser.parse_args()
+
+
+def launch_gui(input_file: Optional[str] = None):
+    """Launch the GUI application."""
+    try:
+        from PyQt5.QtWidgets import QApplication
+        from PyQt5.QtCore import Qt
+        from lib.gui import NC2ASCGUI
+    except ImportError:
+        print("Error: PyQt5 is required for GUI mode.")
+        print("Install with: pip install PyQt5")
+        sys.exit(1)
+
+    # Enable high DPI scaling
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+    app = QApplication(sys.argv)
+    app.setStyle('Fusion')
+    app.setApplicationName('nc2asc')
+    app.setOrganizationName('NCAR/EOL')
+
+    window = NC2ASCGUI()
+    window.show()
+
+    # Load input file if provided
+    if input_file:
+        window.load_netcdf_file(input_file)
+
+    sys.exit(app.exec_())
 
 
 def main():
     """Main entry point."""
     args = parse_arguments()
 
-    # Map format string to enum
-    format_map = {
-        'plain': OutputFormat.PLAIN,
-        'icartt': OutputFormat.ICARTT_1001,
-        'icartt2110': OutputFormat.ICARTT_2110,
-        'ames': OutputFormat.AMES,
-    }
+    # Launch GUI if requested
+    if args.gui:
+        launch_gui(args.input)
+        return
 
     # Load batch file settings if provided
     batch_settings = {}
     if args.batch:
         try:
             batch_settings = parse_batch_file(args.batch)
+            print(f"Loaded batch file: {args.batch}")
         except FileNotFoundError:
             print(f"Error: Batch file not found: {args.batch}")
             sys.exit(1)
@@ -904,86 +453,60 @@ def main():
     # Determine output file (command line takes precedence over batch file)
     output_file = args.output or batch_settings.get('output_file')
 
-    # Create converter
-    converter = NetCDFConverter(input_file, args.config)
+    # Build CLI args dict for ConfigManager
+    cli_args = {
+        'output_format': args.format,
+        'delimiter': args.delimiter,
+        'date_format': args.date_format,
+        'time_format': args.time_format,
+        'fill_value': args.fill_value,
+        'version': args.version,
+        'variables': args.variables,
+        'averaging': args.averaging,
+        'start_time': args.start_time,
+        'end_time': args.end_time,
+        'high_rate_strategy': args.high_rate_strategy,
+    }
 
-    # Apply settings: command line args override batch file settings, batch file overrides defaults
-    # Format/header
-    if args.format:
-        converter.options.output_format = format_map[args.format]
-    elif batch_settings.get('header'):
-        converter.options.output_format = format_map.get(batch_settings['header'], OutputFormat.ICARTT_1001)
-    else:
-        converter.options.output_format = OutputFormat.ICARTT_1001
+    # Remove None values
+    cli_args = {k: v for k, v in cli_args.items() if v is not None}
 
-    # Delimiter
-    if args.delimiter:
-        converter.options.delimiter = args.delimiter
-    elif batch_settings.get('delimiter'):
-        converter.options.delimiter = batch_settings['delimiter']
-    else:
-        converter.options.delimiter = 'comma'
+    # Create ConfigManager and load configuration
+    config_path = Path(args.config) if args.config else None
+    config_manager = ConfigManager(
+        config_path=config_path,
+        batch_settings=batch_settings,
+        cli_args=cli_args
+    )
 
-    # Date format
-    if args.date_format:
-        converter.options.date_format = args.date_format
-    elif batch_settings.get('date_format'):
-        converter.options.date_format = batch_settings['date_format']
-    else:
-        converter.options.date_format = 'NoDate'
+    try:
+        config = config_manager.load()
+        print(f"Configuration loaded. Output format: {config.options.output_format.value}")
+    except Exception as e:
+        print(f"Error loading configuration: {e}")
+        sys.exit(1)
 
-    # Time format
-    if args.time_format:
-        converter.options.time_format = args.time_format
-    elif batch_settings.get('time_format'):
-        converter.options.time_format = batch_settings['time_format']
-    else:
-        converter.options.time_format = 'SecOfDay'
-
-    # Fill value
-    if args.fill_value is not None:
-        converter.options.fill_value = args.fill_value
-    elif batch_settings.get('fill_value') is not None:
-        converter.options.fill_value = batch_settings['fill_value']
-    else:
-        converter.options.fill_value = -99999.0
-
-    # Version
-    if args.version:
-        converter.options.version = args.version
-    elif batch_settings.get('version'):
-        converter.options.version = batch_settings['version']
-    else:
-        converter.options.version = 'RA'
-
-    # Variables (command line overrides batch file completely)
-    if args.variables:
-        converter.options.variables = args.variables
-    elif batch_settings.get('variables'):
-        converter.options.variables = batch_settings['variables']
-
-    # Averaging
-    if args.averaging:
-        converter.options.averaging = args.averaging
-    elif batch_settings.get('averaging'):
-        converter.options.averaging = batch_settings['averaging']
-
-    # Start time
-    if args.start_time is not None:
-        converter.options.start_time = args.start_time
-    elif batch_settings.get('start_time') is not None:
-        converter.options.start_time = batch_settings['start_time']
-
-    # End time
-    if args.end_time is not None:
-        converter.options.end_time = args.end_time
-    elif batch_settings.get('end_time') is not None:
-        converter.options.end_time = batch_settings['end_time']
+    # Create converter with loaded config
+    converter = NetCDFConverter(input_file, config)
 
     # Convert
     try:
         output_path = converter.convert(output_file)
         print(f"Conversion complete: {output_path}")
+
+        # Validate if requested
+        if args.validate:
+            formatter = FormatterFactory.create(
+                FmtOutputFormat(config.options.output_format.value),
+                converter,
+                config
+            )
+            if formatter.validate_output(Path(output_path)):
+                print("Output validation: PASSED")
+            else:
+                print("Output validation: FAILED")
+                sys.exit(1)
+
     except Exception as e:
         print(f"Error during conversion: {e}")
         import traceback

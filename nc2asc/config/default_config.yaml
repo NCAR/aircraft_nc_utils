@@ -1,0 +1,83 @@
+# nc2asc Default Configuration
+# YAML configuration file for NetCDF to ASCII converter
+#
+# This file provides default values for ICARTT/AMES header metadata
+# and normal comment fields. Values can be overridden by:
+# 1. Command-line arguments (highest priority)
+# 2. Batch file settings
+# 3. This config file
+# 4. Format-specific defaults
+# 5. Global defaults (lowest priority)
+
+# Header metadata for ICARTT/AMES formats
+header:
+  pi_name: "Patrick Veres, Cory Wolff"
+  pi_organization: "NCAR Research Aviation Facility"
+  datasource_desc: "RAF Instruments on"
+  data_interval: 1.0
+  missing_value: -99999.0
+
+# Required ICARTT normal comments (all 16 keywords)
+normal_comments:
+  pi_contact_info: "303-497-1030, 1850 Table Mesa Dr, Boulder, CO, raf-pm@ucar.edu"
+
+  # Platform template - {platform} and {tail_number} are replaced dynamically
+  platform: "NSF/NCAR {platform} {tail_number}"
+
+  location: "Aircraft location data is given in nav data file"
+  associated_data: "Full data in NetCDF file."
+  instrument_info: "Various RAF instruments"
+  data_info: "Data reported in ambient condition, ambient temperature and pressure are given for conversion to STP (273.15K and 1013 mb)"
+  uncertainty: "Contact PI for uncertainty estimates"
+
+  # Limit of detection flags
+  ulod_flag: "-77777"
+  ulod_value: "N/A"
+  llod_flag: "-88888"
+  llod_value: "N/A"
+
+  dm_contact_info: "NCAR/EOL Data Archive, eol-archive@ucar.edu"
+
+  # Project info template - populated from NetCDF attributes
+  project_info: ""
+
+  stipulations_on_use: "Preliminary field data, not for publication use"
+  other_comments: "none"
+
+  # Current revision code
+  revision: "RA"
+
+  # Revision code descriptions
+  revision_comments:
+    RA: "Field Data"
+    RB: "Trimmed data to flight time"
+    RC: "Post-mission preliminary QC"
+    R0: "Final quality controlled data"
+    R1: "First revision to final data"
+    R2: "Second revision to final data"
+
+# Optional special comments (instrument-specific notes)
+# These appear in the ICARTT special comments section
+special_comments: []
+
+# Platform tail number to name mapping
+# Used to translate aircraft tail numbers to platform names
+platform_mapping:
+  N677F: "GV"
+  N130AR: "C130"
+  N2UW: "KingAir"
+
+# Default conversion options
+defaults:
+  output_format: "icartt"
+  date_format: "NoDate"
+  time_format: "SecOfDay"
+  delimiter: "comma"
+  fill_value: -99999.0
+  version: "RA"
+
+  # Strategy for 3D high-rate data:
+  # - "first": Take first SPS sample only (default)
+  # - "average": Average across SPS dimension
+  # - "expand": Expand to full sample rate
+  high_rate_strategy: "first"
