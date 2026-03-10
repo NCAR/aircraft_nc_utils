@@ -130,7 +130,7 @@ class ICARTT1001Writer(OutputFormatter):
         lines.extend(var_descriptions)
 
         # Special comments
-        special_comments = self.config.special_comments or []
+        special_comments = list(self.config.special_comments or [])
 
         # Add CellSizes to special comments only for selected multi-dim variables
         _, filtered_multi = self.converter._filter_variables()
@@ -142,13 +142,12 @@ class ICARTT1001Writer(OutputFormatter):
         lines.append(str(len(special_comments)))
         lines.extend(special_comments)
 
-        # Normal comments
+        # Normal comments (includes column headers as the last line per ICARTT format)
         normal_comment_lines = self._build_normal_comments()
+        column_headers = ", ".join(df.columns)
+        normal_comment_lines.append(column_headers)
         lines.append(str(len(normal_comment_lines)))
         lines.extend(normal_comment_lines)
-
-        # Column headers (last header line)
-        lines.append(", ".join(df.columns))
 
         # Update NLHEAD
         nlhead = len(lines)
@@ -189,11 +188,16 @@ class ICARTT1001Writer(OutputFormatter):
                     value = f"{metadata.project_name} {year}".strip()
 
             elif key == 'revision':
-                # Include revision code and description
-                version = self.config.options.version
+                # Format: REVISION: <current_version>
+                # Then: <version>: <description> for the current version only
+                version = self.config.options.version or 'R0'
+                lines.append(f"{label}: {version}")
+
+                # Add only the current version's revision note
                 rev_comments = nc.revision_comments or {}
-                rev_desc = rev_comments.get(version, '')
-                value = f"{version}: {rev_desc}" if rev_desc else version
+                rev_desc = rev_comments.get(version, 'Field Data')
+                lines.append(f"{version}: {rev_desc}")
+                continue
 
             lines.append(f"{label}: {value}")
 
@@ -207,6 +211,11 @@ class ICARTT1001Writer(OutputFormatter):
             DataFrame ready for output
         """
         df = self.converter._build_dataframe_1d()
+
+        # Remove _raw_date and _raw_time columns (ICARTT uses seconds of day only)
+        cols_to_drop = [c for c in df.columns if c.startswith('_raw_')]
+        if cols_to_drop:
+            df = df.drop(columns=cols_to_drop)
 
         # Flatten multidim data into columns for FFI 1001
         # Build all columns at once using pd.concat to avoid fragmentation
