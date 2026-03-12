@@ -28,6 +28,8 @@ env['CXX'] = cxx or env['CXX']
 
 # nc_compare now requires C++11
 env.AppendUnique(CXXFLAGS=['-std=c++11'])
+env.AppendUnique(CXXFLAGS=['-Werror'])
+env.AppendUnique(CXXFLAGS=['-Wall'])
 # env.AppendUnique(CCFLAGS=['-O0'])
 
 srcs = env.Split("NcCache.cc NcComparison.cc ReportStyle.cc")

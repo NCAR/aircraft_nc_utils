@@ -2,7 +2,7 @@
 
 tools=['default', 'prefixoptions', 'netcdf']
 env = Environment(tools=tools)
-env.Append(CXXFLAGS='-g -Werror')
+env.Append(CXXFLAGS='-g -Werror -Wall')
 
 ncmerge = env.Program('ncmerge.cc')
 env.Default(ncmerge)

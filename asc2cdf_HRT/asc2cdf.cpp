@@ -49,7 +49,7 @@ const char	*noUnits = "Unk";
 
 
 static int ProcessArgv(int argc, char **argv);
-static void WriteMissingData(int, int);
+//static void WriteMissingData(int, int);
 
 
 /* -------------------------------------------------------------------- */
@@ -245,6 +245,7 @@ void AddTimeVariables(int dims[])
 }
 
 /* -------------------------------------------------------------------- */
+/*
 static void WriteMissingData(int currSecond, int lastSecond)
 {
   int	i, j, ts;
@@ -285,7 +286,7 @@ static void WriteMissingData(int currSecond, int lastSecond)
       }
     }
 
-}	/* END WRITEMISSINGDATA */
+}*/	/* END WRITEMISSINGDATA */
 
 /* -------------------------------------------------------------------- */
 static int ProcessArgv(int argc, char **argv)

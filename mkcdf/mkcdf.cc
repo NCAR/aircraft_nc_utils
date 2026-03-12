@@ -119,7 +119,7 @@ void makeLRTfile()
 
 void setData(float *varData, int i, int offset, int rate)
 {
-  for (size_t j = 0; j < rate; ++j)
+  for (int j = 0; j < rate; ++j)
     varData[(i*rate)+j] = (float)offset + i + ((float)j / rate);
 }
 

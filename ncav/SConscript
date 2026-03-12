@@ -3,7 +3,7 @@
 
 tools=['default', 'prefixoptions', 'netcdf', 'openmotif', 'raf']
 env = Environment(tools=tools)
-env.Append(CXXFLAGS='-g -Werror')
+env.Append(CXXFLAGS='-g -Werror -Wall')
 
 sources = Split("""
 ncav.c

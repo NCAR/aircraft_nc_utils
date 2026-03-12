@@ -2,7 +2,7 @@
 
 tools = ['default', 'prefixoptions', 'netcdf', 'vardb', 'raf']
 env = Environment(tools=tools)
-env.Append(CCFLAGS='-g -Wall')
+env.Append(CCFLAGS='-g -Werror -Wall')
 
 #env.Append(LIBS = ['hdf5_hl' 'hdf5'])
 

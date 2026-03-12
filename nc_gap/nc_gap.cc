@@ -100,7 +100,7 @@ printStartTimes(NcFile *inFile, NcVar &timeVar, float *time_data)
     return 0;
   }
 
-  int nValues = gspdVar.getDim(0).getSize();
+  size_t nValues = gspdVar.getDim(0).getSize();
   float *gspd_data = new float[nValues];
   gspdVar.getVar(gspd_data);
 

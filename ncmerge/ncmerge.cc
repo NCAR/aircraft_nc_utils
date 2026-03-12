@@ -438,7 +438,7 @@ void MoveData()
       {
         data_p_int = new int[size];
       }
-      catch (const std::bad_alloc)
+      catch (const std::bad_alloc&)
       {
         std::cerr << "\n***\nNot enough memory to perform alloc of data_p_int: exiting\n***\n";
         exit(1);
@@ -465,7 +465,7 @@ void MoveData()
       {
         data_p = new float[size];
       }
-      catch (const std::bad_alloc)
+      catch (const std::bad_alloc&)
       {
         std::cerr << "\n***\nNot enough memory to perform alloc of data_p: exiting\n***\n";
         exit(1);
