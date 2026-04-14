@@ -2,7 +2,7 @@
 
 tools  = ['default', 'prefixoptions', 'netcdfcxx4']
 env = Environment(tools=tools)
-env.Append(CXXFLAGS='-g -Werror')
+env.Append(CXXFLAGS='-g -Werror -Wall')
 
 mkcdf = env.Program('mkcdf.cc')
 env.Default(mkcdf)

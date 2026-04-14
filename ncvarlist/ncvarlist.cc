@@ -76,8 +76,16 @@ main(int argc, char *argv[])
     {
       NcVar var = it->second;
 
+      cout << var.getName() << endl;
       longestName = max(longestName, var.getName().size());
-      NcVarAtt att = var.getAtt("units");
+
+      try 
+      {
+        NcVarAtt att = var.getAtt("units");
+      }
+      catch (netCDF::exceptions::NcException& e)
+      { ; }
+
       if (!att.isNull())
       {
         std::string s;
@@ -96,10 +104,21 @@ main(int argc, char *argv[])
     NcVarAtt att;
     std::string units, long_name;
 
-    att = var.getAtt("units");
-    att.getValues(units);
-    att = var.getAtt("long_name");
-    att.getValues(long_name);
+    try
+    {
+      att = var.getAtt("units");
+      att.getValues(units);
+    }
+    catch (netCDF::exceptions::NcException& e)
+    { ; }
+
+    try
+    {
+      att = var.getAtt("long_name");
+      att.getValues(long_name);
+    }
+    catch (netCDF::exceptions::NcException& e)
+    { ; }
 
     if (csv)
     {

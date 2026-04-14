@@ -2,8 +2,9 @@
 
 tools  = ['default', 'prefixoptions', 'vardb','raf','netcdf']
 env = Environment(tools=tools)
-env.Append(CCFLAGS='-g -Wall -DVARDB -DZEROBIN')
+env.Append(CCFLAGS='-g -Werror -Wall -DVARDB -DZEROBIN')
 
+env['PUBLISH_PREFIX'] = '/net/www/docs/raf/Software'
 
 sources = Split("""
 asc2cdf.cpp
@@ -20,3 +21,7 @@ asc2cdf = env.Program(target = 'asc2cdf', source = sources)
 env.Default(asc2cdf)
 
 env.Install ("$INSTALL_PREFIX/bin", 'asc2cdf')
+
+if "publish" in COMMAND_LINE_TARGETS:
+   pub = env.Install('$PUBLISH_PREFIX', ["doc/asc2cdf.html"])
+   env.Alias('publish', pub)

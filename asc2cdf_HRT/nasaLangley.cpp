@@ -25,7 +25,7 @@ COPYRIGHT:	University Corporation for Atmospheric Research, 1996-7
 /* -------------------------------------------------------------------- */
 void CreateNASAlangNetCDF(FILE *fp)
 {
-  int	i, j, cnt;
+  size_t	i, j, cnt;
   int	year, month, day;
   int	ndims, dims[3], TimeDim, RateDim;
   const char	*p;
@@ -155,7 +155,7 @@ dataRate = 18;
   fgets(buffer, BUFFSIZE, fp);	/* Skip Julian day & seconds.	*/
   nVariables -= 2;
 
-  for (i = 0; i < nVariables; ++i)
+  for (i = 0; i < (size_t)nVariables; ++i)
     {
     fgets(buffer, BUFFSIZE, fp);
 

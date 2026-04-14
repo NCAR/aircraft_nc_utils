@@ -2,7 +2,7 @@
 
 tools=['default', 'prefixoptions', 'netcdfcxx4']
 env = Environment(tools=tools)
-env.Append(CXXFLAGS='-g -Werror')
+env.Append(CXXFLAGS='-g -Werror -Wall')
 
 # The Configure context is just being used as a check here.  We don't want
 # the checks to affect the special linking setup above by appending

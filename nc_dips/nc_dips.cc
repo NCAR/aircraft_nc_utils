@@ -120,7 +120,7 @@ main(int argc, char *argv[])
   NcVar time_var = ncFile->getVar("Time");
 
   // Locate Start of Flight
-  long i, ndips = 0;
+  size_t i, ndips = 0;
   bool high_alt = false;
   for (i = 0; i < time_var.getDim(0).getSize(); ++i)
   {
