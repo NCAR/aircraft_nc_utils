@@ -220,8 +220,10 @@ class DimensionHandler:
         # Try CellSizes
         if var_name in self.cell_sizes:
             cell_sizes = np.array(self.cell_sizes[var_name]).flatten()
-            bin_edges = np.concatenate([[0], np.cumsum(cell_sizes)])
-            return (bin_edges[:-1] + bin_edges[1:]) / 2
+            # Validate CellSizes length matches expected elements
+            if len(cell_sizes) == n_elements:
+                bin_edges = np.concatenate([[0], np.cumsum(cell_sizes)])
+                return (bin_edges[:-1] + bin_edges[1:]) / 2
 
         # Fall back to indices
         return np.arange(n_elements)

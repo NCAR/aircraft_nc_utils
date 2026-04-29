@@ -1,19 +1,54 @@
 # -*- python -*-
 import os
-# Define the source files
-support_files = [
-    './lib/write_data.py',
-    './lib/process_nc.py',
-    './lib/read_batch.py',
-    # Add any other new files here
-]
-tools  = ['default', 'prefixoptions']
+
+tools = ['default', 'prefixoptions']
 env = Environment(tools=tools)
 
-env.Install('$INSTALL_PREFIX/bin', 'nc2asc')
-env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header1.txt')
-env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header1_ames.txt')
-env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header2.txt')
-env.Install('$INSTALL_PREFIX/lib/nc2asc', './lib/header2_ames.txt')
-for file in support_files:
-    env.Install('$INSTALL_PREFIX/lib/nc2asc', file)
+# Install nc2asc_multidim as the nc2asc executable
+env.InstallAs('$INSTALL_PREFIX/bin/nc2asc', 'nc2asc_multidim')
+
+# Core lib modules
+lib_dest = '$INSTALL_PREFIX/lib/nc2asc/lib'
+lib_src = './lib'
+
+core_modules = [
+    'config_manager.py',
+    'dimension_handler.py',
+    'process_nc.py',
+    'read_batch.py',
+    'write_data.py',
+    '__init__.py',
+]
+for f in core_modules:
+    src = os.path.join(lib_src, f)
+    env.Install(lib_dest, src)
+
+# Formatter subpackage
+formatter_modules = [
+    '__init__.py',
+    'base.py',
+    'factory.py',
+    'ames.py',
+    'icartt_1001.py',
+    'icartt_2110.py',
+    'plain.py',
+]
+for f in formatter_modules:
+    src = os.path.join(lib_src, 'formatters', f)
+    env.Install(os.path.join(lib_dest, 'formatters'), src)
+
+# GUI subpackage
+gui_modules = [
+    '__init__.py',
+    'main_window.py',
+    'options_panel.py',
+    'preview_panel.py',
+    'variable_table.py',
+    'config_dialog.py',
+]
+for f in gui_modules:
+    src = os.path.join(lib_src, 'gui', f)
+    env.Install(os.path.join(lib_dest, 'gui'), src)
+
+# Config file
+env.Install('$INSTALL_PREFIX/lib/nc2asc', '../config/default_config.yaml')

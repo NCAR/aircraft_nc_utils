@@ -100,8 +100,10 @@ class ICARTT2110Writer(OutputFormatter):
         # Try CellSizes
         if var_name in self.converter.cell_sizes:
             cell_sizes = np.array(self.converter.cell_sizes[var_name]).flatten()
-            bin_edges = np.concatenate([[0], np.cumsum(cell_sizes)])
-            return (bin_edges[:-1] + bin_edges[1:]) / 2
+            # Validate CellSizes length matches expected elements
+            if len(cell_sizes) == n_elements:
+                bin_edges = np.concatenate([[0], np.cumsum(cell_sizes)])
+                return (bin_edges[:-1] + bin_edges[1:]) / 2
 
         # Fall back to indices
         return np.arange(n_elements)
@@ -122,6 +124,10 @@ class ICARTT2110Writer(OutputFormatter):
         """
         Build ICARTT FFI 2110 header.
 
+        FFI 2110 header is identical to FFI 1001, only the data structure is
+        more complex (2D arrays). Variable names use [] suffix to indicate
+        array data.
+
         Returns:
             List of header line strings
         """
@@ -137,6 +143,8 @@ class ICARTT2110Writer(OutputFormatter):
         n_bins = primary_data.shape[1]
 
         dim_var_name = self._find_dimension_variable(primary_var)
+        dim_units = self._get_units(dim_var_name) if dim_var_name else 'index'
+        dim_name = dim_var_name if dim_var_name else 'BinIndex'
 
         # Get config values
         header_cfg = self.config.header
@@ -144,13 +152,27 @@ class ICARTT2110Writer(OutputFormatter):
         fill_value = int(self.config.options.fill_value)
         today = datetime.today().strftime('%Y, %m, %d')
 
+        # Get auxiliary 1D variables
+        data_1d, _ = self.converter._filter_variables()
+        aux_vars = list(data_1d.keys())
+
+        # Number of dependent variables: primary 2D var + auxiliary 1D vars
+        # (bin dimension is independent bounded, not dependent)
+        num_vars = 1 + len(aux_vars)
+
         # Line 1: NLHEAD, FFI (placeholder)
         lines.append("NLHEAD_PLACEHOLDER, 2110")
 
-        # Lines 2-5: Common header info
+        # Line 2: PI name
         lines.append(header_cfg.pi_name)
+
+        # Line 3: Organization
         lines.append(header_cfg.pi_organization)
+
+        # Line 4: Data source + platform
         lines.append(f"{header_cfg.datasource_desc} {metadata.platform}")
+
+        # Line 5: Mission/Project name
         lines.append(metadata.project_name)
 
         # Line 6: Volume numbers
@@ -162,56 +184,41 @@ class ICARTT2110Writer(OutputFormatter):
         # Line 8: Data interval
         lines.append(str(header_cfg.data_interval))
 
-        # Line 9: Independent variable
+        # Line 9: Independent variable description
         lines.append("Time_Start, seconds, UTC seconds from midnight on flight date")
 
-        # Line 10: Number of dependent variables
-        lines.append("1")  # One 2D dependent variable
+        # Line 10: Number of dependent variables (NV)
+        lines.append(str(num_vars))
 
-        # Line 11: Scale factor for independent bound variable
-        lines.append("1.0")
+        # Line 11: Scale factors (one per dependent variable)
+        lines.append(", ".join(["1.0"] * num_vars))
 
-        # Line 12: Independent bound variable description
-        dim_units = self._get_units(dim_var_name) if dim_var_name else 'index'
-        dim_name = dim_var_name if dim_var_name else 'BinIndex'
-        lines.append(f"{dim_name}[], {dim_units}, Bin dimension values")
+        # Line 12: Fill/missing values (one per dependent variable)
+        lines.append(", ".join([str(fill_value)] * num_vars))
 
-        # Line 13: Primary independent variable description
-        lines.append("Time_Start, seconds, UTC seconds from midnight on flight date")
-
-        # Line 14: Number of elements in bounded dimension
-        lines.append(str(n_bins))
-
-        # Lines 15-16: Scale and fill for bounded data
-        lines.append("1.0")
-        lines.append(str(fill_value))
-
-        # Line 17: Dependent variable description with [] suffix
+        # Lines 13 to 12+NV: Variable descriptions (one per line)
+        # Primary 2D variable (use [] to indicate array data per ICARTT 2110)
         var_units = self._get_units(primary_var)
         var_long = self._get_long_name(primary_var).replace(',', ';')
         lines.append(f"{primary_var}[], {var_units}, {var_long}")
 
-        # Auxiliary variables (1D variables)
-        data_1d, _ = self.converter._filter_variables()
-        aux_vars = list(data_1d.keys())
-        lines.append(str(len(aux_vars)))
-
-        if aux_vars:
-            lines.append(", ".join(["1.0"] * len(aux_vars)))  # Scale factors
-            lines.append(", ".join([str(fill_value)] * len(aux_vars)))  # Fill values
-            for var in aux_vars:
-                units = self._get_units(var)
-                long_name = self._get_long_name(var).replace(',', ';')
-                lines.append(f"{var}, {units}, {long_name}")
+        # Auxiliary 1D variables
+        for var in aux_vars:
+            units = self._get_units(var)
+            long_name = self._get_long_name(var).replace(',', ';')
+            lines.append(f"{var}, {units}, {long_name}")
 
         # Special comments
-        special_comments = self.config.special_comments or []
+        special_comments = list(self.config.special_comments or [])
 
         # Add CellSizes info if present
         if primary_var in self.converter.cell_sizes:
             sizes = self.converter.cell_sizes[primary_var]
             sizes_str = ', '.join(f"{s:.6g}" for s in np.array(sizes).flatten())
             special_comments.append(f"CellSizes {primary_var}: {sizes_str}")
+
+        # Add bounded dimension info to special comments
+        special_comments.append(f"Bounded_Variable: {dim_name}, {dim_units}, {n_bins} bins")
 
         lines.append(str(len(special_comments)))
         lines.extend(special_comments)
@@ -221,7 +228,8 @@ class ICARTT2110Writer(OutputFormatter):
         lines.append(str(len(normal_lines)))
         lines.extend(normal_lines)
 
-        # Column headers
+        # Column headers - FFI 2110 format
+        # Data rows are: Time, NumBins on first line, then per-bin lines with dim_value, data_value
         lines.append(f"Time_Start, NumBins, {dim_name}[], {primary_var}[]")
 
         # Update NLHEAD

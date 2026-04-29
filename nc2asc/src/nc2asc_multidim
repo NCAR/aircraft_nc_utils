@@ -13,11 +13,17 @@ Copyright University Corporation for Atmospheric Research (2021-2025)
 """
 
 import argparse
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+# Resolve lib path when installed (bin/nc2asc -> ../lib/nc2asc/)
+_nc2asc_lib = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '..', 'lib', 'nc2asc')
+if os.path.exists(_nc2asc_lib):
+    sys.path.insert(0, _nc2asc_lib)
 
 import numpy as np
 import pandas as pd
@@ -169,12 +175,46 @@ class NetCDFConverter:
                 self.data_multidim[var_name] = var.values
                 if 'CellSizes' in var.attrs:
                     self.cell_sizes[var_name] = var.attrs['CellSizes']
-            elif len(dims) == 3 and 'Time' in dims and 'sps1' in str(dims):
-                # High-rate histogram data - process according to strategy
-                if self._high_rate_handler:
-                    self.data_multidim[var_name] = self._high_rate_handler.process(var.values)
+            elif len(dims) == 3 and 'Time' in dims:
+                # 3D variable - handle high-rate or squeezable dimensions
+                data = var.values
+                shape = data.shape
+
+                # Find the Time dimension index
+                time_idx = dims.index('Time')
+
+                # Find other dimensions
+                other_dims = [(i, dims[i], shape[i]) for i in range(3) if i != time_idx]
+
+                # Check for squeezable dimension (size 1)
+                squeezable = [d for d in other_dims if d[2] == 1]
+
+                if squeezable:
+                    # Squeeze out the dimension of size 1
+                    squeeze_axis = squeezable[0][0]
+                    self.data_multidim[var_name] = np.squeeze(data, axis=squeeze_axis)
+                elif 'sps' in str(dims).lower():
+                    # High-rate histogram data - process according to strategy
+                    if self._high_rate_handler:
+                        # Determine which axis is the SPS axis (not Time, smaller size typically)
+                        sps_candidates = [(i, d, s) for i, d, s in other_dims if 'sps' in d.lower()]
+                        if sps_candidates:
+                            sps_axis = sps_candidates[0][0]
+                        else:
+                            # Default to axis 1 if Time is axis 0
+                            sps_axis = 1 if time_idx == 0 else (0 if time_idx == 1 else 1)
+                        self.data_multidim[var_name] = self._high_rate_handler.process(data, sps_dim=sps_axis)
+                    else:
+                        # Take first sample of the smaller non-time dimension
+                        sizes = [(i, s) for i, d, s in other_dims]
+                        sps_axis = min(sizes, key=lambda x: x[1])[0]
+                        self.data_multidim[var_name] = np.take(data, 0, axis=sps_axis)
                 else:
-                    self.data_multidim[var_name] = var[:, 0, :].values
+                    # Unknown 3D structure - try to squeeze or take first slice of smaller dim
+                    sizes = [(i, s) for i, d, s in other_dims]
+                    smaller_axis = min(sizes, key=lambda x: x[1])[0]
+                    self.data_multidim[var_name] = np.take(data, 0, axis=smaller_axis)
+
                 if 'CellSizes' in var.attrs:
                     self.cell_sizes[var_name] = var.attrs['CellSizes']
 
@@ -352,7 +392,9 @@ Examples:
         """
     )
 
-    parser.add_argument('input', nargs='?', help='Input NetCDF file (can also be specified in batch file)')
+    parser.add_argument('input', nargs='?', help='Input NetCDF file (can also be specified with -i or in batch file)')
+    parser.add_argument('-i', '--input-file', dest='input_file_flag', metavar='INPUT',
+                        help='Input NetCDF file (alternative to positional argument)')
     parser.add_argument('-b', '--batch', help='Batch file with conversion settings')
     parser.add_argument('-o', '--output', help='Output file path')
     parser.add_argument('-c', '--config', help='YAML or JSON configuration file')
@@ -444,10 +486,10 @@ def main():
             print(f"Error reading batch file: {e}")
             sys.exit(1)
 
-    # Determine input file (command line takes precedence over batch file)
-    input_file = args.input or batch_settings.get('input_file')
+    # Determine input file (-i flag, positional arg, or batch file)
+    input_file = args.input_file_flag or args.input or batch_settings.get('input_file')
     if not input_file:
-        print("Error: No input file specified. Use positional argument or 'if=' in batch file.")
+        print("Error: No input file specified. Use -i, positional argument, or 'if=' in batch file.")
         sys.exit(1)
 
     # Determine output file (command line takes precedence over batch file)
