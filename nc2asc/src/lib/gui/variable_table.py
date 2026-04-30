@@ -162,6 +162,7 @@ class VariableTableWidget(QWidget):
                 'dim_type': dim_type,
                 'units': units,
                 'long_name': long_name,
+                'checked': dim_type == '1d',
             })
 
         # Sort variables: 1D first, then 2D, then 3D, alphabetically within each
@@ -188,11 +189,9 @@ class VariableTableWidget(QWidget):
 
     def _add_row(self, row: int, var: dict):
         """Add a single row to the table."""
-        # Checkbox - default to checked for 1D variables only
         checkbox_item = QTableWidgetItem()
         checkbox_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-        default_state = Qt.Checked if var['dim_type'] == '1d' else Qt.Unchecked
-        checkbox_item.setCheckState(default_state)
+        checkbox_item.setCheckState(Qt.Checked if var['checked'] else Qt.Unchecked)
         self.table.setItem(row, self.COL_CHECKBOX, checkbox_item)
 
         # Variable name
@@ -252,6 +251,7 @@ class VariableTableWidget(QWidget):
 
         self._populate_table()
         self._update_count_label()
+        self.selection_changed.emit()
 
     def _on_cell_clicked(self, row: int, column: int):
         """Handle cell click events."""
@@ -264,6 +264,11 @@ class VariableTableWidget(QWidget):
     def _on_cell_changed(self, row: int, column: int):
         """Handle cell change events (checkbox toggling)."""
         if column == self.COL_CHECKBOX:
+            if row < len(self._filtered_indices):
+                checkbox = self.table.item(row, self.COL_CHECKBOX)
+                if checkbox:
+                    idx = self._filtered_indices[row]
+                    self._all_variables[idx]['checked'] = checkbox.checkState() == Qt.Checked
             self.selection_changed.emit()
             self._update_count_label()
 
@@ -294,15 +299,9 @@ class VariableTableWidget(QWidget):
         Get list of selected variable names.
 
         Returns:
-            List of variable names that are checked
+            List of variable names that are checked (including those hidden by filter)
         """
-        selected = []
-        for row in range(self.table.rowCount()):
-            checkbox = self.table.item(row, self.COL_CHECKBOX)
-            name_item = self.table.item(row, self.COL_VARIABLE)
-            if checkbox and name_item and checkbox.checkState() == Qt.Checked:
-                selected.append(name_item.text())
-        return selected
+        return [var['name'] for var in self._all_variables if var['checked']]
 
     def set_selected_variables(self, variables: List[str]):
         """
@@ -312,13 +311,14 @@ class VariableTableWidget(QWidget):
             variables: List of variable names to select
         """
         var_set = set(variables)
+        for var in self._all_variables:
+            var['checked'] = var['name'] in var_set
         self.table.blockSignals(True)
         for row in range(self.table.rowCount()):
             checkbox = self.table.item(row, self.COL_CHECKBOX)
             name_item = self.table.item(row, self.COL_VARIABLE)
             if checkbox and name_item:
-                state = Qt.Checked if name_item.text() in var_set else Qt.Unchecked
-                checkbox.setCheckState(state)
+                checkbox.setCheckState(Qt.Checked if name_item.text() in var_set else Qt.Unchecked)
         self.table.blockSignals(False)
         self.selection_changed.emit()
         self._update_count_label()
@@ -330,6 +330,7 @@ class VariableTableWidget(QWidget):
             item = self.table.item(row, self.COL_CHECKBOX)
             if item:
                 item.setCheckState(Qt.Checked)
+                self._all_variables[self._filtered_indices[row]]['checked'] = True
         self.table.blockSignals(False)
         self.selection_changed.emit()
         self._update_count_label()
@@ -340,12 +341,11 @@ class VariableTableWidget(QWidget):
         for row in range(self.table.rowCount()):
             idx = self._filtered_indices[row]
             var = self._all_variables[idx]
+            checked = var['dim_type'] == '1d'
+            var['checked'] = checked
             item = self.table.item(row, self.COL_CHECKBOX)
             if item:
-                if var['dim_type'] == '1d':
-                    item.setCheckState(Qt.Checked)
-                else:
-                    item.setCheckState(Qt.Unchecked)
+                item.setCheckState(Qt.Checked if checked else Qt.Unchecked)
         self.table.blockSignals(False)
         self.selection_changed.emit()
         self._update_count_label()
@@ -357,6 +357,7 @@ class VariableTableWidget(QWidget):
             item = self.table.item(row, self.COL_CHECKBOX)
             if item:
                 item.setCheckState(Qt.Unchecked)
+                self._all_variables[self._filtered_indices[row]]['checked'] = False
         self.table.blockSignals(False)
         self.selection_changed.emit()
         self._update_count_label()
@@ -367,8 +368,9 @@ class VariableTableWidget(QWidget):
         for row in range(self.table.rowCount()):
             item = self.table.item(row, self.COL_CHECKBOX)
             if item:
-                new_state = Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked
-                item.setCheckState(new_state)
+                checked = item.checkState() != Qt.Checked
+                item.setCheckState(Qt.Checked if checked else Qt.Unchecked)
+                self._all_variables[self._filtered_indices[row]]['checked'] = checked
         self.table.blockSignals(False)
         self.selection_changed.emit()
         self._update_count_label()

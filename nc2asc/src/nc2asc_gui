@@ -12,12 +12,17 @@ Copyright University Corporation for Atmospheric Research (2021-2025)
 import sys
 import os
 
-# Add the src directory to the path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_installed_lib = os.path.join(_script_dir, '..', 'lib', 'nc2asc')
+_source_lib = os.path.join(_script_dir, 'lib')
+if os.path.isdir(_installed_lib):
+    sys.path.insert(0, _installed_lib)
+elif os.path.isdir(_source_lib):
+    sys.path.insert(0, _source_lib)
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
-from lib.gui import NC2ASCGUI
+from gui import NC2ASCGUI
 
 
 def main():

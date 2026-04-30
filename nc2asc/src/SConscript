@@ -4,11 +4,10 @@ import os
 tools = ['default', 'prefixoptions']
 env = Environment(tools=tools)
 
-# Install nc2asc_multidim as the nc2asc executable
-env.InstallAs('$INSTALL_PREFIX/bin/nc2asc', 'nc2asc_multidim')
+env.Install('$INSTALL_PREFIX/bin', 'nc2asc')
 
 # Core lib modules
-lib_dest = '$INSTALL_PREFIX/lib/nc2asc/lib'
+lib_dest = '$INSTALL_PREFIX/lib/nc2asc'
 lib_src = './lib'
 
 core_modules = [
@@ -51,4 +50,4 @@ for f in gui_modules:
     env.Install(os.path.join(lib_dest, 'gui'), src)
 
 # Config file
-env.Install('$INSTALL_PREFIX/lib/nc2asc', '../config/default_config.yaml')
+env.Install('$INSTALL_PREFIX/lib/nc2asc', '../config/example_config.yaml')

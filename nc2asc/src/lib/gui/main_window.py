@@ -83,9 +83,8 @@ class NC2ASCGUI(QMainWindow):
 
     def _load_default_config(self) -> MergedConfiguration:
         """Load the default configuration file."""
-        # Look for default_config.yaml relative to this file
         config_dir = Path(__file__).parent.parent.parent.parent / "config"
-        default_config = config_dir / "default_config.yaml"
+        default_config = config_dir / "example_config.yaml"
 
         if default_config.exists():
             try:
@@ -314,7 +313,10 @@ class NC2ASCGUI(QMainWindow):
 
     def _browse_input(self):
         """Browse for input NetCDF file."""
-        start_dir = str(self._netcdf_path.parent) if self._netcdf_path else ""
+        if self._netcdf_path:
+            start_dir = str(self._netcdf_path.parent)
+        else:
+            start_dir = os.environ.get('DATA_DIR', '')
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open NetCDF File",
