@@ -12,10 +12,9 @@ lib_src = './lib'
 
 core_modules = [
     'config_manager.py',
+    'converter.py',
     'dimension_handler.py',
-    'process_nc.py',
-    'read_batch.py',
-    'write_data.py',
+    'nc2asc_paths.py',
     '__init__.py',
 ]
 for f in core_modules:

@@ -8,20 +8,16 @@ Copyright University Corporation for Atmospheric Research (2021-2025)
 """
 
 import os
-import sys
 from pathlib import Path
 from typing import Optional
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
     QGroupBox, QLabel, QLineEdit, QPushButton, QFileDialog,
-    QMessageBox, QStatusBar, QMenuBar, QMenu, QAction,
+    QMessageBox, QStatusBar, QAction,
     QProgressDialog, QApplication
 )
 from PyQt5.QtCore import Qt, QSettings
-
-# Add parent directory for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from .variable_table import VariableTableWidget
 from .options_panel import OutputOptionsPanel
@@ -29,23 +25,11 @@ from .preview_panel import PreviewPanel, VariableDetailPanel
 from .config_dialog import ConfigEditorDialog
 
 from config_manager import (
-    ConfigManager, ConversionOptions, MergedConfiguration, OutputFormat
+    ConfigManager, MergedConfiguration
 )
+from converter import NetCDFConverter
 from dimension_handler import categorize_variables
-
-
-def _get_netcdf_converter():
-    """Load NetCDFConverter from nc2asc_multidim script (no .py extension)."""
-    import importlib.machinery
-    import importlib.util
-    # this should really get argv[0] to get the nc2asc uri.
-    src_dir = Path(__file__).resolve().parents[3]
-    module_path = src_dir / "bin/nc2asc"
-    loader = importlib.machinery.SourceFileLoader("nc2asc", str(module_path))
-    spec = importlib.util.spec_from_loader("nc2asc", loader)
-    nc2asc_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(nc2asc_module)
-    return nc2asc_module.NetCDFConverter
+from nc2asc_paths import EXAMPLE_CONFIG
 
 
 class NC2ASCGUI(QMainWindow):
@@ -84,16 +68,12 @@ class NC2ASCGUI(QMainWindow):
 
     def _load_default_config(self) -> MergedConfiguration:
         """Load the default configuration file."""
-        config_dir = Path(__file__).parent.parent.parent.parent / "config"
-        default_config = config_dir / "example_config.yaml"
-
-        if default_config.exists():
+        if EXAMPLE_CONFIG.exists():
             try:
-                config_manager = ConfigManager(config_path=default_config)
+                config_manager = ConfigManager(config_path=EXAMPLE_CONFIG)
                 return config_manager.load()
             except Exception as e:
                 print(f"Warning: Could not load default config: {e}")
-
         return MergedConfiguration.default()
 
     def _setup_ui(self):
@@ -357,9 +337,6 @@ class NC2ASCGUI(QMainWindow):
         QApplication.processEvents()
 
         try:
-            # Import converter here to avoid circular imports
-            NetCDFConverter = _get_netcdf_converter()
-
             self._converter = NetCDFConverter(str(path), self._config)
             if not self._converter.load_netcdf():
                 QMessageBox.critical(self, "Error", "Failed to load NetCDF file")
@@ -537,8 +514,6 @@ class NC2ASCGUI(QMainWindow):
                 platform_mapping=self._config.platform_mapping
             )
 
-            # Create fresh converter with updated config
-            NetCDFConverter = _get_netcdf_converter()
             converter = NetCDFConverter(str(self._netcdf_path), self._config)
 
             # Convert

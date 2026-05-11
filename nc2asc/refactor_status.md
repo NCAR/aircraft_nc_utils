@@ -7,7 +7,7 @@ Branch: `feature/nc2asc-multidim`
 **Issue #11 — Multidimensional/histogram functionality**
 - `src/lib/dimension_handler.py` — flattens 2D vars into columns, extracts bin metadata, handles 3D high-rate (SPS) data
 - `src/lib/formatters/icartt_2110.py` — ICARTT 2110 format writer
-- `src/nc2asc_multidim` — unified CLI entry point combining previous scripts
+- `src/nc2asc` — unified CLI entry point combining previous scripts
 - Unit tests written and passing
 
 **Issue #6 — ICARTT Configuration File**
@@ -45,9 +45,16 @@ Branch: `feature/nc2asc-multidim`
 
 Unit tests pass but no integration tests exist against real NetCDF files.
 
-1. **1D variable conversion** — `nc2asc_multidim` on a standard NC file to ICARTT 1001; verify header and data columns
+1. **1D variable conversion** — `nc2asc` on a standard NC file to ICARTT 1001; verify header and data columns
 2. **2D histogram conversion** — file with a 2D variable (e.g., `A2DCR_RPC[]`) to ICARTT 2110; verify bin metadata and header match spec
 3. **HRT data** — each strategy (`first_sample`, `average`, `expand`) against real high-rate NC data
 4. **Config file loading** — `--config` flag overrides defaults correctly
 5. **Batchfile round-trip** — load a batch file, confirm parsing; save from GUI, confirm it re-reads (currently broken, #12)
 6. **GUI workflow** — open `nc2asc_gui`, load NC file, select vars, preview, convert, inspect output
+
+Current Errors:
+If format is ICARTT it should overwrite to the proper filename even if specified output filename
+
+Preview on GUI is wrong for multidim variables
+
+Global base-path that is saved so that you can run locally or scons installed

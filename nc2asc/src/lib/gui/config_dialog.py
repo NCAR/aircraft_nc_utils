@@ -13,11 +13,10 @@ import json
 
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget,
-    QFormLayout, QLineEdit, QTextEdit, QLabel, QPushButton,
+    QFormLayout, QLineEdit, QLabel, QPushButton,
     QDialogButtonBox, QFileDialog, QMessageBox, QGroupBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea
 )
-from PyQt5.QtCore import Qt
 
 try:
     import yaml

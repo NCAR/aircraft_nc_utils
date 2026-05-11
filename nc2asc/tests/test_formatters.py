@@ -9,9 +9,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src' / 'lib'))
 
-from lib.formatters import (
+from formatters import (
     FormatterFactory,
     OutputFormat,
     OutputFormatter,
@@ -20,7 +20,7 @@ from lib.formatters import (
     ICARTT2110Writer,
     AMESWriter,
 )
-from lib.config_manager import MergedConfiguration
+from config_manager import MergedConfiguration
 
 
 class TestFormatterFactory:

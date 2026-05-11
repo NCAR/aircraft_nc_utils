@@ -14,7 +14,6 @@ from PyQt5.QtWidgets import (
     QSpinBox, QPushButton, QGroupBox
 )
 from PyQt5.QtGui import QFont, QTextOption
-from PyQt5.QtCore import Qt
 
 if TYPE_CHECKING:
     from config_manager import MergedConfiguration

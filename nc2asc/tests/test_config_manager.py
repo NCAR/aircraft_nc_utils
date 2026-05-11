@@ -10,9 +10,9 @@ from pathlib import Path
 import pytest
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src' / 'lib'))
 
-from lib.config_manager import (
+from config_manager import (
     ConfigManager,
     ConversionOptions,
     FlightMetadata,

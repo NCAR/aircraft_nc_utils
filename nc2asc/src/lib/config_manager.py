@@ -10,7 +10,7 @@ Copyright University Corporation for Atmospheric Research (2021-2025)
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import json
 

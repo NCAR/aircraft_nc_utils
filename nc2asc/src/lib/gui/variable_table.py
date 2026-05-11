@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLineEdit, QLabel, QHeaderView, QAbstractItemView
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QBrush, QFont
+from PyQt5.QtGui import QColor, QBrush
 
 import xarray as xr
 
