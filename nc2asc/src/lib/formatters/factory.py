@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Dict, Type
 
 if TYPE_CHECKING:
     from .base import OutputFormatter
-    from ..config_manager import MergedConfiguration
+    from config_manager import MergedConfiguration
 
 
 class OutputFormat(Enum):

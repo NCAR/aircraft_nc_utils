@@ -25,7 +25,7 @@ try:
 except ImportError:
     YAML_AVAILABLE = False
 
-from ..config_manager import (
+from config_manager import (
     HeaderConfig, NormalComments, MergedConfiguration, PlatformMapping
 )
 

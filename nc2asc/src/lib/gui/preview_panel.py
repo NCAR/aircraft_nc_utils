@@ -17,7 +17,7 @@ from PyQt5.QtGui import QFont, QTextOption
 from PyQt5.QtCore import Qt
 
 if TYPE_CHECKING:
-    from ..config_manager import MergedConfiguration
+    from config_manager import MergedConfiguration
 
 
 class PreviewPanel(QWidget):
@@ -142,7 +142,7 @@ class PreviewPanel(QWidget):
         Returns:
             Tuple of (preview_text, header_line_count)
         """
-        from ..formatters import FormatterFactory, OutputFormat as FmtOutputFormat
+        from formatters import FormatterFactory, OutputFormat as FmtOutputFormat
 
         # Create formatter
         formatter = FormatterFactory.create(

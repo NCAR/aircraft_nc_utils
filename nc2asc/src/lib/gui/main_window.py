@@ -28,10 +28,10 @@ from .options_panel import OutputOptionsPanel
 from .preview_panel import PreviewPanel, VariableDetailPanel
 from .config_dialog import ConfigEditorDialog
 
-from ..config_manager import (
+from config_manager import (
     ConfigManager, ConversionOptions, MergedConfiguration, OutputFormat
 )
-from ..dimension_handler import categorize_variables
+from dimension_handler import categorize_variables
 
 
 def _get_netcdf_converter():

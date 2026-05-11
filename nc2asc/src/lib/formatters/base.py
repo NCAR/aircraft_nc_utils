@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, List, Optional
 import pandas as pd
 
 if TYPE_CHECKING:
-    from ..config_manager import MergedConfiguration, FlightMetadata
+    from config_manager import MergedConfiguration
 
 
 class OutputFormatter(ABC):

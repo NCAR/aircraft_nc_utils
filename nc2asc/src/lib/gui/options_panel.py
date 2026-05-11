@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSignal, QTime
 
-from ..config_manager import ConversionOptions, OutputFormat, MergedConfiguration
+from config_manager import ConversionOptions, OutputFormat, MergedConfiguration
 
 
 class OutputOptionsPanel(QWidget):
