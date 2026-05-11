@@ -492,10 +492,15 @@ def launch_gui(input_file: Optional[str] = None):
     try:
         from PyQt5.QtWidgets import QApplication
         from PyQt5.QtCore import Qt
-        from gui import NC2ASCGUI
     except ImportError:
         print("Error: PyQt5 is required for GUI mode.")
         print("Install with: pip install PyQt5")
+        sys.exit(1)
+
+    try:
+        from gui import NC2ASCGUI
+    except ImportError:
+        print("Error: Can't locate NC2ASCGUI")
         sys.exit(1)
 
     # Enable high DPI scaling
