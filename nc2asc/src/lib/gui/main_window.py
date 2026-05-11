@@ -38,10 +38,11 @@ def _get_netcdf_converter():
     """Load NetCDFConverter from nc2asc_multidim script (no .py extension)."""
     import importlib.machinery
     import importlib.util
-    src_dir = Path(__file__).parent.parent.parent
-    module_path = src_dir / "nc2asc_multidim"
-    loader = importlib.machinery.SourceFileLoader("nc2asc_multidim", str(module_path))
-    spec = importlib.util.spec_from_loader("nc2asc_multidim", loader)
+    # this should really get argv[0] to get the nc2asc uri.
+    src_dir = Path(__file__).resolve().parents[3]
+    module_path = src_dir / "bin/nc2asc"
+    loader = importlib.machinery.SourceFileLoader("nc2asc", str(module_path))
+    spec = importlib.util.spec_from_loader("nc2asc", loader)
     nc2asc_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(nc2asc_module)
     return nc2asc_module.NetCDFConverter
