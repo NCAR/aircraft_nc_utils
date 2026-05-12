@@ -318,7 +318,17 @@ class NetCDFConverter:
         if not self.load_netcdf():
             raise RuntimeError("Failed to load NetCDF file")
 
-        if output_path is None:
+        icartt_formats = {OutputFormat.ICARTT_1001, OutputFormat.ICARTT_2110}
+        if self.options.output_format in icartt_formats:
+            # ICARTT filenames must follow strict naming conventions regardless of
+            # what the user specified; preserve directory if one was given.
+            compliant_name = self.generate_output_filename()
+            if output_path is not None:
+                output_path = str(Path(output_path).parent / compliant_name)
+                print(f"ICARTT format requires compliant filename: {compliant_name}")
+            else:
+                output_path = compliant_name
+        elif output_path is None:
             output_path = self.generate_output_filename()
 
         # Get formatter from factory
