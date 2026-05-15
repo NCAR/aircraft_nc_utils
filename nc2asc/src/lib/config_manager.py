@@ -81,6 +81,7 @@ class ConversionOptions:
     averaging: Optional[int] = None
     version: str = "RA"
     high_rate_strategy: str = "first"  # 'first', 'average', 'expand'
+    ames_file_code: str = "RF"  # two-letter NASA Ames filename prefix (CCyyyyMMdd.ext)
 
 
 @dataclass
@@ -363,7 +364,9 @@ class ConfigManager:
             averaging=self._get_value('averaging'),
             version=self._get_value('version') or file_defaults.get('version', 'RA'),
             high_rate_strategy=self._get_value('high_rate_strategy') or
-                              file_defaults.get('high_rate_strategy', 'first')
+                              file_defaults.get('high_rate_strategy', 'first'),
+            ames_file_code=self._get_value('ames_file_code') or
+                          file_defaults.get('ames_file_code', 'RF')
         )
 
     def get_config(self) -> MergedConfiguration:

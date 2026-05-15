@@ -1,0 +1,15 @@
+# nc2asc requirements
+# pip:   pip install -r requirements.txt
+# conda: conda install --file requirements.txt
+#        Note: PyQt5 is named 'pyqt' in conda:
+#              conda install -c conda-forge pyqt
+
+numpy
+pandas
+xarray
+pyyaml
+
+# GUI only — omit if running headless/command-line
+# pip:   PyQt5
+# conda: conda install -c conda-forge pyqt
+PyQt5

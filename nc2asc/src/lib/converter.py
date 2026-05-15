@@ -296,12 +296,15 @@ class NetCDFConverter:
     def generate_output_filename(self) -> str:
         """Generate appropriate output filename based on format."""
         date_str = self.metadata.flight_date.replace(", ", "").replace(" ", "")
+        platform_ext = self.metadata.platform.upper()
 
         if self.options.output_format in [OutputFormat.ICARTT_1001, OutputFormat.ICARTT_2110]:
-            ext = ".ict"
-            return f"{self.metadata.project_name}-CORE_{self.metadata.platform}_{date_str}_{self.options.version}{ext}"
+            return f"{self.metadata.project_name}-CORE_{self.metadata.platform}_{date_str}_{self.options.version}.ict"
         elif self.options.output_format == OutputFormat.AMES_1001:
-            return f"{self.metadata.project_name}_{self.metadata.platform}_{date_str}.ames"
+            # NASA Ames strict filename convention: CCyyyyMMdd_Rn.PLATFORM
+            # CC = two-letter file code (default RF = Research Aviation Facility)
+            cc = self.options.ames_file_code.upper()[:2]
+            return f"{cc}{date_str}_{self.options.version}.{platform_ext}"
         else:
             return f"{self.metadata.project_name}_{self.metadata.platform}_{date_str}.txt"
 
@@ -318,14 +321,14 @@ class NetCDFConverter:
         if not self.load_netcdf():
             raise RuntimeError("Failed to load NetCDF file")
 
-        icartt_formats = {OutputFormat.ICARTT_1001, OutputFormat.ICARTT_2110}
-        if self.options.output_format in icartt_formats:
-            # ICARTT filenames must follow strict naming conventions regardless of
-            # what the user specified; preserve directory if one was given.
+        strict_formats = {OutputFormat.ICARTT_1001, OutputFormat.ICARTT_2110, OutputFormat.AMES_1001}
+        if self.options.output_format in strict_formats:
+            # ICARTT and NASA Ames filenames must follow strict naming conventions
+            # regardless of what the user specified; preserve directory if one was given.
             compliant_name = self.generate_output_filename()
             if output_path is not None:
                 output_path = str(Path(output_path).parent / compliant_name)
-                print(f"ICARTT format requires compliant filename: {compliant_name}")
+                print(f"{self.options.output_format.value} format requires compliant filename: {compliant_name}")
             else:
                 output_path = compliant_name
         elif output_path is None:

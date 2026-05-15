@@ -149,6 +149,8 @@ EXAMPLES:
                         choices=['first', 'average', 'expand'],
                         default=None,
                         help='How to handle 3D high-rate variables: first, average, or expand (default: first)')
+    parser.add_argument('--ames-file-code', metavar='CC', default=None,
+                        help='Two-letter NASA Ames filename prefix CC in CCyyyyMMdd_Rn.PLATFORM (default: RF)')
     parser.add_argument('--validate', action='store_true',
                         help='Validate the output file after writing')
     parser.add_argument('--gui', action='store_true',
@@ -249,6 +251,7 @@ def main():
         'start_time': args.start_time,
         'end_time': args.end_time,
         'high_rate_strategy': args.high_rate_strategy,
+        'ames_file_code': args.ames_file_code,
     }
 
     # Remove None values
