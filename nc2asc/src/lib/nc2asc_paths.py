@@ -4,7 +4,7 @@ Path constants for nc2asc — resolves correctly from source and after scons ins
 Source:    src/lib/nc2asc_paths.py              -> LIB_DIR = src/lib/
 Installed: $PREFIX/lib/nc2asc/nc2asc_paths.py  -> LIB_DIR = $PREFIX/lib/nc2asc/
 
-Import anywhere with:  from nc2asc_paths import LIB_DIR, NC2ASC_BIN, EXAMPLE_CONFIG
+Import anywhere with:  from nc2asc_paths import LIB_DIR, NC2ASC_BIN, EXAMPLE_CONFIG, EXAMPLE_BATCH
 """
 
 from pathlib import Path
@@ -25,3 +25,8 @@ NC2ASC_BIN = _installed_bin if _installed_bin.exists() else _source_bin
 EXAMPLE_CONFIG = LIB_DIR / 'example_config.yaml'
 if not EXAMPLE_CONFIG.exists():
     EXAMPLE_CONFIG = LIB_DIR.parent.parent / 'config' / 'example_config.yaml'
+
+# example_batch.bat — same dual-mode resolution as EXAMPLE_CONFIG
+EXAMPLE_BATCH = LIB_DIR / 'example_batch.bat'
+if not EXAMPLE_BATCH.exists():
+    EXAMPLE_BATCH = LIB_DIR.parent.parent / 'config' / 'example_batch.bat'

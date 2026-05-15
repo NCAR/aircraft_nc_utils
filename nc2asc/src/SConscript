@@ -48,5 +48,6 @@ for f in gui_modules:
     src = os.path.join(lib_src, 'gui', f)
     env.Install(os.path.join(lib_dest, 'gui'), src)
 
-# Config file
+# Config files
 env.Install('$INSTALL_PREFIX/lib/nc2asc', '../config/example_config.yaml')
+env.Install('$INSTALL_PREFIX/lib/nc2asc', '../config/example_batch.bat')

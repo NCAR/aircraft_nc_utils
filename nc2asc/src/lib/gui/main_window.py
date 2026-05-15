@@ -15,9 +15,10 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
     QGroupBox, QLabel, QLineEdit, QPushButton, QFileDialog,
     QMessageBox, QStatusBar, QAction,
-    QProgressDialog, QApplication
+    QProgressDialog, QApplication, QDialog, QPlainTextEdit, QDialogButtonBox
 )
 from PyQt5.QtCore import Qt, QSettings
+from PyQt5.QtGui import QFont
 
 from .variable_table import VariableTableWidget
 from .options_panel import OutputOptionsPanel
@@ -25,11 +26,11 @@ from .preview_panel import PreviewPanel, VariableDetailPanel
 from .config_dialog import ConfigEditorDialog
 
 from config_manager import (
-    ConfigManager, MergedConfiguration
+    ConfigManager, MergedConfiguration, parse_batch_file, write_batch_file
 )
 from converter import NetCDFConverter
 from dimension_handler import categorize_variables
-from nc2asc_paths import EXAMPLE_CONFIG
+from nc2asc_paths import EXAMPLE_CONFIG, EXAMPLE_BATCH
 
 
 class NC2ASCGUI(QMainWindow):
@@ -52,19 +53,23 @@ class NC2ASCGUI(QMainWindow):
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle("nc2asc - NetCDF to ASCII Converter")
-        self.setMinimumSize(1200, 850)
+        self.setMinimumSize(800, 550)
+        self.resize(1200, 850)
 
         # State
         self._converter = None
         self._config = self._load_default_config()
         self._netcdf_path: Optional[Path] = None
         self._output_dir: Optional[Path] = None
+        self._batch_path: Optional[Path] = None
+        self._pending_variables: list = []
         self._settings = QSettings("NCAR-EOL", "nc2asc")
 
         self._setup_ui()
         self._setup_menu()
         self._connect_signals()
         self._load_settings()
+        self._apply_default_batch()
 
     def _load_default_config(self) -> MergedConfiguration:
         """Load the default configuration file."""
@@ -93,14 +98,36 @@ class NC2ASCGUI(QMainWindow):
 
         # Input file group
         input_group = QGroupBox("Input")
-        input_layout = QHBoxLayout(input_group)
+        input_vbox = QVBoxLayout(input_group)
+
+        nc_layout = QHBoxLayout()
+        nc_label = QLabel("NetCDF:")
         self.input_path_edit = QLineEdit()
         self.input_path_edit.setReadOnly(True)
         self.input_path_edit.setPlaceholderText("Select a NetCDF file...")
         self.input_browse_btn = QPushButton("Browse...")
         self.input_browse_btn.clicked.connect(self._browse_input)
-        input_layout.addWidget(self.input_path_edit, 1)
-        input_layout.addWidget(self.input_browse_btn)
+        nc_layout.addWidget(nc_label)
+        nc_layout.addWidget(self.input_path_edit, 1)
+        nc_layout.addWidget(self.input_browse_btn)
+        input_vbox.addLayout(nc_layout)
+
+        batch_layout = QHBoxLayout()
+        batch_label = QLabel("Batch:")
+        self.batch_path_edit = QLineEdit()
+        self.batch_path_edit.setReadOnly(True)
+        self.batch_path_edit.setPlaceholderText("No batch file loaded")
+        self.batch_browse_btn = QPushButton("Browse...")
+        self.batch_browse_btn.clicked.connect(self._load_batch)
+        self.view_batch_btn = QPushButton("View")
+        self.view_batch_btn.setEnabled(False)
+        self.view_batch_btn.clicked.connect(self._preview_batch)
+        batch_layout.addWidget(batch_label)
+        batch_layout.addWidget(self.batch_path_edit, 1)
+        batch_layout.addWidget(self.batch_browse_btn)
+        batch_layout.addWidget(self.view_batch_btn)
+        input_vbox.addLayout(batch_layout)
+
         left_layout.addWidget(input_group)
 
         # Output directory group
@@ -176,11 +203,11 @@ class NC2ASCGUI(QMainWindow):
         self.convert_btn.clicked.connect(self._convert)
         right_layout.addWidget(self.convert_btn)
 
-        right_panel.setMinimumWidth(350)
         main_splitter.addWidget(right_panel)
-
-        # Set splitter sizes (55% left, 45% right)
-        main_splitter.setSizes([600, 500])
+        main_splitter.setStretchFactor(0, 55)
+        main_splitter.setStretchFactor(1, 45)
+        main_splitter.setCollapsible(0, False)
+        main_splitter.setCollapsible(1, False)
 
         # Bottom panel (preview + variable details)
         bottom_splitter = QSplitter(Qt.Horizontal)
@@ -197,7 +224,11 @@ class NC2ASCGUI(QMainWindow):
         self.detail_panel = VariableDetailPanel()
         bottom_splitter.addWidget(self.detail_panel)
 
-        bottom_splitter.setSizes([700, 300])
+        bottom_splitter.setStretchFactor(0, 70)
+        bottom_splitter.setStretchFactor(1, 30)
+        bottom_splitter.setCollapsible(0, False)
+        bottom_splitter.setCollapsible(1, False)
+        bottom_splitter.setMinimumHeight(150)
 
         # Status bar
         self.status_bar = QStatusBar()
@@ -227,6 +258,18 @@ class NC2ASCGUI(QMainWindow):
         save_config_action.setShortcut("Ctrl+Shift+S")
         save_config_action.triggered.connect(self._save_config)
         file_menu.addAction(save_config_action)
+
+        file_menu.addSeparator()
+
+        load_batch_action = QAction("Load &Batch...", self)
+        load_batch_action.setShortcut("Ctrl+B")
+        load_batch_action.triggered.connect(self._load_batch)
+        file_menu.addAction(load_batch_action)
+
+        save_batch_action = QAction("Save &Batch...", self)
+        save_batch_action.setShortcut("Ctrl+Shift+B")
+        save_batch_action.triggered.connect(self._save_batch)
+        file_menu.addAction(save_batch_action)
 
         file_menu.addSeparator()
 
@@ -356,6 +399,11 @@ class NC2ASCGUI(QMainWindow):
             # Populate variable table
             self.variable_table.populate_from_dataset(self._converter.ds)
 
+            # Re-apply variable selection from batch if one was loaded before the file
+            if self._pending_variables:
+                self.variable_table.set_selected_variables(self._pending_variables)
+                self._pending_variables = []
+
             # Set time range from file
             if self._converter.metadata.start_time and self._converter.metadata.end_time:
                 self.options_panel.set_file_time_range(
@@ -465,6 +513,93 @@ class NC2ASCGUI(QMainWindow):
         # Open editor to save
         dialog = ConfigEditorDialog(self._config, self)
         dialog._save_config_file()
+
+    def _apply_default_batch(self):
+        """Apply example_batch.bat settings at startup if it exists."""
+        if EXAMPLE_BATCH.exists():
+            try:
+                self._apply_batch_settings(parse_batch_file(str(EXAMPLE_BATCH)), EXAMPLE_BATCH)
+            except Exception as e:
+                print(f"Warning: Could not load default batch: {e}")
+
+    def _load_batch(self):
+        """Load settings from a batch file chosen by the user."""
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Load Batch File", "", "Batch Files (*.bat);;All Files (*)"
+        )
+        if not path:
+            return
+        try:
+            batch_settings = parse_batch_file(path)
+        except Exception as e:
+            QMessageBox.warning(self, "Load Batch", f"Could not read batch file:\n{e}")
+            return
+        self._apply_batch_settings(batch_settings, Path(path))
+        self.status_bar.showMessage(f"Loaded batch: {Path(path).name}")
+
+    def _apply_batch_settings(self, batch_settings: dict, batch_path: Optional[Path] = None):
+        """Apply parsed batch settings to the GUI state."""
+        if batch_settings.get('input_file') and not self._netcdf_path:
+            self.load_netcdf_file(batch_settings['input_file'])
+
+        config = ConfigManager(batch_settings=batch_settings).load()
+        self._config = config
+        self.options_panel.set_from_config(config)
+
+        if batch_settings.get('output_file'):
+            out = Path(batch_settings['output_file'])
+            self.output_dir_edit.setText(str(out.parent))
+            self.output_name_edit.setText(out.name)
+            self._output_dir = out.parent
+
+        if batch_path:
+            self._batch_path = Path(batch_path)
+            self.batch_path_edit.setText(str(self._batch_path))
+            self.view_batch_btn.setEnabled(True)
+
+        # Store variable list — applied after NC file populates the table
+        self._pending_variables = batch_settings.get('variables', [])
+        if self._netcdf_path and self._pending_variables:
+            self.variable_table.set_selected_variables(self._pending_variables)
+            self._pending_variables = []
+
+    def _preview_batch(self):
+        """Show the current batch file contents in a read-only dialog."""
+        if not self._batch_path or not self._batch_path.exists():
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Batch File: {self._batch_path.name}")
+        dialog.resize(520, 420)
+        layout = QVBoxLayout(dialog)
+        text_edit = QPlainTextEdit()
+        text_edit.setReadOnly(True)
+        text_edit.setFont(QFont("Courier", 11))
+        text_edit.setPlainText(self._batch_path.read_text())
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(text_edit)
+        layout.addWidget(buttons)
+        dialog.exec_()
+
+    def _save_batch(self):
+        """Save current settings to a batch file."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Batch File", "", "Batch Files (*.bat);;All Files (*)"
+        )
+        if not path:
+            return
+        options = self.options_panel.get_conversion_options()
+        variables = self.variable_table.get_selected_variables()
+        input_file = str(self._netcdf_path) if self._netcdf_path else None
+        out_dir = self.output_dir_edit.text().strip()
+        out_name = self.output_name_edit.text().strip()
+        output_file = str(Path(out_dir) / out_name) if out_dir and out_name else None
+        try:
+            write_batch_file(path, options, variables, input_file, output_file)
+        except Exception as e:
+            QMessageBox.warning(self, "Save Batch", f"Could not save batch file:\n{e}")
+            return
+        self.status_bar.showMessage(f"Saved batch: {Path(path).name}")
 
     def _convert(self):
         """Perform the conversion."""

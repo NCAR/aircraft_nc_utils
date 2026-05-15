@@ -521,3 +521,62 @@ def parse_batch_file(batch_path: str) -> dict:
                         settings['variables'].append(value)
 
     return settings
+
+
+def write_batch_file(
+    batch_path: str,
+    options: 'ConversionOptions',
+    variables: list,
+    input_file: Optional[str] = None,
+    output_file: Optional[str] = None,
+) -> None:
+    """Write a batch file from the given conversion options and variable list.
+
+    Produces a file readable by parse_batch_file() and the CLI -b flag.
+
+    Args:
+        batch_path: Destination path for the batch file
+        options: ConversionOptions with current settings
+        variables: List of variable names to include
+        input_file: Optional path to input NetCDF file
+        output_file: Optional path to output file
+    """
+    format_map = {
+        'plain': 'Plain',
+        'icartt': 'ICARTT',
+        'icartt2110': 'ICARTT2110',
+        'ames': 'AMES',
+    }
+
+    lines = []
+
+    lines.append(f"hd={format_map.get(options.output_format.value, 'ICARTT')}")
+    lines.append(f"dt={options.date_format}")
+    lines.append(f"tm={options.time_format}")
+
+    delimiter_str = 'comma' if options.delimiter in (',', ', ') else 'space'
+    lines.append(f"sp={delimiter_str}")
+
+    lines.append(f"fv={options.fill_value}")
+    lines.append(f"version={options.version}")
+
+    if options.averaging and options.averaging > 1:
+        lines.append(f"avg={options.averaging}")
+
+    if options.start_time is not None or options.end_time is not None:
+        start = str(int(options.start_time)) if options.start_time is not None else 'X'
+        end = str(int(options.end_time)) if options.end_time is not None else 'X'
+        lines.append(f"ti={start},{end}")
+
+    if input_file:
+        lines.append(f"if={input_file}")
+    if output_file:
+        lines.append(f"of={output_file}")
+
+    lines.append("")
+    for var in variables:
+        if var != 'Time':
+            lines.append(f"Vars={var}")
+
+    with open(batch_path, 'w') as f:
+        f.write('\n'.join(lines) + '\n')
