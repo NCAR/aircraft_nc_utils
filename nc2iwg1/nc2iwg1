@@ -138,8 +138,8 @@ def buildIWG():
                       "HGM232", "GGSPD", "TASX", "IAS", "MACH_A", "VSPD",
                       "THDG", "TKAT", "DRFTA", "PITCH", "ROLL", "SSLIP",
                       "ATTACK", "ATX", "DPXC", "RTX", "PSXC", "QCXC",
-                      "PCAB", "WSC", "WDC", "WIC", "SOLZE", "Solar_El_AC",
-                      "SOLAZ", "Sun_Az_AC"]
+                      "PCAB", "WSC", "WDC", "WIC", "SOLZE", "SOLELAC",
+                      "SOLAZ", "SOLAZAC"]
 
     # Detect if this is a highrate or samplerate file by checking for sps dimensions
     highrate_dims = [dim for dim in nc.dimensions if dim.startswith('sps')]
