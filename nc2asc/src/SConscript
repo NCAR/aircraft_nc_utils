@@ -2,9 +2,9 @@
 import os
 # Define the source files
 support_files = [
-    './lib/write_data.py',
-    './lib/process_nc.py',
-    './lib/read_batch.py',
+    './lib/nc2asc/write_data.py',
+    './lib/nc2asc/process_nc.py',
+    './lib/nc2asc/read_batch.py',
     # Add any other new files here
 ]
 tools  = ['default', 'prefixoptions']
