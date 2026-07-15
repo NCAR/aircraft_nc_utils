@@ -51,8 +51,8 @@ sys.modules.setdefault("PyQt5.QtWidgets", qtwidgets_stub)
 class TestParseVars(unittest.TestCase):
     def setUp(self):
         root = pathlib.Path(__file__).resolve().parents[1]
-        sys.path.insert(0, str(root / "src" / "lib"))
-        loader = SourceFileLoader("nc2asc_mod", str(root / "src" / "nc2asc"))
+        sys.path.insert(0, str(root / "src" / "lib" / "nc2asc"))
+        loader = SourceFileLoader("nc2asc_mod", str(root / "src" / "bin" / "nc2asc"))
         spec = importlib.util.spec_from_loader("nc2asc_mod", loader)
         self.module = importlib.util.module_from_spec(spec)
         loader.exec_module(self.module)
