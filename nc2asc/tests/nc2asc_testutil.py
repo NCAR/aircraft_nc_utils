@@ -95,20 +95,26 @@ def write_sample_netcdf(path, n=5):
     return str(path)
 
 
-def write_batch_file(path, input_file, output_file):
-    """Write a Plain-format batch file pointing at the given input/output files.
+def write_batch_file(path, input_file, output_file, header="Plain",
+                     variables=None, date="yyyy-mm-dd", time="hh:mm:ss"):
+    """Write a batch file pointing at the given input/output files.
 
-    No ``Vars=`` lines are written so nc2asc takes its convert-all code path.
+    ``header`` selects the output format (``Plain``/``ICARTT``/``AMES``).
+    ``variables`` is an optional list of variable names to emit as ``Vars=``
+    lines; when omitted nc2asc takes its convert-all code path. ``date``/``time``
+    set the ``dt=``/``tm=`` directives (ICARTT batches use ``NoDate``/``SecOfDay``).
     """
     with open(path, "w") as fh:
         fh.write(f"if={input_file}\n")
         fh.write(f"of={output_file}\n\n")
-        fh.write("hd=Plain\n")
-        fh.write("dt=yyyy-mm-dd\n")
-        fh.write("tm=hh:mm:ss\n")
+        fh.write(f"hd={header}\n")
+        fh.write(f"dt={date}\n")
+        fh.write(f"tm={time}\n")
         fh.write("sp=comma\n")
         fh.write("fv=-32767\n")
         fh.write("ti=X,X\n")
+        for var in variables or []:
+            fh.write(f"Vars={var}\n")
     return str(path)
 
 
