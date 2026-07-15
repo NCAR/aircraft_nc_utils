@@ -1,6 +1,7 @@
 *~
 *.o
 *.a
+__pycache__
 .sconf_temp
 .sconsign.dblite
 asc2cdf/asc2cdf
