@@ -11,7 +11,12 @@ pipeline {
     stage('Build') {
       steps {
         sh 'git submodule update --init --recursive vardb'
-        sh 'scons'
+        sh '''
+          python3.11 -m venv build-venv
+          . build-venv/bin/activate
+          pip install --upgrade pip scons
+          scons
+        '''
       }
     }
   }
