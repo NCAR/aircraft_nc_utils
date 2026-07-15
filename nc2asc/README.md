@@ -179,3 +179,21 @@ Users can convert high rate or sample rate netCDF files to CSV files using the f
 
 Example for mixed rate (HRT or SRT) conversion:
 ```nc2asc -i <input_file> -o <output_file> -mixed_rate -v <Var1> <Var2> <Var3>```
+
+## Running the Tests
+
+Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework. They require `numpy` and `xarray` (both are already dependencies of `nc2asc`); no additional test packages are needed.
+
+Run all tests from the `nc2asc` project root (the directory containing `src/` and `tests/`):
+
+```
+python -m unittest discover -s tests -v
+```
+
+To run a single test module:
+
+```
+python -m unittest tests.test_nc2asc_parse_vars -v
+```
+
+Note: some older test modules (e.g. `test_nc2asc_writeData.py`) do not currently import under Python 3.12+ because they rely on the removed `imp` module and stale hard-coded paths. Until they are updated, run the maintained modules individually as shown above.

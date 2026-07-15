@@ -453,7 +453,10 @@ class gui(QMainWindow):
                 var_list = [i] * len(self.asc[i].columns) ## Add the variable name to the column header
                 self.asc[i].columns = pd.MultiIndex.from_tuples(zip(var_list,self.asc[i].columns, [units]))
                 
-            elif "sps1" in dims:
+            elif "sps1" in dims and nc[i].ndim >= 3:
+                # Genuine histogram data has dims like ('Time', 'sps1', 'nbins').
+                # A lone coordinate variable such as sps1(sps1) also contains the
+                # substring "sps1" but is not histogram data, so it is skipped below.
                 self.histo = True
                 histo_output = pd.DataFrame(nc[i][:, 0, :].values)
                 self.asc[i] = pd.DataFrame(histo_output)
@@ -1112,7 +1115,7 @@ def main():
         try:
             cl.processData(args)
         except Exception as e:
-            gui._log_exception(e+ ': Error processing data')
+            gui._log_exception(f"{e}: Error processing data")
     else:
         app = QtWidgets.QApplication(sys.argv)
         app.setStyle('Windows')
