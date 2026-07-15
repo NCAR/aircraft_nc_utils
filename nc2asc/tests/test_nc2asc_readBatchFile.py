@@ -1,50 +1,64 @@
 #! /usr/bin/env python3
+"""Tests for reading/parsing a batch file (nc2asc process_batch_file)."""
 
-import unittest
-import imp
 import os
 import sys
-import argparse
-import netCDF4
-import pandas as pd
-import numpy as np
-from datetime import datetime
-sys.path.append('h/eol/taylort/aircraft_nc_utils/nc2asc_python/src')
-import nc2asc_cl
+import tempfile
+import unittest
 
-class TEST_readBatchFile(unittest.TestCase):
+sys.path.insert(0, os.path.dirname(__file__))
+import nc2asc_testutil as util
 
+
+class TestReadBatchFile(unittest.TestCase):
     def setUp(self):
-        nc_2asc= imp.load_source('nc2asc_cl.py', './nc2asc_cl.py')
-        self.args = argparse.Namespace(input_file = '/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc',
-                                       output_file = '/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt',
-                                       batch_file = '/scr/raf_data/ASPIRE-TEST/batchfile')
-        self.nc2asc = nc2asc_cl.nc2asc_CL()
-        self.nc2asc.processData(self.args)
+        self.module = util.load_nc2asc()
+        self.tmp = tempfile.TemporaryDirectory()
+        tmp = self.tmp.name
+        self.input_file = os.path.join(tmp, "sample.nc")
+        self.output_file = os.path.join(tmp, "out.txt")
+        self.batch_file = os.path.join(tmp, "batchfile")
+        util.write_sample_netcdf(self.input_file)
+        util.write_batch_file(self.batch_file, self.input_file, self.output_file)
 
-    def test_readBatchFile_input_file_type(self):
-        self.assertTrue(isinstance(self.nc2asc.input_file, str))
+        # process_batch_file is a gui-class function; drive it on a CL instance.
+        self.cl = self.module.nc2asc_CL()
+        self.cl.inputbatch_file = self.batch_file
+        self.module.gui.process_batch_file(self.cl, self.batch_file)
 
-    def test_readBatchFile_output_file_type(self):
-        self.assertTrue(isinstance(self.nc2asc.output_file, str))
+    def tearDown(self):
+        self.tmp.cleanup()
 
-    def test_readBatchFile_batchfile_type(self):
-        self.assertTrue(isinstance(self.nc2asc.inputbatch_file, str))
+    def test_input_file_type(self):
+        self.assertIsInstance(self.cl.input_file, str)
 
-    def test_readBatchFilea_date(self):
-        self.assertTrue(self.nc2asc.date == 'yyyy-mm-dd')
+    def test_output_file_type(self):
+        self.assertIsInstance(self.cl.output_file, str)
 
-    def test_readBatchFile_time(self):
-        self.assertTrue(self.nc2asc.time == 'hh:mm:ss')
+    def test_batchfile_type(self):
+        self.assertIsInstance(self.cl.inputbatch_file, str)
 
-    def test_readBatchFile_delimiter(self):
-        self.assertTrue(self.nc2asc.delimiter == 'comma')
+    def test_input_file_value(self):
+        self.assertEqual(self.cl.input_file, self.input_file)
 
-    def test_readBatchFile_fillvalue(self):
-        self.assertTrue(self.nc2asc.fillvalue == '-32767')
+    def test_output_file_value(self):
+        self.assertEqual(self.cl.output_file, self.output_file)
 
-    def test_readBatchFile_header(self):
-        self.assertTrue(self.nc2asc.header == 'Plain')
+    def test_date(self):
+        self.assertEqual(self.cl.date, "yyyy-mm-dd")
 
-if __name__ == '__main__':
+    def test_time(self):
+        self.assertEqual(self.cl.time, "hh:mm:ss")
+
+    def test_delimiter(self):
+        self.assertEqual(self.cl.delimiter, "comma")
+
+    def test_fillvalue(self):
+        self.assertEqual(self.cl.fillvalue, "-32767")
+
+    def test_header(self):
+        self.assertEqual(self.cl.header, "Plain")
+
+
+if __name__ == "__main__":
     unittest.main()

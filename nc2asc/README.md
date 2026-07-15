@@ -182,7 +182,7 @@ Example for mixed rate (HRT or SRT) conversion:
 
 ## Running the Tests
 
-Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework. They require `numpy` and `xarray` (both are already dependencies of `nc2asc`); no additional test packages are needed.
+Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework. They require `numpy` and `xarray` (both are already dependencies of `nc2asc`); no additional test packages are needed. The tests build small synthetic netCDF and batch-file fixtures in a temporary directory, so they run anywhere and do not require the project data on `/scr/raf_data`.
 
 Run all tests from the `nc2asc` project root (the directory containing `src/` and `tests/`):
 
@@ -196,4 +196,4 @@ To run a single test module:
 python -m unittest tests.test_nc2asc_parse_vars -v
 ```
 
-Note: some older test modules (e.g. `test_nc2asc_writeData.py`) do not currently import under Python 3.12+ because they rely on the removed `imp` module and stale hard-coded paths. Until they are updated, run the maintained modules individually as shown above.
+Shared test helpers (PyQt5 stubs, module loading, and fixture builders) live in `tests/nc2asc_testutil.py`. The program under test is loaded from `src/bin/nc2asc` with `src/lib/nc2asc` on the import path.

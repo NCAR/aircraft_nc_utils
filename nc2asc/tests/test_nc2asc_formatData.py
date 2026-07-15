@@ -1,45 +1,51 @@
 #! /usr/bin/env python3
+"""Tests for formatData: reading a netCDF file into the asc data structure."""
 
-import unittest
-import imp
 import os
 import sys
-import argparse
-import netCDF4
+import tempfile
+import unittest
+
 import pandas as pd
-import numpy as np
-from datetime import datetime
-sys.path.append('h/eol/taylort/aircraft_nc_utils/nc2asc_python/src')
-import nc2asc_cl
 
-class TEST_formatData(unittest.TestCase):
+sys.path.insert(0, os.path.dirname(__file__))
+import nc2asc_testutil as util
 
+
+class TestFormatData(unittest.TestCase):
     def setUp(self):
-        nc_2asc= imp.load_source('nc2asc_cl.py', './nc2asc_cl.py')
-        self.args = argparse.Namespace(input_file = '/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc', 
-                                       output_file = '/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.txt', 
-                                       batch_file = '/scr/raf_data/ASPIRE-TEST/batchfile')
-        self.nc2asc = nc2asc_cl.nc2asc_CL()
-        self.nc2asc.processData(self.args)
+        self.module = util.load_nc2asc()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.input_file = os.path.join(self.tmp.name, "sample.nc")
+        util.write_sample_netcdf(self.input_file)
+
+        # formatData calls self.parse_vars (a gui method) and touches gui
+        # widgets, so it must run on a gui instance, not a CL instance.
+        self.obj = self.module.gui.__new__(self.module.gui)
+        self.obj.input_file = self.input_file
+        self.obj.variables_extract_batch = []
+        self.obj.cellsize_dict = {}
+        self.obj.histo = False
+        self.module.formatData(self.obj)
+
+    def tearDown(self):
+        self.tmp.cleanup()
 
     def test_input_file_type(self):
-        self.assertTrue(isinstance(self.nc2asc.input_file, str))
-
-    def test_output_file_type(self):
-        self.assertTrue(isinstance(self.nc2asc.output_file, str))
-
-    def test_batchfile_type(self):
-        self.assertTrue(isinstance(self.nc2asc.inputbatch_file, str))        
+        self.assertIsInstance(self.obj.input_file, str)
 
     def test_project_name(self):
-        assert self.nc2asc.project_name == 'ASPIRE-TEST'
+        self.assertEqual(self.obj.project_name, "ASPIRE-TEST")
 
-    def test_PI(self):
-        assert self.nc2asc.project_manager == 'Pavel Romashkin'
+    def test_tail_number(self):
+        self.assertEqual(self.obj.tail_number, "N130AR")
 
     def test_asc(self):
-        self.assertTrue(isinstance(self.nc2asc.asc, pd.DataFrame))
- 
-if __name__ == '__main__':
+        self.assertIsInstance(self.obj.asc, pd.DataFrame)
+
+    # Note: the former test_PI asserting a `project_manager` attribute was
+    # removed; nc2asc no longer reads/sets a PI attribute anywhere.
+
+
+if __name__ == "__main__":
     unittest.main()
-                             
