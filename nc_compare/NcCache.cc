@@ -4,8 +4,13 @@
 #include <time.h>
 #include <string.h>
 #include <iostream>
+#include <iomanip>
+#include <ctime>
+#include <cmath>
 #include <memory>
 #include <stdexcept>
+
+#include "statistics.h"
 
 using std::unique_ptr;
 using std::shared_ptr;
@@ -13,12 +18,6 @@ using std::make_shared;
 using std::runtime_error;
 using std::string;
 using boost::posix_time::time_duration;
-
-#ifdef MO_MINGW32
-char* strptime(const char *buf, const char *fmt, struct tm *tm);
-#endif
-
-#include "statistics.h"
 
 NcCache::
 NcCache(const std::string& path) :
@@ -37,13 +36,115 @@ NcCache(const std::string& path) :
 }
 
 
+/**
+ * Parse timezone offsets (+HHMM, -HHMM, +HH:MM, or Z).  Return true if @p
+ * offset_seconds is set successfully to the offset in seconds. This is not
+ * necessarily a precise implementation of the %z syntax accepted by
+ * strptime(), but it has the basics and should work at least to verify the
+ * time units in aircraft netcdf files, since those are always UTC.
+ */
+bool parse_timezone_offset(std::istream& ss, int& offset_seconds)
+{
+    char sign_or_z;
+    if (!(ss >> sign_or_z))
+      return false;
+
+    // Handle UTC 'Z' shorthand (ISO 8601)
+    if (sign_or_z == 'Z' || sign_or_z == 'z') {
+        offset_seconds = 0;
+        return true;
+    }
+
+    if (sign_or_z != '+' && sign_or_z != '-')
+      return false;
+
+    int hours = 0;
+    char digit;
+
+    // Parse HH
+    for (int i = 0; i < 2; ++i)
+    {
+        if (!(ss >> digit) || !std::isdigit(digit)) return false;
+        hours = hours * 10 + (digit - '0');
+    }
+
+    // Optional colon separator (common in ISO 8601 like -06:00)
+    if (ss.peek() == ':')
+    {
+        ss.get(); 
+    }
+
+    // Parse MM
+    int minutes = 0;
+    for (int i = 0; i < 2; ++i)
+    {
+        if (!(ss >> digit) || !std::isdigit(digit)) return false;
+        minutes = minutes * 10 + (digit - '0');
+    }
+
+    offset_seconds = (hours * 3600) + (minutes * 60);
+    if (sign_or_z == '-')
+    {
+        offset_seconds = -offset_seconds;
+    }
+    return true;
+}
+
+
+// Parse a time string given a strptime format and fill in the struct tm.
+// Return true if the parse was successful, false otherwise.
+bool
+parse_time(const std::string& text, const std::string& strptime_format,
+           struct tm* tm1)
+{
+  memset(tm1, 0, sizeof(struct tm));
+  std::istringstream ss(text);
+  std::string fmt = strptime_format;
+  // get_time() does not support %F, so replace it with %Y-%m-%d. however, it
+  // also does not support %z, so parse that separately.  there may be other
+  // missing specifiers in get_time(), but those are the two known to be used
+  // in aircraft netcdf files.  also, it is not quite correct to just search
+  // for %F and %z, since they could be preceded by a % literal, but that
+  // seems unnecessary.
+  size_t f;
+  while ((f = fmt.find("%F")) != std::string::npos)
+    fmt.replace(f, 2, "%Y-%m-%d");
+  string next_fmt = fmt;
+  bool ok = fmt.length() > 0;
+  while (ok && !next_fmt.empty())
+  {
+    auto z = fmt.find("%z");
+    if (z != std::string::npos)
+    {
+      next_fmt = fmt.substr(z + 2);
+      fmt = fmt.substr(0, z);
+    }
+    else
+    {
+      next_fmt.clear();
+    }
+    // scan up to the %z
+    ss >> std::get_time(tm1, fmt.c_str());
+    ok = !ss.fail();
+    // now parse the timezone offset if it was present in the format string
+    if (ok && z != std::string::npos)
+    {
+      int tz_offset{0};
+      ok = parse_timezone_offset(ss, tz_offset);
+      tm1->tm_gmtoff = tz_offset;
+    }
+  }
+  return ok;
+}
+
 
 nc_time
 basetime_from_units(const std::string& units,
                     const std::string& strptime_format,
                     boost::posix_time::time_duration& timestep)
 {
-  int year, month, day, hour, minute, second, tz_offset;
+  int year{0}, month{0}, day{0};
+  int hour{0}, minute{0}, second{0}, tz_offset{0};
 
   // If given an explicit strptime format, use it.  Otherwise parse with
   // strptime and grab the individual fields from the struct tm.  The time
@@ -52,21 +153,45 @@ basetime_from_units(const std::string& units,
   if (strptime_format.length())
   {
     struct tm tm1;
-    memset(&tm1, 0, sizeof(struct tm));
-    strptime(units.c_str(), strptime_format.c_str(), &tm1);
+    if (!parse_time(units, strptime_format, &tm1))
+    {
+      throw std::runtime_error(units + ": could not parse time units with "
+                               "format, " + strptime_format);
+    }
     year = tm1.tm_year + 1900;
     month = tm1.tm_mon + 1;
     day = tm1.tm_mday;
     hour = tm1.tm_hour;
     minute = tm1.tm_min;
     second = tm1.tm_sec;
+    tz_offset = tm1.tm_gmtoff;
   }
   else
   {
-    sscanf(units.c_str(), "%*s since %d-%d-%d %d:%d:%d %d",
-           &year, &month, &day, &hour, &minute, &second, &tz_offset);
+    // Note this only parses timezone offsets in the 4-digit format (+HHMM or
+    // -HHMM).  A colon would be silently ignored, potentially causing a
+    // non-zero offset to be accepted as a zero offset.
+    int n = sscanf(units.c_str(), "%*s since %d-%d-%d %d:%d:%d %d",
+                   &year, &month, &day, &hour, &minute, &second, &tz_offset);
+    // We must parse at least the year, month, and day.
+    if (n != 3 && n != 6 && n != 7)
+    {
+      throw std::runtime_error("unexpected number of fields parsed in "
+                               "time units: " + units);
+    }
   }
-  // Sanity check.
+  // Since UTC is expected, expect the offset is zero.
+  if (tz_offset != 0)
+  {
+    throw std::runtime_error("time units have non-zero timezone offset: " +
+                              units);
+  }
+
+  // Sanity check.  Is this necessary or helpful?  If the wrong time fields
+  // are parsed, then parsing should fail rather than be silently corrected.
+  // Or do we really want to default to 1970-01-01 00:00:00 if the time fields
+  // are invalid?  If there is a units variable to parse, then probably we
+  // should expect it to parse correctly.
   if (year == 0) year = 1970;
   if (month == 0) month = 1;
   if (day == 0) day = 1;
@@ -82,7 +207,7 @@ basetime_from_units(const std::string& units,
   else
     throw std::runtime_error("time units must be seconds or microseconds");
 
-  return nc_time(boost::gregorian::date(year, month, day), 
+  return nc_time(boost::gregorian::date(year, month, day),
                  boost::posix_time::time_duration(hour, minute, second));
 }
 
