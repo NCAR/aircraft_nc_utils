@@ -19,6 +19,12 @@ using std::runtime_error;
 using std::string;
 using boost::posix_time::time_duration;
 
+
+namespace {
+  bool nc_finalize_registered = false;
+}
+
+
 NcCache::
 NcCache(const std::string& path) :
   ncid(-1),
@@ -33,6 +39,14 @@ NcCache(const std::string& path) :
   loadGlobalAttributes();
   loadVariables();
   loadTimes();
+
+  // Probably it wouldn't hurt to just register nc_finalize() for every open,
+  // but it seems safer to only register it once.
+  if (!nc_finalize_registered)
+  {
+    std::atexit([]() { nc_finalize(); });
+    nc_finalize_registered = true;
+  }
 }
 
 
