@@ -95,7 +95,7 @@ bool parse_timezone_offset(std::istream& ss, int& offset_seconds)
 // Return true if the parse was successful, false otherwise.
 bool
 parse_time(const std::string& text, const std::string& strptime_format,
-           struct tm* tm1)
+           struct tm* tm1, int& tz_offset)
 {
   memset(tm1, 0, sizeof(struct tm));
   std::istringstream ss(text);
@@ -129,9 +129,7 @@ parse_time(const std::string& text, const std::string& strptime_format,
     // now parse the timezone offset if it was present in the format string
     if (ok && z != std::string::npos)
     {
-      int tz_offset{0};
       ok = parse_timezone_offset(ss, tz_offset);
-      tm1->tm_gmtoff = tz_offset;
     }
   }
   return ok;
@@ -153,7 +151,7 @@ basetime_from_units(const std::string& units,
   if (strptime_format.length())
   {
     struct tm tm1;
-    if (!parse_time(units, strptime_format, &tm1))
+    if (!parse_time(units, strptime_format, &tm1, tz_offset))
     {
       throw std::runtime_error(units + ": could not parse time units with "
                                "format, " + strptime_format);
@@ -164,7 +162,6 @@ basetime_from_units(const std::string& units,
     hour = tm1.tm_hour;
     minute = tm1.tm_min;
     second = tm1.tm_sec;
-    tz_offset = tm1.tm_gmtoff;
   }
   else
   {
