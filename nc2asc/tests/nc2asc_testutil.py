@@ -65,6 +65,18 @@ def load_nc2asc():
     return module
 
 
+def load_write_data():
+    """Load and return the write_data library module on its own.
+
+    Useful for testing its helpers directly, without running a conversion.
+    """
+    _install_pyqt5_stubs()
+    if str(LIB_DIR) not in sys.path:
+        sys.path.insert(0, str(LIB_DIR))
+    import write_data
+    return write_data
+
+
 def write_sample_netcdf(path, n=5):
     """Write a small synthetic RAF-style netCDF file to ``path``.
 
@@ -103,10 +115,14 @@ def write_batch_file(path, input_file, output_file, header="Plain",
     ``variables`` is an optional list of variable names to emit as ``Vars=``
     lines; when omitted nc2asc takes its convert-all code path. ``date``/``time``
     set the ``dt=``/``tm=`` directives (ICARTT batches use ``NoDate``/``SecOfDay``).
+    Passing ``output_file=None`` omits the ``of=`` line, the batch-file
+    equivalent of leaving -o off the command line.
     """
     with open(path, "w") as fh:
         fh.write(f"if={input_file}\n")
-        fh.write(f"of={output_file}\n\n")
+        if output_file is not None:
+            fh.write(f"of={output_file}\n")
+        fh.write("\n")
         fh.write(f"hd={header}\n")
         fh.write(f"dt={date}\n")
         fh.write(f"tm={time}\n")

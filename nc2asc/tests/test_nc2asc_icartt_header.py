@@ -43,8 +43,9 @@ class TestICARTTHeader(unittest.TestCase):
         self.cl = self.module.nc2asc_CL()
         self.cl.processData(util.make_cl_args(batch_file=self.batch_file))
 
-        # ICARTT overrides the output name to a strict .ict filename.
-        self.ict_path = os.path.join(tmp, self.cl.icartt_filename)
+        # The batch file names the output, so that is where it is written; the
+        # strict ICARTT filename is only recommended (see test_ict_filename_format).
+        self.ict_path = self.output_file
         with open(self.ict_path) as fh:
             self.lines = fh.read().splitlines()
         # ICARTT line 1 gives the number of header lines; data follows.
@@ -65,6 +66,14 @@ class TestICARTTHeader(unittest.TestCase):
 
     def test_ict_file_created(self):
         self.assertTrue(os.path.exists(self.ict_path))
+
+    def test_batch_file_name_is_not_overwritten(self):
+        # A name from the batch file is kept even though it is not the strict
+        # ICARTT name, which is only recommended.
+        self.assertEqual(self.cl.output_file, self.output_file)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.tmp.name, self.cl.icartt_filename))
+        )
 
     # --- ICARTT format invariants ---------------------------------------
     def test_first_line_file_format_index(self):

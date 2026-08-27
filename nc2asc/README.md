@@ -182,18 +182,59 @@ Example for mixed rate (HRT or SRT) conversion:
 
 ## Running the Tests
 
-Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework. They require `numpy` and `xarray` (both are already dependencies of `nc2asc`); no additional test packages are needed. The tests build small synthetic netCDF and batch-file fixtures in a temporary directory, so they run anywhere and do not require the project data on `/scr/raf_data`.
+Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework, so there is no test framework to install. The tests build small synthetic netCDF and batch-file fixtures in a temporary directory, so they run anywhere and do not require the project data on `/scr/raf_data`. PyQt5 is stubbed out by the test helpers, so no Qt install or display is needed.
 
-Run all tests from the `nc2asc` project root (the directory containing `src/` and `tests/`):
+### Setting up a Python environment
+
+The tests need the same data packages `nc2asc` itself uses: `numpy`, `pandas`, `xarray`, and `netCDF4`. To check whether the python you are using already has them:
+
+```
+python -c "import numpy, pandas, xarray, netCDF4"
+```
+
+No output means you are ready to run the tests. If that reports a `ModuleNotFoundError`, create a virtual environment once, from the `nc2asc` project root (the directory containing `src/` and `tests/`):
+
+```
+cd <path to>/aircraft_nc_utils/nc2asc
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r tests/requirements.txt
+```
+
+In later sessions just activate it again with `source .venv/bin/activate` (and `deactivate` when finished). The `.venv` directory ignores itself, so it will not show up in `git status`.
+
+### Running the tests
+
+All of the tests, from the `nc2asc` project root:
 
 ```
 python -m unittest discover -s tests -v
 ```
 
-To run a single test module:
+A single test module:
 
 ```
-python -m unittest tests.test_nc2asc_parse_vars -v
+python -m unittest tests.test_nc2asc_output_option -v
 ```
+
+A single test:
+
+```
+python -m unittest tests.test_nc2asc_output_option.TestOutputFileOption.test_provided_output_file_is_used -v
+```
+
+The tests print the same progress and warning messages the program does, so a passing run is still noisy; look for the `OK` or `FAILED` summary at the end.
+
+### What the test modules cover
+
+| Module | Covers |
+| --- | --- |
+| `test_nc2asc_formatData.py` | reading a netCDF file into the internal dataframes |
+| `test_nc2asc_parse_vars.py` | variable selection, including multidimensional variables |
+| `test_nc2asc_readBatchFile.py` | parsing batch file directives |
+| `test_nc2asc_writeData.py` | end-to-end conversion of a Plain output file |
+| `test_nc2asc_icartt_header.py` | ICARTT header content and format invariants |
+| `test_nc2asc_filename_helpers.py` | the `dataDate`, `icarttFilename`, and `defaultOutputFile` helpers |
+| `test_nc2asc_output_option.py` | conversions with and without the optional `-o` |
 
 Shared test helpers (PyQt5 stubs, module loading, and fixture builders) live in `tests/nc2asc_testutil.py`. The program under test is loaded from `src/bin/nc2asc` with `src/lib/nc2asc` on the import path.

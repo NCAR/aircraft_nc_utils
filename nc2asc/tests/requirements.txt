@@ -1,0 +1,8 @@
+# Packages needed to run the nc2asc test suite. These are the same data
+# packages nc2asc itself uses; PyQt5 is stubbed out by nc2asc_testutil, so it
+# is not needed here. The tests use the standard library unittest framework,
+# so there is no test framework to install.
+numpy
+pandas
+xarray
+netCDF4
