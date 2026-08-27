@@ -226,22 +226,23 @@ def _fillvalue_map():
     }
 
 def _handle_file(instance, line, attr_name, file_type):
-    """Prompt user to confirm file selection from batch file or use command line input."""
+    """Take the file from the batch file unless one was given on the command line.
+
+    The command line wins, so a batch file can be reused with a different input
+    or output file, but warn when both provide one so the user knows which was
+    used. Never prompts - nc2asc runs unattended from the ground processing
+    scripts, where a prompt would hang the conversion.
+    """
     batch_file_value = line.split('=')[1].strip() # extract file path from batch file line
     current_value = getattr(instance, attr_name, None)
 
     if not current_value:
-        print(f'No {file_type} file provided.')
-        setattr(instance, attr_name, batch_file_value) 
-        ## print attr to make sure it's set
+        print(f'No {file_type} file on the command line. Using the one from the batch file: {batch_file_value}')
+        setattr(instance, attr_name, batch_file_value)
     else:
-        choice = input(
-            f"Would you like to use the {file_type.lower()} file from the batch file? (y/Y to confirm, any other key to keep current): "
-        )
-        if choice.lower() == 'y':
-            setattr(instance, attr_name, batch_file_value)
-        else:
-            print(f"Using {file_type.lower()} file from command line: {current_value}")
+        print(f'WARNING: {file_type} file provided on the command line and in the batch file:\n'
+              f'\tcommand line (used): {current_value}\n'
+              f'\tbatch file (ignored): {batch_file_value}')
 
 
 def _handle_directive(instance, line, attr_name, directive_map):
