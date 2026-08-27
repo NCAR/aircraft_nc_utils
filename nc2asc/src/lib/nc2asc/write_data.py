@@ -319,10 +319,17 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = f'{count}\n'
                 f.seek(0)
                 f.writelines(lines)
-            
+        # Create required output filename. If user provided a filename, warn if
+        # the names do not match but DON'T rename - user may have a reason for
+        # wanting a bogus name, such as test and compare.
         instance.icartt_filename_date = instance.data_date.replace(', ', '')
         instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{instance.version}.ict'
-        print(f'Overwriting Output Filename, since ICARTT file has strict format: {instance.icartt_filename}')
+        output_basename = os.path.basename(instance.output_file)
+        if (instance.icartt_filename != output_basename):
+            print(f'WARNING: Provided output filename does not conform to '
+                  f'strict ICARTT filename:\n'
+                  f'\trecommended ICARTT format: {instance.icartt_filename}\n'
+                  f'\tuser-provided filename: {output_basename}')
         os.system(f'mv {instance.output_file} {instance.output_file}.tmp')
         #os.system(f'cat ./header.tmp {instance.output_file}.tmp >> {instance.output_file}')
         # Use Python file operations for more control
@@ -340,7 +347,6 @@ def ICARTTHeader(instance, dataframe):
             # Copy data
             with open(f'{instance.output_file}.tmp', 'r') as data_file:
                 outfile.write(data_file.read())
-        os.system(f'mv {instance.output_file} {os.path.abspath(os.path.dirname(instance.output_file))}/{instance.icartt_filename}')
         os.system(f'rm header.tmp header1.tmp header2.tmp {instance.output_file}.tmp')
     except Exception:
         print(traceback.format_exc())
@@ -435,4 +441,4 @@ def add_fills(dataframe, fill):
                 print(f'Could not convert {column} to float')
                 pass  
     
-    return dataframe.replace(np.nan, fill)  
+    return dataframe.replace(np.nan, fill)
