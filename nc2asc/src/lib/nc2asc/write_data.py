@@ -68,6 +68,42 @@ def formatData(instance):
         print('Error in extracting variable in ' + str(instance.input_file))
 
 
+def dataDate(instance):
+    """The date of the data as 'yyyy, mm, dd', from the first timestamp. Keeps
+    any previously determined date if the timestamps are not available.
+    """
+    try:
+        instance.data_date = str(instance.dtime_sep[0].iloc[1]).replace('-', ', ')
+    except Exception:
+        if not getattr(instance, 'data_date', ''):
+            raise
+    return instance.data_date
+
+
+def icarttFilename(instance):
+    """The filename required by the strict ICARTT naming convention."""
+    instance.icartt_filename_date = dataDate(instance).replace(', ', '')
+    version = getattr(instance, 'version', 'RA')
+    instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{version}.ict'
+    return instance.icartt_filename
+
+
+def defaultOutputFile(instance):
+    """Build an output filename for when the user did not provide one, since -o
+    is optional. ICARTT output gets the strict ICARTT name, anything else reuses
+    the input filename with a .asc extension. Both are written to the current
+    working directory so read-only data directories are not a problem.
+    """
+    if instance.header == 'ICARTT':
+        try:
+            return icarttFilename(instance)
+        except Exception as e:
+            instance._log_exception(e)
+    if instance.input_file:
+        return os.path.splitext(os.path.basename(str(instance.input_file)))[0] + '.asc'
+    return 'nc2asc_output.asc'
+
+
 def writeData(instance):
 
     #####################################################################
@@ -114,6 +150,11 @@ def writeData(instance):
     except Exception as e:
         instance._log_exception(e)
         
+    # -o is optional; generate a name if the user did not provide one
+    if not instance.output_file:
+        instance.output_file = defaultOutputFile(instance)
+        print(f'No output file provided (-o), using: {instance.output_file}')
+
     try:
         os.remove(str(instance.output_file))
     except Exception:
@@ -241,7 +282,6 @@ def ICARTTHeader(instance, dataframe):
     dataframe.to_csv(instance.output_file, header=True, index=False)
     instance.varNumber = str(len(dataframe.columns) - 1)
     try:
-        instance.data_date = str(instance.dtime_sep[0].iloc[1]).replace('-', ', ')
         os.system(f'cp {instance.lib_path}/header1.txt ./header1.tmp')
         os.system("ex -s -c '5i' -c x ./header1.tmp")
         os.system(f'cp {instance.lib_path}/header2.txt ./header2.tmp')
@@ -255,7 +295,7 @@ def ICARTTHeader(instance, dataframe):
                 if line.startswith('<PROJECT>'):
                     lines[i] = f'{instance.project_name}\n'
                 if line.startswith('<YYYY, MM, DD,>'):
-                    lines[i] = f'{instance.data_date}, {instance.today}\n'
+                    lines[i] = f'{dataDate(instance)}, {instance.today}\n'
                 if line.startswith('<varNumber>'):
                     lines[i] = f'{instance.varNumber}\n'
                 if line.startswith('<1.0>'):
@@ -322,10 +362,8 @@ def ICARTTHeader(instance, dataframe):
         # Create required output filename. If user provided a filename, warn if
         # the names do not match but DON'T rename - user may have a reason for
         # wanting a bogus name, such as test and compare.
-        instance.icartt_filename_date = instance.data_date.replace(', ', '')
-        instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{instance.version}.ict'
         output_basename = os.path.basename(instance.output_file)
-        if (instance.icartt_filename != output_basename):
+        if (icarttFilename(instance) != output_basename):
             print(f'WARNING: Provided output filename does not conform to '
                   f'strict ICARTT filename:\n'
                   f'\trecommended ICARTT format: {instance.icartt_filename}\n'
@@ -381,8 +419,6 @@ def AMESHeader(instance, ames_header):
     try:
         instance.columns = pd.DataFrame(ames_header.columns.values.tolist())
         instance.fileheader = instance.fileheader.loc[instance.fileheader[0].isin(instance.columns[0])]
-        instance.data_date = str(instance.dtime_sep[0].iloc[1])
-        instance.data_date = instance.data_date.replace('-', ', ')
         # start going through the template text docs
         os.system('cp ' + lib_path + '/header1_ames.txt ' + lib_path + '/header1_ames.tmp')
         os.system("ex -s -c '5i' -c x " + lib_path + "/header1_ames.tmp")
@@ -398,7 +434,7 @@ def AMESHeader(instance, ames_header):
                 if line.startswith('<PROJECT>'):
                     lines[i] = instance.project_name + '\n'
                 if line.startswith('<YYYY, MM, DD,>'):
-                    lines[i] = instance.data_date+', ' + instance.today + '\n'
+                    lines[i] = dataDate(instance) +', ' + instance.today + '\n'
                 if line.startswith('<varNumber>'):
                     lines[i] = instance.varNumber + '\n'
                 if line.startswith('<0.1>'):
