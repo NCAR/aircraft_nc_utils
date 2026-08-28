@@ -108,7 +108,8 @@ def write_sample_netcdf(path, n=5):
 
 
 def write_batch_file(path, input_file, output_file, header="Plain",
-                     variables=None, date="yyyy-mm-dd", time="hh:mm:ss"):
+                     variables=None, date="yyyy-mm-dd", time="hh:mm:ss",
+                     version=None, revisions=None, comments=False):
     """Write a batch file pointing at the given input/output files.
 
     ``header`` selects the output format (``Plain``/``ICARTT``/``AMES``).
@@ -116,9 +117,16 @@ def write_batch_file(path, input_file, output_file, header="Plain",
     lines; when omitted nc2asc takes its convert-all code path. ``date``/``time``
     set the ``dt=``/``tm=`` directives (ICARTT batches use ``NoDate``/``SecOfDay``).
     Passing ``output_file=None`` omits the ``of=`` line, the batch-file
-    equivalent of leaving -o off the command line.
+    equivalent of leaving -o off the command line. ``version`` writes a
+    ``version=`` line, the ICARTT revision (RA, RB... field data; R0, R1...
+    final data); when omitted nc2asc uses its RA default. ``revisions`` writes
+    the cumulative revision history as ``rev=`` lines, most recent first.
+    ``comments`` adds ``#`` comment lines, which nc2asc must ignore.
     """
     with open(path, "w") as fh:
+        if comments:
+            fh.write("# a comment, and below a directive commented out\n")
+            fh.write("#hd=AMES\n")
         fh.write(f"if={input_file}\n")
         if output_file is not None:
             fh.write(f"of={output_file}\n")
@@ -129,6 +137,12 @@ def write_batch_file(path, input_file, output_file, header="Plain",
         fh.write("sp=comma\n")
         fh.write("fv=-32767\n")
         fh.write("ti=X,X\n")
+        if version is not None:
+            fh.write(f"version={version}\n")
+        for revision in revisions or []:
+            fh.write(f"rev={revision}\n")
+        if comments:
+            fh.write("# variables to convert follow\n")
         for var in variables or []:
             fh.write(f"Vars={var}\n")
     return str(path)

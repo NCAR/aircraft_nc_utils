@@ -79,6 +79,14 @@ def saveBatchFile_GUI(instance):
                 # by default the instance.start/end.text() method will return the full file
                 instance.batchfile.write('ti=X,X\n')
 
+                # write the ICARTT revision and its history back out, so that
+                # saving does not quietly drop the history a batch file carries
+                version = getattr(instance, 'version', None)
+                if version:
+                    instance.batchfile.write('version=' + version + '\n')
+                for revision in getattr(instance, 'revisions', []):
+                    instance.batchfile.write('rev=' + revision + '\n')
+
                 # in order to display vars on separate lines to align with
                 # nimbus batch file conventions, split by two spaces
                 for i in instance.variables_extract:
@@ -101,7 +109,13 @@ def saveBatchFile_GUI(instance):
 
 ##READING BATCHFILE##
 def process_batch_file(instance, inputbatch_file):
-    """Processes a batch file to extract settings and variables."""
+    """Processes a batch file to extract settings and variables.
+
+    Lines starting with # are comments, so a batch file can carry its own
+    instructions for whoever edits it next.
+    """
+    instance.revisions = []
+    instance.version_from_batch = False
     action_map = {
         'if=': lambda ln: _handle_file(instance,ln, 'input_file', 'Input'),
         'of=': lambda ln: _handle_file(instance,ln, 'output_file', 'Output'),
@@ -110,20 +124,24 @@ def process_batch_file(instance, inputbatch_file):
         'tm=': lambda ln: _handle_directive(instance,ln, 'time', _time_map()),
         'sp=': lambda ln: _handle_directive(instance,ln, 'delimiter', _delimiter_map()),
         'fv=': lambda ln: _handle_directive(instance,ln, 'fillvalue', _fillvalue_map()),
-        'version=': lambda ln: setattr(instance, 'version', ln.replace('version=', '').strip()),
+        'version=': lambda ln: _handle_version(instance,ln),
+        'rev=': lambda ln: _add_revision(instance,ln),
         'ti=': lambda ln: setattr(instance, 'ti', ln[3:].strip()),
         'avg=': lambda ln: setattr(instance, 'avg', _format_avg(ln[4:])),
         'Vars=': lambda ln: _add_variable(instance,ln),
     }
-    
+
     with open(inputbatch_file, 'r') as fil:
         print('****Reading Batch File****')
         for ln in fil:
             ln = ln.strip()
+            if ln.startswith('#'):
+                continue
             for key, action in action_map.items():
                 if ln.startswith(key):
                     action(ln)
                     break
+        _check_revisions(instance)
         print('Batch file processing complete.')
         
 def readBatchFile(instance):
@@ -224,6 +242,72 @@ def _fillvalue_map():
         'fv=blank': ('fillvalue2', 'blank'),
         'fv=replicate': ('fillvalue3', 'replicate'),
     }
+
+def _handle_version(instance, line):
+    """Set the ICARTT revision this conversion is producing, from version=."""
+    instance.version = line.replace('version=', '').strip()
+    instance.version_from_batch = True
+
+
+def _add_revision(instance, line):
+    """Collect one rev= line: an ICARTT revision and what changed in it.
+
+    ICARTT wants the full history in every file, most recent revision first,
+    which is the order the rev= lines are read and written.
+    """
+    instance.revisions.append(line.split('=', 1)[1].strip())
+
+
+def _revision_id(revision):
+    """The revision number from a rev= line, e.g. 'R1' from 'R1: fixed ATX'."""
+    return revision.split(':')[0].split()[0].strip() if revision.strip() else ''
+
+
+def _revision_order(revision_id):
+    """Sort key placing field revisions (RA, RB...) before final ones (R0, R1...)."""
+    suffix = revision_id[1:]
+    if suffix.isdigit():
+        return (1, int(suffix))
+    return (0, suffix)
+
+
+def _check_revisions(instance):
+    """Cross check the rev= lines against version=, warning about the mistakes
+    that would leave the header misstating which release the file is.
+
+    Without a version= line the most recent revision is used, so a batch file
+    can name its revision once.
+    """
+    revisions = getattr(instance, 'revisions', [])
+    if not revisions:
+        return
+
+    most_recent = _revision_id(revisions[0])
+    if not instance.version_from_batch:
+        instance.version = most_recent
+        print(f'No version= in the batch file. Using the most recent revision: {most_recent}')
+    elif instance.version != most_recent:
+        print(f'WARNING: version={instance.version} is not the most recent revision listed:\n'
+              f'\trev={revisions[0]}\n'
+              f'\tThe file will report REVISION: {instance.version}')
+
+    for revision in revisions:
+        if ':' not in revision:
+            print(f'WARNING: revision has no description: rev={revision}\n'
+                  '\tICARTT expects a line like "rev=R1: what changed in R1".')
+
+    ids = [_revision_id(revision) for revision in revisions]
+    unique = list(dict.fromkeys(ids))
+    if len(unique) != len(ids):
+        print(f'WARNING: the same revision is listed more than once: {", ".join(ids)}')
+    order = [_revision_order(revision_id) for revision_id in unique]
+    if order != sorted(order, reverse=True):
+        print('WARNING: revisions are not listed most recent first: ' + ', '.join(unique))
+    numbers = [value for kind, value in order if kind == 1]
+    if numbers and sorted(numbers, reverse=True) != list(range(max(numbers), -1, -1)):
+        print(f'WARNING: the revision history skips a revision: {", ".join(unique)}\n'
+              '\tICARTT expects every revision from the current one down to R0.')
+
 
 def _handle_file(instance, line, attr_name, file_type):
     """Take the file from the batch file unless one was given on the command line.

@@ -135,5 +135,179 @@ class TestICARTTHeader(unittest.TestCase):
             self.assertEqual(len(row.split(",")), 2)
 
 
+class TestRevisionDescription(unittest.TestCase):
+    """ICARTT revisions are RA, RB... while data is preliminary and R0, R1...
+    once it is final, and the header describes them accordingly."""
+
+    wd = util.load_write_data()
+
+    def test_numbered_revisions_are_final_data(self):
+        for version in ("R0", "R1", "R12"):
+            self.assertEqual(self.wd.revisionDescription(version), "Final Data")
+
+    def test_lettered_revisions_are_field_data(self):
+        for version in ("RA", "RB"):
+            self.assertEqual(self.wd.revisionDescription(version), "Field Data")
+
+    def test_final_data_may_be_published(self):
+        self.assertEqual(
+            self.wd.revisionStipulation("R0"), "Final data for publication use"
+        )
+
+    def test_field_data_may_not_be_published(self):
+        self.assertEqual(
+            self.wd.revisionStipulation("RA"), "Field data not for publication use"
+        )
+
+
+class ICARTTConversion(unittest.TestCase):
+    """Runs an ICARTT conversion per test, with batch file settings to vary.
+
+    No tests of its own; the revision test cases below share it.
+    """
+
+    N_DATA_ROWS = 5  # one row per Time sample in the synthetic file
+
+    def setUp(self):
+        self.module = util.load_nc2asc()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.prev_cwd = os.getcwd()
+        os.chdir(self.tmp.name)
+
+    def tearDown(self):
+        os.chdir(self.prev_cwd)
+        self.tmp.cleanup()
+
+    def convert(self, version=None, revisions=None, comments=False):
+        """Convert with the given batch file version=/rev= settings, returning
+        the run and the header lines of the output file."""
+        tmp = self.tmp.name
+        input_file = os.path.join(tmp, "sample.nc")
+        output_file = os.path.join(tmp, "out.ict")
+        batch_file = os.path.join(tmp, "batchfile")
+        util.write_sample_netcdf(input_file)
+        util.write_batch_file(
+            batch_file, input_file, output_file, header="ICARTT",
+            variables=["Time", "ATX"], date="NoDate", time="SecOfDay",
+            version=version, revisions=revisions, comments=comments,
+        )
+        cl = self.module.nc2asc_CL()
+        cl.processData(util.make_cl_args(batch_file=batch_file))
+        with open(output_file) as fh:
+            self.lines = fh.read().splitlines()
+        return cl, self.lines[: int(self.lines[0].split(",")[0])]
+
+    def revision_index(self, header_lines):
+        """Index of the REVISION line, which the history follows."""
+        return next(
+            i for i, line in enumerate(header_lines)
+            if line.startswith("REVISION:")
+        )
+
+
+class TestICARTTRevisionLines(ICARTTConversion):
+    """The REVISION/description lines written for a given version= setting."""
+
+    def test_final_data_revision(self):
+        cl, header_lines = self.convert(version="R0")
+        self.assertIn("REVISION: R0", header_lines)
+        self.assertIn("R0: Final Data", header_lines)
+        self.assertIn(
+            "STIPULATIONS_ON_USE: Final data for publication use", header_lines
+        )
+
+    def test_later_field_data_revision(self):
+        cl, header_lines = self.convert(version="RB")
+        self.assertIn("REVISION: RB", header_lines)
+        self.assertIn("RB: Field Data", header_lines)
+        self.assertIn(
+            "STIPULATIONS_ON_USE: Field data not for publication use", header_lines
+        )
+
+    def test_default_revision_is_field_data(self):
+        cl, header_lines = self.convert()
+        self.assertIn("REVISION: RA", header_lines)
+        self.assertIn("RA: Field Data", header_lines)
+        self.assertIn(
+            "STIPULATIONS_ON_USE: Field data not for publication use", header_lines
+        )
+
+    def test_final_data_filename(self):
+        cl, _ = self.convert(version="R0")
+        self.assertEqual(cl.icartt_filename, "ASPIRE-TEST-CORE_C130_20210529_R0.ict")
+
+
+class TestICARTTRevisionHistory(ICARTTConversion):
+    """ICARTT wants every revision listed in every file, most recent first.
+
+    The history comes from the rev= lines of the batch file, so that releasing
+    a revision means adding a line there rather than editing the installed
+    header2.txt template.
+    """
+
+    HISTORY = [
+        "R2: Corrected ATX calibration",
+        "R1: Trimmed to flight time",
+        "R0: Final Data",
+    ]
+
+    def test_history_written_most_recent_first(self):
+        cl, header_lines = self.convert(version="R2", revisions=self.HISTORY)
+        start = self.revision_index(header_lines) + 1
+        self.assertEqual(header_lines[start:start + len(self.HISTORY)], self.HISTORY)
+
+    def test_history_is_the_end_of_the_normal_comments(self):
+        # ICARTT puts the revision block last, just above the column names.
+        cl, header_lines = self.convert(version="R2", revisions=self.HISTORY)
+        self.assertEqual(header_lines[-4:-1], self.HISTORY)
+
+    def test_normal_comment_count_covers_the_added_lines(self):
+        # The normal comment count has to grow with the history, or readers
+        # reject the file. The count is the line before the first comment, and
+        # the comments run to the end of the header.
+        cl, header_lines = self.convert(version="R2", revisions=self.HISTORY)
+        first_comment = next(
+            i for i, line in enumerate(header_lines)
+            if line.startswith("PI_CONTACT_INFO")
+        )
+        normal_comments = int(header_lines[first_comment - 1])
+        self.assertEqual(normal_comments, len(header_lines) - first_comment)
+        self.assertEqual(normal_comments, 20)  # 18 in the template, plus 2 revisions
+
+    def test_header_line_count_is_correct(self):
+        # The ICARTT line count in line 1 still has to match the file itself.
+        cl, header_lines = self.convert(version="R2", revisions=self.HISTORY)
+        self.assertEqual(len(header_lines) + self.N_DATA_ROWS, len(self.lines))
+
+    def test_stipulation_follows_the_current_revision(self):
+        cl, header_lines = self.convert(version="R2", revisions=self.HISTORY)
+        self.assertIn(
+            "STIPULATIONS_ON_USE: Final data for publication use", header_lines
+        )
+
+    def test_version_defaults_to_most_recent_revision(self):
+        # With no version= line, the top of the history is the current revision.
+        cl, header_lines = self.convert(revisions=self.HISTORY)
+        self.assertEqual(cl.version, "R2")
+        self.assertIn("REVISION: R2", header_lines)
+        self.assertEqual(cl.icartt_filename, "ASPIRE-TEST-CORE_C130_20210529_R2.ict")
+
+    def test_version_wins_over_the_history(self):
+        # Mismatched version= is warned about, not silently corrected: the file
+        # reports the revision the user asked for, with the history unchanged.
+        cl, header_lines = self.convert(version="R1", revisions=self.HISTORY)
+        self.assertIn("REVISION: R1", header_lines)
+        start = self.revision_index(header_lines) + 1
+        self.assertEqual(header_lines[start:start + len(self.HISTORY)], self.HISTORY)
+
+    def test_comments_are_ignored(self):
+        cl, header_lines = self.convert(
+            version="R2", revisions=self.HISTORY, comments=True
+        )
+        self.assertEqual(cl.header, "ICARTT")  # not the commented out hd=AMES
+        self.assertIn("REVISION: R2", header_lines)
+        self.assertFalse([ln for ln in header_lines if ln.startswith("#")])
+
+
 if __name__ == "__main__":
     unittest.main()

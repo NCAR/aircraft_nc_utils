@@ -119,7 +119,53 @@ The desired vars should be inclueded with each Var listed on a separate line.
 
 `Vars=<VarName>`
 
+#### ICARTT Revisions
+
+ICARTT files carry a revision number and the history of every revision before it. Both come from the batch file, so a release means editing the batch file - never the installed `header2.txt` template, which is shared by every project and is replaced when nc2asc is reinstalled.
+
+`version=<revision>` is the revision this conversion produces. It sets the `REVISION:` line in the header and the `_R??` part of the [ICARTT filename](#header-format-options):
+
+| Revision | Meaning | Header lines |
+| --- | --- | --- |
+| `RA`, `RB`, `RC` ... | field data | `RA: Field Data`, `STIPULATIONS_ON_USE: Field data not for publication use` |
+| `R0`, `R1`, `R2` ... | final data | `R0: Final Data`, `STIPULATIONS_ON_USE: Final data for publication use` |
+
+`rev=<revision>: <what changed>` adds one revision to the history. ICARTT requires every revision to be listed in every file, most recent first, so **add** a `rev=` line when you release a revision rather than replacing the previous one:
+
+```
+version=R2
+rev=R2: Corrected ATX calibration
+rev=R1: Trimmed to flight time
+rev=R0: Final Data
+```
+
+writes:
+
+```
+REVISION: R2
+R2: Corrected ATX calibration
+R1: Trimmed to flight time
+R0: Final Data
+```
+
+Leave `version=` out and the most recent `rev=` line is used, so the revision is named once. With no `rev=` lines at all, the header gets a single generated line for the current revision (`R0: Final Data` or `RA: Field Data`).
+
+nc2asc warns, and converts anyway, when `version=` is not the most recent `rev=` line, when a revision is listed twice or out of order, when the history skips a revision, or when a `rev=` line has no description. A `version=` that disagrees with the history is used as given, not corrected.
+
+#### Comments
+
+Lines starting with `#` are ignored, so a batch file can carry its own notes and instructions:
+
+```
+# Bump version= and add a rev= line for every release. Do not remove old ones.
+version=R1
+rev=R1: Trimmed to flight time
+rev=R0: Final Data
+```
+
 ### Example Batch File
+
+Batch files are per project; the input and output files are usually given on the command line, one flight at a time. A fully commented example to copy is in [example_batchfile.bat](example_batchfile.bat).
 
 ```
 if=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc
@@ -131,6 +177,9 @@ dt=yyyy-mm-dd
 tm=hh:mm:ss
 sp=comma
 fv=-32767
+
+version=RA
+rev=RA: Field Data
 
 Vars=Time
 Vars=ALT
@@ -231,9 +280,9 @@ The tests print the same progress and warning messages the program does, so a pa
 | --- | --- |
 | `test_nc2asc_formatData.py` | reading a netCDF file into the internal dataframes |
 | `test_nc2asc_parse_vars.py` | variable selection, including multidimensional variables |
-| `test_nc2asc_readBatchFile.py` | parsing batch file directives |
+| `test_nc2asc_readBatchFile.py` | parsing batch file directives, including revisions and comments |
 | `test_nc2asc_writeData.py` | end-to-end conversion of a Plain output file |
-| `test_nc2asc_icartt_header.py` | ICARTT header content and format invariants |
+| `test_nc2asc_icartt_header.py` | ICARTT header content, format invariants, and the revision history |
 | `test_nc2asc_filename_helpers.py` | the `dataDate`, `icarttFilename`, and `defaultOutputFile` helpers |
 | `test_nc2asc_output_option.py` | conversions with and without the optional `-o` |
 

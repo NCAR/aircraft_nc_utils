@@ -88,6 +88,39 @@ def icarttFilename(instance):
     return instance.icartt_filename
 
 
+def revisionIsFinal(version):
+    """Whether an ICARTT revision is final data. R followed by a number
+    (R0, R1...) is final, R followed by a letter (RA, RB...) is preliminary
+    field data.
+    """
+    return version[1:2].isdigit()
+
+
+def revisionDescription(version):
+    """The ICARTT description of a revision."""
+    return 'Final Data' if revisionIsFinal(version) else 'Field Data'
+
+
+def revisionStipulation(version):
+    """The ICARTT stipulation on use that goes with a revision."""
+    if revisionIsFinal(version):
+        return 'Final data for publication use'
+    return 'Field data not for publication use'
+
+
+def revisionLines(instance):
+    """The ICARTT revision history block, one line per revision, most recent
+    first, as a single string ready to write.
+
+    The history comes from the rev= lines in the batch file. With none, the
+    current revision is the whole history, described from its number alone.
+    """
+    revisions = getattr(instance, 'revisions', None)
+    if not revisions:
+        revisions = [f'{instance.version}: {revisionDescription(instance.version)}']
+    return ''.join(f'{revision}\n' for revision in revisions)
+
+
 def defaultOutputFile(instance):
     """Build an output filename for when the user did not provide one, since -o
     is optional. ICARTT output gets the strict ICARTT name, anything else reuses
@@ -310,6 +343,10 @@ def ICARTTHeader(instance, dataframe):
 
         with open('./header2.tmp', 'r+') as f:
             lines = f.readlines()
+            # The template holds one revision line; a cumulative history from
+            # the batch file adds to the normal comment count.
+            revision_lines = revisionLines(instance)
+            revisions_len = revision_lines.count('\n') - 1
             cells_len=0
             if instance.histo:
                 for var in instance.cellsize_dict:
@@ -320,14 +357,15 @@ def ICARTTHeader(instance, dataframe):
                 cells_len = cellsize_len
             for i, line in enumerate(lines):
                 if line.startswith('18'):
-                    lines[i] =str(cells_len+18) + '\n'
+                    lines[i] =str(cells_len+revisions_len+18) + '\n'
                 if line.startswith('<PLATFORM>'):
                     lines[i] = f'PLATFORM: NSF/NCAR {instance.platform} {instance.tail_number}\n'
                 if line.startswith('REVISION: RA'):
                     lines[i] = line.replace('RA', instance.version)
+                if line.startswith('STIPULATIONS_ON_USE:'):
+                    lines[i] = f'STIPULATIONS_ON_USE: {revisionStipulation(instance.version)}\n'
                 if line.startswith('RA:'):
-                    lines[i] = line.replace('RA', instance.version) 
-                    #TODO: This versioning section needs to be cumulative in an icartt config file so that changes can be tracked within one file. (e.g. RA: Field Data; RB: Field Data trimmed to flight time)
+                    lines[i] = revision_lines
             f.seek(0)
             f.writelines(lines)
 
