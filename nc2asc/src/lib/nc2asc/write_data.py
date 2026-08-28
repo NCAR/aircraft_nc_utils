@@ -121,17 +121,23 @@ def revisionLines(instance):
     return ''.join(f'{revision}\n' for revision in revisions)
 
 
-def defaultOutputFile(instance):
+def defaultOutputFile(instance, icartt=None):
     """Build an output filename for when the user did not provide one, since -o
     is optional. ICARTT output gets the strict ICARTT name, anything else reuses
     the input filename with a .asc extension. Both are written to the current
     working directory so read-only data directories are not a problem.
+
+    ``icartt`` overrides the header setting, for output that is never in ICARTT
+    format no matter what header was requested, such as a mixed rate conversion.
     """
-    if instance.header == 'ICARTT':
+    if icartt is None:
+        icartt = instance.header == 'ICARTT'
+    if icartt:
         try:
             return icarttFilename(instance)
-        except Exception as e:
-            instance._log_exception(e)
+        except Exception:
+            print('Could not determine the ICARTT filename, naming the output '
+                  'after the input file instead.')
     if instance.input_file:
         return os.path.splitext(os.path.basename(str(instance.input_file)))[0] + '.asc'
     return 'nc2asc_output.asc'

@@ -34,7 +34,7 @@ if os.path.exists(nc2asc_lib):
     sys.path.append(nc2asc_lib)
 
 # Now import the modules directly (without lib prefix)
-from write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader, icarttFilename
+from write_data import formatData, writeData, ICARTTHeader, AMESHeader, PLAINHeader, icarttFilename, defaultOutputFile
 from process_nc import process_date_time
 from read_batch import process_batch_file, readBatchFile, saveBatchFile_GUI
 from PyQt5.QtWidgets import QTextBrowser, QGroupBox, QGridLayout, QWidget, QHBoxLayout, QFrame, QScrollBar, QToolBar, QMessageBox, QFileDialog, QTableWidgetItem, QVBoxLayout, QMenu, QMenuBar, QMainWindow, QAction, qApp, QApplication
@@ -986,8 +986,15 @@ class nc2asc_CL():
                 temp_time.append(i)
             time = pd.DataFrame(temp_time, columns=['Time'])
             asc['Time'] = time['Time']
-            # write to output file
-            asc.to_csv(args.o, index=False)
+            # write to output file. -o is optional, so generate a name when
+            # there is none, rather than letting to_csv quietly return the
+            # csv as a string and write nothing. Mixed rate output is a plain
+            # csv, never ICARTT, whatever header format was requested.
+            if not self.output_file:
+                self.output_file = defaultOutputFile(self, icartt=False)
+                print(f'No output file provided (-o), using: {self.output_file}')
+            asc.to_csv(self.output_file, index=False)
+            print(f'Mixed rate conversion written to {self.output_file}')
 
         else:
             # create an empty pandas series to hold variables

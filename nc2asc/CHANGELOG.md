@@ -23,7 +23,7 @@ Changes before 2026-08-27 are recorded only in the git history.
   - Anything starting with `#` is ignored. A commented example batch file is in
   `nc2asc/example_batchfile.bat`.
 
-#### Changed
+### Changed
 
 - Removed hard-coded revision information
   - A final data revision (`R0`, `R1`...) is now described as `Final Data` with
@@ -45,7 +45,7 @@ Changes before 2026-08-27 are recorded only in the git history.
   batch-file fixtures, so it needs neither a display nor the project data on
   `/scr/raf_data`. See the Running the Tests section of `nc2asc/README.md`.
 
-#### Fixed
+### Fixed
 
 - An output filename is generated when `-o` is not given, instead of crashing:
   - Generates the strict ICARTT name for ICARTT output, otherwise uses the
@@ -57,6 +57,21 @@ Changes before 2026-08-27 are recorded only in the git history.
 - `nc2asc -i <file>` with ICARTT output (the command line default) crashed with
   `AttributeError: 'dict' object has no attribute 'insert'`, from a variable
   selection step that ran before the variables had been read.
+- `-mixed_rate` without `-o` did the conversion and then silently wrote nothing,
+  because the csv was handed a filename of `None`, which returns the csv as a
+  string instead of writing a file.
+  - A name is now generated when `-o` is not given, the same as the other
+    conversions, but always a plain csv name (`<input file>.asc`) since mixed
+    rate output is never in ICARTT format.
+  - `-mixed_rate` also now honors an output file named by `of=` in the batch
+    file, which it ignored before, and reports where it wrote.
+
+### Known issues
+
+- The `-mixed_rate` conversion does not run against current xarray: it calls
+  `.flatten()` on a `DataArray`, and then sets a column index of the wrong
+  length. Its end-to-end test is marked as an expected failure until this is
+  fixed. Naming and writing the output file, above, are fixed already.
 
 ## [1.0] - 2023-01-12 Initial Release
 Changes before 2026-08-27 are recorded only in the git history.
