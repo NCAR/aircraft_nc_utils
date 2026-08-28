@@ -35,11 +35,11 @@ class TestOutputFileOption(unittest.TestCase):
         os.chdir(self.prev_cwd)
         self.tmp.cleanup()
 
-    def convert(self, output_file=None, batch_file=None):
+    def convert(self, output_file=None, batch_file=None, mixed_rate=False):
         self.cl.processData(
             util.make_cl_args(
                 input_file=self.input_file, output_file=output_file,
-                batch_file=batch_file,
+                batch_file=batch_file, mixed_rate=mixed_rate,
             )
         )
         return self.cl.output_file
@@ -96,6 +96,21 @@ class TestOutputFileOption(unittest.TestCase):
         n_header = int(lines[0].split(",")[0])
         self.assertEqual(lines[0].split(",")[1].strip(), "1001")
         self.assertGreater(len(lines), n_header)
+
+    # --- mixed rate ------------------------------------------------------
+    @unittest.expectedFailure
+    def test_mixed_rate_name_generated_when_no_output_file(self):
+        """Known broken: the -mixed_rate conversion itself fails before writing.
+
+        The output naming is fixed (mixed rate output is a plain csv named
+        after the input file, and to_csv is no longer handed a None filename),
+        but the conversion above it does not run against current xarray: it
+        calls .flatten() on a DataArray, and then sets a column index of the
+        wrong length. When that is fixed, this test should start passing and
+        the expectedFailure marker can come off.
+        """
+        self.assertEqual(self.convert(mixed_rate=True), "sample.asc")
+        self.assertWritten(os.path.join(self.tmp.name, "sample.asc"))
 
     # --- no input file at all --------------------------------------------
     def test_output_file_without_an_input_file_exits(self):

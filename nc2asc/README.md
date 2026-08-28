@@ -272,7 +272,7 @@ A single test:
 python -m unittest tests.test_nc2asc_output_option.TestOutputFileOption.test_provided_output_file_is_used -v
 ```
 
-The tests print the same progress and warning messages the program does, so a passing run is still noisy; look for the `OK` or `FAILED` summary at the end.
+The tests print the same progress and warning messages the program does, so a passing run is still noisy; look for the `OK` or `FAILED` summary at the end. A passing run currently reports `OK (expected failures=1)`: the `-mixed_rate` conversion is known to be broken, and its test is marked as an expected failure so that fixing it shows up as an unexpected success rather than going unnoticed.
 
 ### What the test modules cover
 

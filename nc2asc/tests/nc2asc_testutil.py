@@ -148,8 +148,10 @@ def write_batch_file(path, input_file, output_file, header="Plain",
     return str(path)
 
 
-def make_cl_args(input_file=None, output_file=None, batch_file=None):
+def make_cl_args(input_file=None, output_file=None, batch_file=None,
+                 mixed_rate=False, variables=None):
     """Build an argparse.Namespace matching what nc2asc_CL.processData reads."""
     return argparse.Namespace(
-        i=input_file, o=output_file, b=batch_file, mixed_rate=False, v=None
+        i=input_file, o=output_file, b=batch_file, mixed_rate=mixed_rate,
+        v=variables,
     )

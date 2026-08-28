@@ -119,6 +119,13 @@ class TestDefaultOutputFile(unittest.TestCase):
         instance = self.instance(header="ICARTT", timestamps=None)
         self.assertEqual(wd.defaultOutputFile(instance), "ASPIRE-TESTrf01.asc")
 
+    def test_icartt_can_be_overridden(self):
+        # Mixed rate output is a plain csv whatever header was requested.
+        self.assertEqual(
+            wd.defaultOutputFile(self.instance(header="ICARTT"), icartt=False),
+            "ASPIRE-TESTrf01.asc",
+        )
+
     def test_falls_back_when_there_is_no_input_file(self):
         instance = self.instance(header="Plain", input_file=False)
         self.assertEqual(wd.defaultOutputFile(instance), "nc2asc_output.asc")
