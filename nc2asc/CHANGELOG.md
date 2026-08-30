@@ -57,6 +57,10 @@ Changes before 2026-08-27 are recorded only in the git history.
 - `nc2asc -i <file>` with ICARTT output (the command line default) crashed with
   `AttributeError: 'dict' object has no attribute 'insert'`, from a variable
   selection step that ran before the variables had been read.
+- A stray line of leftover template text could appear in an ICARTT header.
+  The header templates are rewritten in place, and were never truncated, so
+  substituting a placeholder for something shorter left the tail of the old
+  content behind. All five in-place rewrites now truncate.
 - `-mixed_rate` without `-o` did the conversion and then silently wrote nothing,
   because the csv was handed a filename of `None`, which returns the csv as a
   string instead of writing a file.

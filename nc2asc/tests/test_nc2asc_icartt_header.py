@@ -92,6 +92,17 @@ class TestICARTTHeader(unittest.TestCase):
         # one dependent variable (ATX); Time is the independent Time_Start column
         self.assertEqual(len(scale.split(",")), 1)
 
+    def test_no_leftover_template_text(self):
+        # The templates are rewritten in place. Substituting a placeholder for
+        # something shorter used to leave the tail of the old content behind as
+        # a stray line, since the file was never truncated.
+        for line in self.header_lines:
+            self.assertFalse(line.endswith('>'), f'leftover template text: {line}')
+        fill = self.header_lines.index('-99999.0')
+        self.assertEqual(
+            self.header_lines[fill + 1], 'ATX,deg_C,ambient temperature'
+        )
+
     # --- substituted content --------------------------------------------
     def test_project_name_substituted(self):
         self.assertIn("ASPIRE-TEST", self.header_lines)
@@ -236,6 +247,13 @@ class TestICARTTRevisionLines(ICARTTConversion):
         cl, _ = self.convert(version="R0")
         self.assertEqual(cl.icartt_filename, "ASPIRE-TEST-CORE_C130_20210529_R0.ict")
 
+    def test_nothing_follows_the_revision(self):
+        # The revision block ends the header, above the column names. A final
+        # revision writes shorter lines than the field data the template holds,
+        # which used to leave a stray line of the old text behind.
+        cl, header_lines = self.convert(version="R0")
+        self.assertEqual(header_lines[-2:], ["R0: Final Data", "Time_Start,ATX"])
+
 
 class TestICARTTRevisionHistory(ICARTTConversion):
     """ICARTT wants every revision listed in every file, most recent first.
@@ -284,6 +302,22 @@ class TestICARTTRevisionHistory(ICARTTConversion):
         self.assertIn(
             "STIPULATIONS_ON_USE: Final data for publication use", header_lines
         )
+
+    def test_one_long_revision_line(self):
+        # The other direction from a short revision: one revision, so no lines
+        # are added, but the line written is longer than the template's. The
+        # rewrite has to grow the file without disturbing what follows.
+        long_revision = (
+            "R1: Recomputed ATX from the corrected recovery factor, and trimmed "
+            "the file to the flight time reported by WOW_A"
+        )
+        cl, header_lines = self.convert(version="R1", revisions=[long_revision])
+        self.assertEqual(header_lines[-2:], [long_revision, "Time_Start,ATX"])
+        first_comment = next(
+            i for i, line in enumerate(header_lines)
+            if line.startswith("PI_CONTACT_INFO")
+        )
+        self.assertEqual(int(header_lines[first_comment - 1]), 18)
 
     def test_version_defaults_to_most_recent_revision(self):
         # With no version= line, the top of the history is the current revision.

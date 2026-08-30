@@ -346,6 +346,9 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = lines[i].rstrip(',') + '\n'
             f.seek(0)
             f.writelines(lines)
+            # Truncate: substituting a placeholder for something shorter leaves
+            # the tail of the template behind as a stray line otherwise.
+            f.truncate()
 
         with open('./header2.tmp', 'r+') as f:
             lines = f.readlines()
@@ -374,6 +377,7 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = revision_lines
             f.seek(0)
             f.writelines(lines)
+            f.truncate()
 
         instance.columns = pd.DataFrame(dataframe.columns.values.tolist())
         instance.fileheader = instance.fileheader.loc[instance.fileheader[0].isin(instance.columns[0])]
@@ -401,8 +405,9 @@ def ICARTTHeader(instance, dataframe):
             for i, line in enumerate(lines):
                 if line.startswith('<ROWCOUNT>'):
                     lines[i] = f'{count}\n'
-                f.seek(0)
-                f.writelines(lines)
+            f.seek(0)
+            f.writelines(lines)
+            f.truncate()
         # Create required output filename. If user provided a filename, warn if
         # the names do not match but DON'T rename - user may have a reason for
         # wanting a bogus name, such as test and compare.
@@ -490,6 +495,7 @@ def AMESHeader(instance, ames_header):
             f.seek(0)
             for line in lines:
                 f.write(line)
+            f.truncate()
         # combine and perform replacement on the combined header file
         instance.fileheader.to_csv(lib_path + '/header1_ames.tmp', header=False, index=False)
         os.system('cat ' + lib_path + '/header1_ames.tmp ' + lib_path + '/header2_ames.tmp > ' + lib_path + '/header_ames.tmp')
@@ -502,6 +508,7 @@ def AMESHeader(instance, ames_header):
             f.seek(0)
             for line in lines:
                 f.write(line)
+            f.truncate()
         os.system('mv ' + str(instance.output_file) + ' ' + str(instance.output_file) + '.tmp')
         os.system('cat ' + lib_path + '/header_ames.tmp ' + str(instance.output_file) + '.tmp >> ' + str(instance.output_file))
         os.system('rm ' + lib_path + '/header_ames.tmp ' + lib_path + '/header1_ames.tmp ' + lib_path + '/header2_ames.tmp ' + str(instance.output_file) + '.tmp')
