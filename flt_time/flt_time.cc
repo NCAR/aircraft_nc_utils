@@ -312,7 +312,13 @@ main(int argc, char *argv[])
   else
   {
       cout << "Takeoff: " << ctime(&start);
-      cout << "Landing: " << ctime(&end);
+      if (end == 0) {
+	  cout << "Landing undefined; try using a different variable" << endl;
+      }
+      else
+      {
+          cout << "Landing: " << ctime(&end);
+      }
   }
 
 

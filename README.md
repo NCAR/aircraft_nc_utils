@@ -38,6 +38,8 @@ Documentation is available on a per-program basis.
 
 asc2cdf - The users manual can be found online at https://www.eol.ucar.edu/raf/Software/asc2cdf.html.
 
+nc2asc - Notable changes are recorded in [nc2asc/CHANGELOG.md](nc2asc/CHANGELOG.md).
+
 ### Environment ###
 
 The aircraft NC utilities are a mix of C programs and python scripts.  Newer programs are in python3 for ease of portability. Packages can be installed using pip or through the use of anaconda. On EOL servers, adding the following to your PATH will make available all required packages for python3-based nc_utils: `export PATH="/opt/local/anaconda3/bin:$PATH"`

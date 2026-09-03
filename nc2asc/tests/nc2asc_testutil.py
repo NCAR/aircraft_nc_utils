@@ -65,6 +65,18 @@ def load_nc2asc():
     return module
 
 
+def load_write_data():
+    """Load and return the write_data library module on its own.
+
+    Useful for testing its helpers directly, without running a conversion.
+    """
+    _install_pyqt5_stubs()
+    if str(LIB_DIR) not in sys.path:
+        sys.path.insert(0, str(LIB_DIR))
+    import write_data
+    return write_data
+
+
 def write_sample_netcdf(path, n=5):
     """Write a small synthetic RAF-style netCDF file to ``path``.
 
@@ -96,30 +108,50 @@ def write_sample_netcdf(path, n=5):
 
 
 def write_batch_file(path, input_file, output_file, header="Plain",
-                     variables=None, date="yyyy-mm-dd", time="hh:mm:ss"):
+                     variables=None, date="yyyy-mm-dd", time="hh:mm:ss",
+                     version=None, revisions=None, comments=False):
     """Write a batch file pointing at the given input/output files.
 
     ``header`` selects the output format (``Plain``/``ICARTT``/``AMES``).
     ``variables`` is an optional list of variable names to emit as ``Vars=``
     lines; when omitted nc2asc takes its convert-all code path. ``date``/``time``
     set the ``dt=``/``tm=`` directives (ICARTT batches use ``NoDate``/``SecOfDay``).
+    Passing ``output_file=None`` omits the ``of=`` line, the batch-file
+    equivalent of leaving -o off the command line. ``version`` writes a
+    ``version=`` line, the ICARTT revision (RA, RB... field data; R0, R1...
+    final data); when omitted nc2asc uses its RA default. ``revisions`` writes
+    the cumulative revision history as ``rev=`` lines, most recent first.
+    ``comments`` adds ``#`` comment lines, which nc2asc must ignore.
     """
     with open(path, "w") as fh:
+        if comments:
+            fh.write("# a comment, and below a directive commented out\n")
+            fh.write("#hd=AMES\n")
         fh.write(f"if={input_file}\n")
-        fh.write(f"of={output_file}\n\n")
+        if output_file is not None:
+            fh.write(f"of={output_file}\n")
+        fh.write("\n")
         fh.write(f"hd={header}\n")
         fh.write(f"dt={date}\n")
         fh.write(f"tm={time}\n")
         fh.write("sp=comma\n")
         fh.write("fv=-32767\n")
         fh.write("ti=X,X\n")
+        if version is not None:
+            fh.write(f"version={version}\n")
+        for revision in revisions or []:
+            fh.write(f"rev={revision}\n")
+        if comments:
+            fh.write("# variables to convert follow\n")
         for var in variables or []:
             fh.write(f"Vars={var}\n")
     return str(path)
 
 
-def make_cl_args(input_file=None, output_file=None, batch_file=None):
+def make_cl_args(input_file=None, output_file=None, batch_file=None,
+                 mixed_rate=False, variables=None):
     """Build an argparse.Namespace matching what nc2asc_CL.processData reads."""
     return argparse.Namespace(
-        i=input_file, o=output_file, b=batch_file, mixed_rate=False, v=None
+        i=input_file, o=output_file, b=batch_file, mixed_rate=mixed_rate,
+        v=variables,
     )

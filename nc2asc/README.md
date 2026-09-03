@@ -119,7 +119,53 @@ The desired vars should be inclueded with each Var listed on a separate line.
 
 `Vars=<VarName>`
 
+#### ICARTT Revisions
+
+ICARTT files carry a revision number and the history of every revision before it. Both come from the batch file, so a release means editing the batch file - never the installed `header2.txt` template, which is shared by every project and is replaced when nc2asc is reinstalled.
+
+`version=<revision>` is the revision this conversion produces. It sets the `REVISION:` line in the header and the `_R??` part of the [ICARTT filename](#header-format-options):
+
+| Revision | Meaning | Header lines |
+| --- | --- | --- |
+| `RA`, `RB`, `RC` ... | field data | `RA: Field Data`, `STIPULATIONS_ON_USE: Field data not for publication use` |
+| `R0`, `R1`, `R2` ... | final data | `R0: Final Data`, `STIPULATIONS_ON_USE: Final data for publication use` |
+
+`rev=<revision>: <what changed>` adds one revision to the history. ICARTT requires every revision to be listed in every file, most recent first, so **add** a `rev=` line when you release a revision rather than replacing the previous one:
+
+```
+version=R2
+rev=R2: Corrected ATX calibration
+rev=R1: Trimmed to flight time
+rev=R0: Final Data
+```
+
+writes:
+
+```
+REVISION: R2
+R2: Corrected ATX calibration
+R1: Trimmed to flight time
+R0: Final Data
+```
+
+Leave `version=` out and the most recent `rev=` line is used, so the revision is named once. With no `rev=` lines at all, the header gets a single generated line for the current revision (`R0: Final Data` or `RA: Field Data`).
+
+nc2asc warns, and converts anyway, when `version=` is not the most recent `rev=` line, when a revision is listed twice or out of order, when the history skips a revision, or when a `rev=` line has no description. A `version=` that disagrees with the history is used as given, not corrected.
+
+#### Comments
+
+Lines starting with `#` are ignored, so a batch file can carry its own notes and instructions:
+
+```
+# Bump version= and add a rev= line for every release. Do not remove old ones.
+version=R1
+rev=R1: Trimmed to flight time
+rev=R0: Final Data
+```
+
 ### Example Batch File
+
+Batch files are per project; the input and output files are usually given on the command line, one flight at a time. A fully commented example to copy is in [example_batchfile.bat](example_batchfile.bat).
 
 ```
 if=/scr/raf_data/ASPIRE-TEST/ASPIRE-TESTrf01.nc
@@ -131,6 +177,9 @@ dt=yyyy-mm-dd
 tm=hh:mm:ss
 sp=comma
 fv=-32767
+
+version=RA
+rev=RA: Field Data
 
 Vars=Time
 Vars=ALT
@@ -182,18 +231,59 @@ Example for mixed rate (HRT or SRT) conversion:
 
 ## Running the Tests
 
-Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework. They require `numpy` and `xarray` (both are already dependencies of `nc2asc`); no additional test packages are needed. The tests build small synthetic netCDF and batch-file fixtures in a temporary directory, so they run anywhere and do not require the project data on `/scr/raf_data`.
+Unit tests live in the `tests/` directory and are written with Python's built-in `unittest` framework, so there is no test framework to install. The tests build small synthetic netCDF and batch-file fixtures in a temporary directory, so they run anywhere and do not require the project data on `/scr/raf_data`. PyQt5 is stubbed out by the test helpers, so no Qt install or display is needed.
 
-Run all tests from the `nc2asc` project root (the directory containing `src/` and `tests/`):
+### Setting up a Python environment
+
+The tests need the same data packages `nc2asc` itself uses: `numpy`, `pandas`, `xarray`, and `netCDF4`. To check whether the python you are using already has them:
+
+```
+python -c "import numpy, pandas, xarray, netCDF4"
+```
+
+No output means you are ready to run the tests. If that reports a `ModuleNotFoundError`, create a virtual environment once, from the `nc2asc` project root (the directory containing `src/` and `tests/`):
+
+```
+cd <path to>/aircraft_nc_utils/nc2asc
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r tests/requirements.txt
+```
+
+In later sessions just activate it again with `source .venv/bin/activate` (and `deactivate` when finished). The `.venv` directory ignores itself, so it will not show up in `git status`.
+
+### Running the tests
+
+All of the tests, from the `nc2asc` project root:
 
 ```
 python -m unittest discover -s tests -v
 ```
 
-To run a single test module:
+A single test module:
 
 ```
-python -m unittest tests.test_nc2asc_parse_vars -v
+python -m unittest tests.test_nc2asc_output_option -v
 ```
+
+A single test:
+
+```
+python -m unittest tests.test_nc2asc_output_option.TestOutputFileOption.test_provided_output_file_is_used -v
+```
+
+The tests print the same progress and warning messages the program does, so a passing run is still noisy; look for the `OK` or `FAILED` summary at the end. A passing run currently reports `OK (expected failures=1)`: the `-mixed_rate` conversion is known to be broken, and its test is marked as an expected failure so that fixing it shows up as an unexpected success rather than going unnoticed.
+
+### What the test modules cover
+
+| Module | Covers |
+| --- | --- |
+| `test_nc2asc_formatData.py` | reading a netCDF file into the internal dataframes |
+| `test_nc2asc_parse_vars.py` | variable selection, including multidimensional variables |
+| `test_nc2asc_readBatchFile.py` | parsing batch file directives, including revisions and comments |
+| `test_nc2asc_writeData.py` | end-to-end conversion of a Plain output file |
+| `test_nc2asc_icartt_header.py` | ICARTT header content, format invariants, and the revision history |
+| `test_nc2asc_filename_helpers.py` | the `dataDate`, `icarttFilename`, and `defaultOutputFile` helpers |
+| `test_nc2asc_output_option.py` | conversions with and without the optional `-o` |
 
 Shared test helpers (PyQt5 stubs, module loading, and fixture builders) live in `tests/nc2asc_testutil.py`. The program under test is loaded from `src/bin/nc2asc` with `src/lib/nc2asc` on the import path.

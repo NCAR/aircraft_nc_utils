@@ -68,6 +68,81 @@ def formatData(instance):
         print('Error in extracting variable in ' + str(instance.input_file))
 
 
+def dataDate(instance):
+    """The date of the data as 'yyyy, mm, dd', from the first timestamp. Keeps
+    any previously determined date if the timestamps are not available.
+    """
+    try:
+        instance.data_date = str(instance.dtime_sep[0].iloc[1]).replace('-', ', ')
+    except Exception:
+        if not getattr(instance, 'data_date', ''):
+            raise
+    return instance.data_date
+
+
+def icarttFilename(instance):
+    """The filename required by the strict ICARTT naming convention."""
+    instance.icartt_filename_date = dataDate(instance).replace(', ', '')
+    version = getattr(instance, 'version', 'RA')
+    instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{version}.ict'
+    return instance.icartt_filename
+
+
+def revisionIsFinal(version):
+    """Whether an ICARTT revision is final data. R followed by a number
+    (R0, R1...) is final, R followed by a letter (RA, RB...) is preliminary
+    field data.
+    """
+    return version[1:2].isdigit()
+
+
+def revisionDescription(version):
+    """The ICARTT description of a revision."""
+    return 'Final Data' if revisionIsFinal(version) else 'Field Data'
+
+
+def revisionStipulation(version):
+    """The ICARTT stipulation on use that goes with a revision."""
+    if revisionIsFinal(version):
+        return 'Final data for publication use'
+    return 'Field data not for publication use'
+
+
+def revisionLines(instance):
+    """The ICARTT revision history block, one line per revision, most recent
+    first, as a single string ready to write.
+
+    The history comes from the rev= lines in the batch file. With none, the
+    current revision is the whole history, described from its number alone.
+    """
+    revisions = getattr(instance, 'revisions', None)
+    if not revisions:
+        revisions = [f'{instance.version}: {revisionDescription(instance.version)}']
+    return ''.join(f'{revision}\n' for revision in revisions)
+
+
+def defaultOutputFile(instance, icartt=None):
+    """Build an output filename for when the user did not provide one, since -o
+    is optional. ICARTT output gets the strict ICARTT name, anything else reuses
+    the input filename with a .asc extension. Both are written to the current
+    working directory so read-only data directories are not a problem.
+
+    ``icartt`` overrides the header setting, for output that is never in ICARTT
+    format no matter what header was requested, such as a mixed rate conversion.
+    """
+    if icartt is None:
+        icartt = instance.header == 'ICARTT'
+    if icartt:
+        try:
+            return icarttFilename(instance)
+        except Exception:
+            print('Could not determine the ICARTT filename, naming the output '
+                  'after the input file instead.')
+    if instance.input_file:
+        return os.path.splitext(os.path.basename(str(instance.input_file)))[0] + '.asc'
+    return 'nc2asc_output.asc'
+
+
 def writeData(instance):
 
     #####################################################################
@@ -114,6 +189,11 @@ def writeData(instance):
     except Exception as e:
         instance._log_exception(e)
         
+    # -o is optional; generate a name if the user did not provide one
+    if not instance.output_file:
+        instance.output_file = defaultOutputFile(instance)
+        print(f'No output file provided (-o), using: {instance.output_file}')
+
     try:
         os.remove(str(instance.output_file))
     except Exception:
@@ -241,7 +321,6 @@ def ICARTTHeader(instance, dataframe):
     dataframe.to_csv(instance.output_file, header=True, index=False)
     instance.varNumber = str(len(dataframe.columns) - 1)
     try:
-        instance.data_date = str(instance.dtime_sep[0].iloc[1]).replace('-', ', ')
         os.system(f'cp {instance.lib_path}/header1.txt ./header1.tmp')
         os.system("ex -s -c '5i' -c x ./header1.tmp")
         os.system(f'cp {instance.lib_path}/header2.txt ./header2.tmp')
@@ -255,7 +334,7 @@ def ICARTTHeader(instance, dataframe):
                 if line.startswith('<PROJECT>'):
                     lines[i] = f'{instance.project_name}\n'
                 if line.startswith('<YYYY, MM, DD,>'):
-                    lines[i] = f'{instance.data_date}, {instance.today}\n'
+                    lines[i] = f'{dataDate(instance)}, {instance.today}\n'
                 if line.startswith('<varNumber>'):
                     lines[i] = f'{instance.varNumber}\n'
                 if line.startswith('<1.0>'):
@@ -267,9 +346,16 @@ def ICARTTHeader(instance, dataframe):
                     lines[i] = lines[i].rstrip(',') + '\n'
             f.seek(0)
             f.writelines(lines)
+            # Truncate: substituting a placeholder for something shorter leaves
+            # the tail of the template behind as a stray line otherwise.
+            f.truncate()
 
         with open('./header2.tmp', 'r+') as f:
             lines = f.readlines()
+            # The template holds one revision line; a cumulative history from
+            # the batch file adds to the normal comment count.
+            revision_lines = revisionLines(instance)
+            revisions_len = revision_lines.count('\n') - 1
             cells_len=0
             if instance.histo:
                 for var in instance.cellsize_dict:
@@ -280,16 +366,18 @@ def ICARTTHeader(instance, dataframe):
                 cells_len = cellsize_len
             for i, line in enumerate(lines):
                 if line.startswith('18'):
-                    lines[i] =str(cells_len+18) + '\n'
+                    lines[i] =str(cells_len+revisions_len+18) + '\n'
                 if line.startswith('<PLATFORM>'):
                     lines[i] = f'PLATFORM: NSF/NCAR {instance.platform} {instance.tail_number}\n'
                 if line.startswith('REVISION: RA'):
                     lines[i] = line.replace('RA', instance.version)
+                if line.startswith('STIPULATIONS_ON_USE:'):
+                    lines[i] = f'STIPULATIONS_ON_USE: {revisionStipulation(instance.version)}\n'
                 if line.startswith('RA:'):
-                    lines[i] = line.replace('RA', instance.version) 
-                    #TODO: This versioning section needs to be cumulative in an icartt config file so that changes can be tracked within one file. (e.g. RA: Field Data; RB: Field Data trimmed to flight time)
+                    lines[i] = revision_lines
             f.seek(0)
             f.writelines(lines)
+            f.truncate()
 
         instance.columns = pd.DataFrame(dataframe.columns.values.tolist())
         instance.fileheader = instance.fileheader.loc[instance.fileheader[0].isin(instance.columns[0])]
@@ -317,12 +405,18 @@ def ICARTTHeader(instance, dataframe):
             for i, line in enumerate(lines):
                 if line.startswith('<ROWCOUNT>'):
                     lines[i] = f'{count}\n'
-                f.seek(0)
-                f.writelines(lines)
-            
-        instance.icartt_filename_date = instance.data_date.replace(', ', '')
-        instance.icartt_filename = f'{instance.project_name}-CORE_{instance.platform}_{instance.icartt_filename_date}_{instance.version}.ict'
-        print(f'Overwriting Output Filename, since ICARTT file has strict format: {instance.icartt_filename}')
+            f.seek(0)
+            f.writelines(lines)
+            f.truncate()
+        # Create required output filename. If user provided a filename, warn if
+        # the names do not match but DON'T rename - user may have a reason for
+        # wanting a bogus name, such as test and compare.
+        output_basename = os.path.basename(instance.output_file)
+        if (icarttFilename(instance) != output_basename):
+            print(f'WARNING: Provided output filename does not conform to '
+                  f'strict ICARTT filename:\n'
+                  f'\trecommended ICARTT format: {instance.icartt_filename}\n'
+                  f'\tuser-provided filename: {output_basename}')
         os.system(f'mv {instance.output_file} {instance.output_file}.tmp')
         #os.system(f'cat ./header.tmp {instance.output_file}.tmp >> {instance.output_file}')
         # Use Python file operations for more control
@@ -340,7 +434,6 @@ def ICARTTHeader(instance, dataframe):
             # Copy data
             with open(f'{instance.output_file}.tmp', 'r') as data_file:
                 outfile.write(data_file.read())
-        os.system(f'mv {instance.output_file} {os.path.abspath(os.path.dirname(instance.output_file))}/{instance.icartt_filename}')
         os.system(f'rm header.tmp header1.tmp header2.tmp {instance.output_file}.tmp')
     except Exception:
         print(traceback.format_exc())
@@ -375,8 +468,6 @@ def AMESHeader(instance, ames_header):
     try:
         instance.columns = pd.DataFrame(ames_header.columns.values.tolist())
         instance.fileheader = instance.fileheader.loc[instance.fileheader[0].isin(instance.columns[0])]
-        instance.data_date = str(instance.dtime_sep[0].iloc[1])
-        instance.data_date = instance.data_date.replace('-', ', ')
         # start going through the template text docs
         os.system('cp ' + lib_path + '/header1_ames.txt ' + lib_path + '/header1_ames.tmp')
         os.system("ex -s -c '5i' -c x " + lib_path + "/header1_ames.tmp")
@@ -392,7 +483,7 @@ def AMESHeader(instance, ames_header):
                 if line.startswith('<PROJECT>'):
                     lines[i] = instance.project_name + '\n'
                 if line.startswith('<YYYY, MM, DD,>'):
-                    lines[i] = instance.data_date+', ' + instance.today + '\n'
+                    lines[i] = dataDate(instance) +', ' + instance.today + '\n'
                 if line.startswith('<varNumber>'):
                     lines[i] = instance.varNumber + '\n'
                 if line.startswith('<0.1>'):
@@ -404,6 +495,7 @@ def AMESHeader(instance, ames_header):
             f.seek(0)
             for line in lines:
                 f.write(line)
+            f.truncate()
         # combine and perform replacement on the combined header file
         instance.fileheader.to_csv(lib_path + '/header1_ames.tmp', header=False, index=False)
         os.system('cat ' + lib_path + '/header1_ames.tmp ' + lib_path + '/header2_ames.tmp > ' + lib_path + '/header_ames.tmp')
@@ -416,6 +508,7 @@ def AMESHeader(instance, ames_header):
             f.seek(0)
             for line in lines:
                 f.write(line)
+            f.truncate()
         os.system('mv ' + str(instance.output_file) + ' ' + str(instance.output_file) + '.tmp')
         os.system('cat ' + lib_path + '/header_ames.tmp ' + str(instance.output_file) + '.tmp >> ' + str(instance.output_file))
         os.system('rm ' + lib_path + '/header_ames.tmp ' + lib_path + '/header1_ames.tmp ' + lib_path + '/header2_ames.tmp ' + str(instance.output_file) + '.tmp')
@@ -435,4 +528,4 @@ def add_fills(dataframe, fill):
                 print(f'Could not convert {column} to float')
                 pass  
     
-    return dataframe.replace(np.nan, fill)  
+    return dataframe.replace(np.nan, fill)
