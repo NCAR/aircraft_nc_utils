@@ -85,7 +85,7 @@ bool parse_timezone_offset(std::istream& ss, int& offset_seconds)
     // Optional colon separator (common in ISO 8601 like -06:00)
     if (ss.peek() == ':')
     {
-        ss.get(); 
+        ss.get();
     }
 
     // Parse MM
@@ -158,9 +158,10 @@ basetime_from_units(const std::string& units,
   int year{0}, month{0}, day{0};
   int hour{0}, minute{0}, second{0}, tz_offset{0};
 
-  // If given an explicit strptime format, use it.  Otherwise parse with
-  // strptime and grab the individual fields from the struct tm.  The time
-  // is assumed to be in UTC and thus tz_offset is ignored.
+  // If given an explicit strptime format, pass it to parse_time() and use it.
+  // Otherwise, parse individual fields with sscanf() and allow some of the
+  // fields to be omitted.  Only UTC is supported, so a non-zero timezone
+  // offset is an error.
   //
   if (strptime_format.length())
   {
@@ -191,7 +192,7 @@ basetime_from_units(const std::string& units,
                                "time units: " + units);
     }
   }
-  // Since UTC is expected, expect the offset is zero.
+  // Since UTC is expected, the offset must be zero.
   if (tz_offset != 0)
   {
     throw std::runtime_error("time units have non-zero timezone offset: " +
