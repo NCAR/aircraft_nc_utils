@@ -191,8 +191,11 @@ def writeData(instance):
         instance._log_exception(e)
         
     # -o is optional; generate a name if the user did not provide one
+    # Put output file in same dir as input file, since no path provided
     if not instance.output_file:
         instance.output_file = defaultOutputFile(instance)
+        directory = os.path.split(instance.input_file)[0]
+        instance.output_file = os.path.join(directory, instance.output_file)
         print(f'No output file provided (-o), using: {instance.output_file}')
 
     try:
