@@ -155,6 +155,7 @@ def writeData(instance):
             instance.write = instance.asc_new_batch
         except Exception:
             instance.write = instance.asc
+    instance.write = instance.write.copy()
     if instance.header == 'ICARTT':
         instance.write.insert(0, 'Time_Start', instance.secofday)
 ################################################################################################
