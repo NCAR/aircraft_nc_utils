@@ -22,6 +22,21 @@ nc_time_from_time_t(time_t ttime)
   return epoch + boost::posix_time::time_duration(0, 0, ttime);
 }
 
+
+/**
+ * Parse the base time in a units string and return it.  If @p strptime_format
+ * is not empty, then it is used to parse the entire units string, otherwise
+ * the units must be in the form "{seconds|microseconds} since %d-%d-%d
+ * %d:%d:%d %d", where the last %d is the timezone offset.  The time is
+ * assumed to be in UTC, so this throws std::runtime_error if tz_offset is
+ * non-zero.  Also throws std::runtime_error if the units do not start with
+ * seconds or microseconds.
+ */
+nc_time
+basetime_from_units(const std::string& units,
+                    const std::string& strptime_format,
+                    boost::posix_time::time_duration& timestep);
+
 class NcCache;
 
 /**

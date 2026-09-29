@@ -44,9 +44,9 @@ env.Default(nccompare)
 env.Alias('install.nc_compare', env.Install('$INSTALL_PREFIX/bin', nccompare))
 env.Install('$INSTALL_PREFIX/man/man1', manpage)
 
-# gtest now requires C++14
+# gtest now requires C++17
 env = Environment(tools=tools+['testing', 'gtest_main'])
-env.AppendUnique(CXXFLAGS=['-std=c++14'])
+env.AppendUnique(CXXFLAGS=['-std=c++17'])
 env['VALGRIND'] = valgrind
 env['CXX'] = cxx or env['CXX']
 

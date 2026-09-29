@@ -29,6 +29,66 @@ TEST(NcCache, ReadFirstTime)
   EXPECT_EQ(xtime, ncc.times()[0]);
 }
 
+
+nc_time make_time(int year, int month, int day,
+                  int hour, int minute, int second)
+{
+  return nc_time(boost::gregorian::date(year, month, day),
+                 boost::posix_time::time_duration(hour, minute, second));
+}
+
+
+TEST(NcCache, base_time_from_units)
+{
+  boost::posix_time::time_duration timestep;
+  timestep = boost::posix_time::seconds(0);
+
+  nc_time bt = basetime_from_units("seconds since 2013-09-26 00:00:00 +0000",
+                                   "", timestep);
+  EXPECT_EQ(bt, make_time(2013, 9, 26, 0, 0, 0));
+  EXPECT_EQ(timestep, boost::posix_time::seconds(1));
+
+  timestep = boost::posix_time::seconds(0);
+  bt = basetime_from_units("microseconds since 2013-09-26 12:00:02",
+                           "", timestep);
+  EXPECT_EQ(bt, make_time(2013, 9, 26, 12, 0, 2));
+  EXPECT_EQ(timestep, boost::posix_time::microseconds(1));
+
+  // expect error for invalid day
+  EXPECT_THROW(basetime_from_units("seconds since 2013-09-32 00:00:00 +0000",
+                                   "", timestep), std::exception);
+  // wrong units
+  EXPECT_THROW(basetime_from_units("minutes since 2013-09-26 00:00:00 +0000",
+                                   "", timestep), std::exception);
+  // non-zero timezone offset
+  EXPECT_THROW(basetime_from_units("seconds since 2013-09-26 00:00:00 +0100",
+                                   "", timestep), std::exception);
+
+  // strptime format failure
+  EXPECT_THROW(basetime_from_units("seconds since 2013-09-26 00:00:00 +0000",
+                                   "%Y %m %d %H:%M:%S %Z", timestep),
+               std::exception);
+
+  timestep = boost::posix_time::seconds(0);
+  bt = basetime_from_units("seconds since 2024-02-28 00:00:00 +0000",
+                           "seconds since %F %T %z", timestep);
+  EXPECT_EQ(bt, make_time(2024, 2, 28, 0, 0, 0));
+  EXPECT_EQ(timestep, boost::posix_time::seconds(1));
+
+  timestep = boost::posix_time::seconds(0);
+  bt = basetime_from_units("seconds since 2024-02-28 00:00:00 -00:00",
+                           "seconds since %F %T %z", timestep);
+  EXPECT_EQ(bt, make_time(2024, 2, 28, 0, 0, 0));
+  EXPECT_EQ(timestep, boost::posix_time::seconds(1));
+  timestep = boost::posix_time::seconds(0);
+
+  // expect error for non-zero timezone offset
+  EXPECT_THROW(basetime_from_units("seconds since 2024-02-28 00:00:00 +01:00",
+                                   "seconds since %F %T %z", timestep),
+               std::exception);
+}
+
+
 TEST(NcCache, GlobalKeys)
 {
   // Make sure the global attributes are cached correctly.
